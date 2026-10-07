@@ -68,7 +68,7 @@ class EcuabetClient:
 
     def buscar_evento(self, local, visitante):
         payload = self._request("GET", "GetTopEvents", {
-            "eventCount": 0, "sportId": 0, "timePeriod": 1
+            "eventCount": 0, "sportId": 1, "timePeriod": 1
         })
         home_target, away_target = self._tokens(local), self._tokens(visitante)
         candidates = []
@@ -89,6 +89,36 @@ class EcuabetClient:
             aws = len(away_target & self._tokens(names[1]))
             if hs and aws:
                 candidates.append((hs + aws, int(event_id), item.get("name", f"{names[0]} vs {names[1]}")))
+        if not candidates:
+            try:
+                payload = self._request("GET", "GetTopEvents", {
+                    "eventCount": 0, "sportId": 1, "timePeriod": 0
+                })
+                for item in self._walk(payload):
+                    event_id = item.get("id") or item.get("eventId")
+                    competitors = item.get("competitors")
+                    names = []
+                    if isinstance(competitors, list):
+                        names = [c.get("name", "") for c in competitors if isinstance(c, dict)]
+                    if len(names) < 2:
+                        event_name = str(item.get("name", ""))
+                        parts = re.split(r"\\s+vs\\.?\\s+|\\s+-\\s+", event_name, maxsplit=1, flags=re.IGNORECASE)
+                        if len(parts) == 2:
+                            names = parts
+                    if not event_id or len(names) < 2:
+                        continue
+                    hs = len(home_target & self._tokens(names[0]))
+                    aws = len(away_target & self._tokens(names[1]))
+                    if hs and aws:
+                        candidates.append((hs + aws, int(event_id), item.get("name", f"{names[0]} vs {names[1]}")))
+                    else:
+                        hs = len(home_target & self._tokens(names[1]))
+                        aws = len(away_target & self._tokens(names[0]))
+                        if hs and aws:
+                            candidates.append((hs + aws - 0.5, int(event_id), item.get("name", f"{names[0]} vs {names[1]}")))
+            except EcuabetAPIError:
+                pass
+
         if not candidates:
             raise EcuabetAPIError(f"No se encontró en Ecuabet: {local} vs {visitante}")
         candidates.sort(reverse=True)
