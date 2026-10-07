@@ -241,6 +241,21 @@ class EcuabetClient:
         })
 
         event = next((e for e in payload.get("events", []) if int(e.get("id", -1)) == int(event_id)), None)
+
+        # Si el evento ya está guardado en la BD pero no conocemos su
+        # campeonato, repetir la consulta con Bundesliga (champId 2950).
+        if not event and int(champ_id or 0) != 2950:
+            payload = self._request("GET", "GetEvents", {
+                "eventCount": 0,
+                "sportId": 0,
+                "champIds": 2950,
+            })
+            event = next(
+                (e for e in payload.get("events", [])
+                 if int(e.get("id", -1)) == int(event_id)),
+                None,
+            )
+
         if not event:
             raise EcuabetAPIError(f"No se encontró el evento {event_id}")
 
