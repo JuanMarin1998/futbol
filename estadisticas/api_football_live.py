@@ -13,12 +13,19 @@ class APIFootballLiveClient:
         if not self.api_key:
             raise ValueError("Falta API_FOOTBALL_KEY. Configúralo en .env.")
 
-    def obtener_en_vivo(self):
+    def _get(self, params):
         response = requests.get(
             f"{self.BASE_URL}/fixtures",
-            params={"live": "all"},
+            params=params,
             headers={"x-apisports-key": self.api_key},
             timeout=self.timeout,
         )
         response.raise_for_status()
         return response.json()
+
+    def obtener_en_vivo(self):
+        return self._get({"live": "all"})
+
+    def obtener_detalle_partido(self, fixture_id):
+        """Obtiene fixture + eventos + alineaciones + estadísticas + jugadores en una sola llamada."""
+        return self._get({"ids": str(fixture_id)})
