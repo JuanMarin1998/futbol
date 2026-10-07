@@ -257,6 +257,22 @@ class FlashscoreClient:
                     if stat_type not in result["raw_types"]:
                         result["raw_types"].append(stat_type)
 
+        # Completa el catálogo con campos que todavía no tengan valor.
+        # Así la interfaz conserva la estructura completa de Flashscore y
+        # muestra "—" cuando una métrica aún no está disponible en LIVE.
+        for group, stat_type, label in cls.STAT_CATALOG:
+            for target in ("home", "away"):
+                if stat_type not in result[target]:
+                    result[target][stat_type] = {
+                        "name": label,
+                        "label": label,
+                        "value": None,
+                        "raw_value": None,
+                        "group": group,
+                    }
+            if stat_type not in result["raw_types"]:
+                result["raw_types"].append(stat_type)
+
         return result
 
     def obtener_stats(self, event_id: str) -> Dict[str, Any]:
