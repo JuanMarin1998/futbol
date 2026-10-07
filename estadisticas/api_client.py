@@ -76,10 +76,16 @@ def obtener_equipo(id_equipo: int) -> dict:
     return resp.json()
 
 
-def obtener_partidos_equipo(id_equipo: int, limite: int = 10) -> list[dict]:
-    """Trae los últimos partidos finalizados de un equipo (para calcular su racha/estadísticas)."""
+def obtener_partidos_equipo(id_equipo: int, limite: int = 10, estado: str | None = "FINISHED") -> list[dict]:
+    """
+    Trae partidos de un equipo. Por defecto solo los finalizados (para calcular su
+    racha/estadísticas). Pasa estado=None para traer de cualquier estado (útil para
+    buscar un enfrentamiento concreto contra otro equipo, ya sea pasado o futuro).
+    """
     url = f"{BASE_URL}/teams/{id_equipo}/matches"
-    params = {"status": "FINISHED", "limit": limite}
+    params = {"limit": limite}
+    if estado:
+        params["status"] = estado
     resp = requests.get(url, headers=_headers(), params=params, timeout=15)
     if resp.status_code != 200:
         raise FootballDataError(f"Error {resp.status_code} al traer partidos del equipo {id_equipo}: {resp.text}")
@@ -144,3 +150,38 @@ def obtener_tabla_posiciones(codigo_liga: str) -> list[dict]:
         if tabla.get("type") == "TOTAL":
             return tabla.get("table", [])
     return standings[0].get("table", []) if standings else []
+
+
+def obtener_goleadores(codigo_liga: str, limite: int = 20) -> list[dict]:
+    """Trae el ranking de goleadores de una competición."""
+    url = f"{BASE_URL}/competitions/{codigo_liga}/scorers"
+    params = {"limit": limite}
+    resp = requests.get(url, headers=_headers(), params=params, timeout=15)
+    if resp.status_code != 200:
+        raise FootballDataError(f"Error {resp.status_code} al traer goleadores de {codigo_liga}: {resp.text}")
+    return resp.json().get("scorers", [])
+
+
+def obtener_head2head(id_partido: int, limite: int = 10) -> dict:
+    """
+    Trae el historial de enfrentamientos directos asociado a un partido (programado o jugado).
+    La API arma el head2head a partir de un id de partido concreto, no de dos equipos sueltos.
+    """
+    url = f"{BASE_URL}/matches/{id_partido}/head2head"
+    params = {"limit": limite}
+    resp = requests.get(url, headers=_headers(), params=params, timeout=15)
+    if resp.status_code != 200:
+        raise FootballDataError(f"Error {resp.status_code} al traer el head2head del partido {id_partido}: {resp.text}")
+    return resp.json()
+
+
+def buscar_proximo_o_ultimo_enfrentamiento(id_equipo_a: int, id_equipo_b: int, partidos_equipo_a: list[dict]) -> dict | None:
+    """
+    Busca, dentro de los partidos recientes/próximos del equipo A, uno que haya sido
+    contra el equipo B. Sirve como punto de entrada para pedir el head2head real a la API,
+    ya que esta solo lo expone a partir del id de un partido concreto.
+    """
+    for p in partidos_equipo_a:
+        if p["homeTeam"]["id"] == id_equipo_b or p["awayTeam"]["id"] == id_equipo_b:
+            return p
+    return None

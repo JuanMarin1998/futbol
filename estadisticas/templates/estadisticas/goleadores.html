@@ -1,0 +1,45 @@
+{% extends "estadisticas/base.html" %}
+{% block titulo %}{{ nombre_liga }} — Goleadores{% endblock %}
+{% block contenido %}
+    <h2>{{ nombre_liga }} — Tabla de goleadores</h2>
+
+    {% if error %}
+        <div class="error">
+            <strong>No se pudo conectar con la API:</strong><br>
+            {{ error }}
+        </div>
+    {% else %}
+        <div class="tarjeta">
+            {% if goleadores %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Jugador</th>
+                            <th>Equipo</th>
+                            <th>Goles</th>
+                            <th>Asistencias</th>
+                            <th>Penaltis</th>
+                            <th>PJ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for g in goleadores %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ g.player.name }}</td>
+                            <td><a href="{% url 'estadisticas:equipo_detalle' g.team.id %}" style="color:#e2e8f0; text-decoration:none;">{{ g.team.name }}</a></td>
+                            <td class="resultado">{{ g.goals }}</td>
+                            <td>{{ g.assists|default:"—" }}</td>
+                            <td>{{ g.penalties|default:"0" }}</td>
+                            <td>{{ g.playedMatches }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p style="color:#64748b;">No hay datos de goleadores disponibles todavía para esta liga/temporada.</p>
+            {% endif %}
+        </div>
+    {% endif %}
+{% endblock %}

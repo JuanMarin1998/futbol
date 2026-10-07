@@ -1,0 +1,94 @@
+{% extends "estadisticas/base.html" %}
+{% block titulo %}{{ nombre_liga }} — Enfrentamiento directo{% endblock %}
+{% block contenido %}
+    <h2>{{ nombre_liga }} — Enfrentamiento directo (Head to Head)</h2>
+    <p style="color:#64748b;">Elige dos equipos para ver su historial real de enfrentamientos.</p>
+
+    <form method="get" class="tarjeta" style="display:flex; gap:1rem; align-items:flex-end; flex-wrap:wrap;">
+        <div>
+            <label style="display:block; color:#94a3b8; font-size:0.8rem; margin-bottom:0.3rem;">Equipo A</label>
+            <select name="equipo_a" style="background:#0f172a; color:#e2e8f0; border:1px solid #334155; border-radius:6px; padding:0.5rem;">
+                <option value="">— Selecciona —</option>
+                {% for eq in equipos %}
+                    <option value="{{ eq.id }}" {% if id_equipo_a == eq.id|stringformat:"s" %}selected{% endif %}>{{ eq.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label style="display:block; color:#94a3b8; font-size:0.8rem; margin-bottom:0.3rem;">Equipo B</label>
+            <select name="equipo_b" style="background:#0f172a; color:#e2e8f0; border:1px solid #334155; border-radius:6px; padding:0.5rem;">
+                <option value="">— Selecciona —</option>
+                {% for eq in equipos %}
+                    <option value="{{ eq.id }}" {% if id_equipo_b == eq.id|stringformat:"s" %}selected{% endif %}>{{ eq.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" style="background:#3b82f6; color:white; border:none; border-radius:6px; padding:0.55rem 1.2rem; cursor:pointer; font-size:0.9rem;">
+            Comparar
+        </button>
+    </form>
+
+    {% if error %}
+        <div class="error">{{ error }}</div>
+    {% endif %}
+
+    {% if resultado %}
+        <div class="tarjeta">
+            <div class="seccion-titulo">Resumen del historial</div>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:1rem;">
+                <div>
+                    <div style="font-size:1.6rem; font-weight:700;">{{ resultado.aggregates.numberOfMatches }}</div>
+                    <div style="color:#94a3b8; font-size:0.8rem;">Partidos jugados</div>
+                </div>
+                <div>
+                    <div style="font-size:1.6rem; font-weight:700; color:#4ade80;">{{ resultado.aggregates.homeTeam.wins }}</div>
+                    <div style="color:#94a3b8; font-size:0.8rem;">Victorias {{ resultado.aggregates.homeTeam.name }}</div>
+                </div>
+                <div>
+                    <div style="font-size:1.6rem; font-weight:700; color:#facc15;">{{ resultado.aggregates.homeTeam.draws }}</div>
+                    <div style="color:#94a3b8; font-size:0.8rem;">Empates</div>
+                </div>
+                <div>
+                    <div style="font-size:1.6rem; font-weight:700; color:#f87171;">{{ resultado.aggregates.awayTeam.wins }}</div>
+                    <div style="color:#94a3b8; font-size:0.8rem;">Victorias {{ resultado.aggregates.awayTeam.name }}</div>
+                </div>
+                <div>
+                    <div style="font-size:1.6rem; font-weight:700;">{{ resultado.aggregates.totalGoals }}</div>
+                    <div style="color:#94a3b8; font-size:0.8rem;">Goles totales</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tarjeta">
+            <div class="seccion-titulo">Partidos del historial</div>
+            {% if resultado.matches %}
+                <table>
+                    <thead>
+                        <tr><th>Fecha</th><th>Local</th><th>Resultado</th><th>Visitante</th><th>Competición</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for p in resultado.matches %}
+                        <tr>
+                            <td>{{ p.utcDate|slice:":10" }}</td>
+                            <td>{{ p.homeTeam.name }}</td>
+                            <td class="resultado">
+                                {% if p.score.fullTime.home is not None %}
+                                    {{ p.score.fullTime.home }} - {{ p.score.fullTime.away }}
+                                {% else %}
+                                    vs
+                                {% endif %}
+                            </td>
+                            <td>{{ p.awayTeam.name }}</td>
+                            <td style="color:#64748b;">{{ p.competition.name }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p style="color:#64748b;">No hay partidos en el historial.</p>
+            {% endif %}
+        </div>
+    {% elif not error %}
+        <p style="color:#64748b;">Elige dos equipos y presiona "Comparar" para ver su historial.</p>
+    {% endif %}
+{% endblock %}

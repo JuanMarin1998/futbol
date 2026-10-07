@@ -116,6 +116,24 @@
             letter-spacing: 0.03em;
             margin-bottom: 0.8rem;
         }
+        .subnav {
+            background: #0b1220;
+            padding: 0.6rem 2rem;
+            border-bottom: 1px solid #334155;
+            display: flex;
+            gap: 0.3rem;
+        }
+        .subnav a {
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 0.85rem;
+            padding: 0.3rem 0.7rem;
+            border-radius: 6px;
+        }
+        .subnav a:hover, .subnav a.activo {
+            background: #1e293b;
+            color: #fff;
+        }
     </style>
 </head>
 <body>
@@ -127,6 +145,14 @@
             {% endfor %}
         </nav>
     </header>
+    {% if codigo_liga %}
+    <div class="subnav">
+        <a href="{% url 'estadisticas:partidos_liga' codigo_liga %}" class="{% if seccion == 'partidos' %}activo{% endif %}">Partidos</a>
+        <a href="{% url 'estadisticas:tabla_liga' codigo_liga %}" class="{% if seccion == 'tabla' %}activo{% endif %}">Tabla</a>
+        <a href="{% url 'estadisticas:goleadores_liga' codigo_liga %}" class="{% if seccion == 'goleadores' %}activo{% endif %}">Goleadores</a>
+        <a href="{% url 'estadisticas:enfrentamiento' codigo_liga %}" class="{% if seccion == 'enfrentamiento' %}activo{% endif %}">Enfrentamiento directo</a>
+    </div>
+    {% endif %}
     <main>
         {% block contenido %}{% endblock %}
     </main>
