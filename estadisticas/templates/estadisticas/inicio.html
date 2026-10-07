@@ -2,7 +2,7 @@
 {% block titulo %}Fútbol Stats — Inicio{% endblock %}
 {% block contenido %}
     <h2>Elige una liga</h2>
-    <p style="color:#94a3b8;">Datos en vivo desde football-data.org</p>
+    <p style="color:#94a3b8;">Datos almacenados en PostgreSQL</p>
     <div class="ligas-grid">
         {% for codigo, nombre in ligas.items %}
             <a href="{% url 'estadisticas:partidos_liga' codigo %}" class="liga-card">
