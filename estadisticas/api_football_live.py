@@ -40,6 +40,30 @@ class APIFootballLiveClient:
         """Obtiene fixture + eventos + alineaciones + estadísticas + jugadores en una sola llamada."""
         return self._get({"id": str(fixture_id)})
 
+    def obtener_cobertura_liga(self, league_id, season):
+        """Obtiene la cobertura de datos de una liga/temporada."""
+        from django.core.cache import cache
+        key = f"api_football_league_coverage_v1_{league_id}_{season}"
+        cached = cache.get(key)
+        if cached is not None:
+            return cached
+
+        payload = self._get_path(
+            "leagues",
+            {"id": str(league_id), "season": str(season)},
+        )
+        response = payload.get("response") or []
+        coverage = {}
+        if response:
+            seasons = response[0].get("seasons") or []
+            for item in seasons:
+                if str(item.get("year")) == str(season):
+                    coverage = item.get("coverage") or {}
+                    break
+
+        cache.set(key, coverage, 3600)
+        return coverage
+
     def obtener_estadisticas_partido(self, fixture_id):
         from django.core.cache import cache
         key = f"api_football_fixture_stats_v1_{fixture_id}"
