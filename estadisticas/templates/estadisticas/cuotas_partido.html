@@ -1,8 +1,8 @@
 {% extends "estadisticas/base.html" %}
-{% block titulo %}Cuotas 1X2 — {{ partido.equipo_local.nombre }} vs {{ partido.equipo_visitante.nombre }}{% endblock %}
+{% block titulo %}Cuotas Ecuabet — {{ partido.equipo_local.nombre }} vs {{ partido.equipo_visitante.nombre }}{% endblock %}
 {% block contenido %}
 <div class="tarjeta">
-    <div class="seccion-titulo">Cuotas Ecuabet — 1X2</div>
+    <div class="seccion-titulo">Cuotas Ecuabet — Todos los mercados</div>
     <h2>{{ partido.equipo_local.nombre }} <span style="color:#64748b;">vs</span> {{ partido.equipo_visitante.nombre }}</h2>
 
     <div id="estado" style="color:#94a3b8;margin-bottom:1rem;">Consultando cuotas...</div>
@@ -20,6 +20,8 @@
             </tr>
         </tbody>
     </table>
+
+    <div id="mercados" style="display:none;margin-top:1.5rem;"></div>
 
     <div id="movimiento" style="margin-top:1rem;color:#94a3b8;"></div>
     <div id="periodo" style="margin-top:.5rem;color:#94a3b8;"></div>
@@ -44,6 +46,44 @@ function formatChange(value) {
 
 function setOdd(id, value) {
     document.getElementById(id).textContent = formatOdd(value);
+}
+
+function escapeHtml(value) {
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+function renderMercados(mercados) {
+    const contenedor = document.getElementById("mercados");
+
+    if (!Array.isArray(mercados) || !mercados.length) {
+        contenedor.style.display = "none";
+        contenedor.innerHTML = "";
+        return;
+    }
+
+    contenedor.innerHTML = mercados.map(function(market, index) {
+        const titulo = escapeHtml(market.name || ("Mercado " + (index + 1)));
+        const linea = market.line != null && String(market.line).trim() !== ""
+            ? " · Línea: " + escapeHtml(market.line)
+            : "";
+
+        const filas = (market.selections || []).map(function(selection) {
+            return '<tr><td>' + escapeHtml(selection.name || "Selección") +
+                   '</td><td>' + formatOdd(selection.price) + '</td></tr>';
+        }).join("");
+
+        return '<div style="margin-bottom:1.25rem;">' +
+               '<h3 style="margin-bottom:.5rem;">' + titulo + linea + '</h3>' +
+               '<table><thead><tr><th>Selección</th><th>Cuota</th></tr></thead>' +
+               '<tbody>' + filas + '</tbody></table></div>';
+    }).join("");
+
+    contenedor.style.display = "block";
 }
 
 function actualizarMovimiento(changes) {
@@ -73,6 +113,7 @@ async function actualizar() {
         setOdd("visitante", current.cuotas.visitante);
 
         document.getElementById("cuotas").style.display = "table";
+        renderMercados(current.mercados);
         document.getElementById("error").style.display = "none";
 
         const score = current.marcador[0] !== null
