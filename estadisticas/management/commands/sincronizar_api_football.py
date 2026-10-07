@@ -7,7 +7,6 @@ from estadisticas.api_client import (
     FootballDataError,
     obtener_equipos,
     obtener_partidos,
-    obtener_equipo,
     obtener_tabla_posiciones,
     obtener_goleadores,
 )
@@ -256,14 +255,17 @@ class Command(BaseCommand):
                         },
                     )
 
-                # 5) Plantillas. Es opcional porque requiere una petición por equipo.
-                jugadores_guardados = 0
-                if not options["sin_plantillas"]:
-                    for equipo in equipos.values():
-                        detalle = obtener_equipo(equipo.id_externo)
-                        for jugador_data in detalle.get("squad", []):
-                            self.guardar_jugador(jugador_data, equipo)
-                            jugadores_guardados += 1
+                # Las plantillas NO se descargan aquí.
+                # Obtener el detalle de cada equipo requiere una petición por equipo
+                # y puede agotar rápidamente el límite de football-data.org.
+                # Se descargan por separado con el comando cargar_plantillas.
+
+                self.stdout.write(
+                    self.style.SUCCESS(
+                        f"  {len(equipos)} equipos, {guardados} partidos, "
+                        f"{len(tabla)} posiciones y {len(goleadores)} goleadores guardados."
+                    )
+                )
 
                 self.stdout.write(
                     self.style.SUCCESS(
