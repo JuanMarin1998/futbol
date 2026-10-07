@@ -5,6 +5,7 @@ from ..flashscore_client import FlashscoreClient
 from .match_mapper import MatchMapper, MatchMappingError
 from .models import LiveMatch
 from .opportunity_engine import LiveOpportunityEngine
+from .opportunity_engine_v2 import LiveOpportunityEngineV2
 
 
 class LiveMatchCollector:
@@ -91,7 +92,9 @@ class LiveMatchCollector:
             mapping_confidence=mapping_confidence,
             data_quality=self._calculate_data_quality(stats),
         )
+        # V1 se conserva intacto; V2 se calcula en paralelo para comparar ambos motores.
         match.opportunities = LiveOpportunityEngine.evaluate(match)
+        match.opportunities_v2 = LiveOpportunityEngineV2.evaluate(match)
         return match
 
     def _obtener_ecuabet_evento(self, event_id: int) -> Dict[str, Any]:
