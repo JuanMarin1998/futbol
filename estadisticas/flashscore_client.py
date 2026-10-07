@@ -169,6 +169,57 @@ class FlashscoreClient:
         except (TypeError, ValueError):
             return None
 
+    # Catálogo de métricas que Flashscore puede mostrar en Estadísticas/General.
+    STAT_CATALOG = [
+        ("General", "ball_possession", "Posesión"),
+        ("General", "expected_goals", "Expected goals (xG)"),
+        ("General", "goal_attempts", "Remates totales"),
+        ("General", "shots_on_goal", "Remates a puerta"),
+        ("General", "shots_off_goal", "Remates fuera"),
+        ("General", "blocked_shots", "Remates bloqueados"),
+        ("General", "corner_kicks", "Córneres"),
+        ("General", "yellow_cards", "Tarjetas amarillas"),
+        ("General", "red_cards", "Tarjetas rojas"),
+        ("General", "yellow_red_cards", "Doble amarilla / roja"),
+        ("Shots", "expected_goals_on_target", "xG a puerta (xGOT)"),
+        ("Shots", "shots_inside_box", "Remates dentro del área"),
+        ("Shots", "shots_outside_box", "Remates fuera del área"),
+        ("Shots", "hit_woodwork", "Remates al poste"),
+        ("Shots", "headed_goals", "Goles de cabeza"),
+        ("Attack", "touches_in_opposition_box", "Toques en el área rival"),
+        ("Attack", "big_chances", "Grandes ocasiones"),
+        ("Attack", "big_chances_scored", "Grandes ocasiones convertidas"),
+        ("Attack", "big_chances_missed", "Grandes ocasiones falladas"),
+        ("Attack", "corner_kicks", "Córneres"),
+        ("Attack", "free_kicks", "Tiros libres"),
+        ("Attack", "offsides", "Fueras de juego"),
+        ("Attack", "accurate_through_passes", "Pases filtrados precisos"),
+        ("Passes", "passes", "Pases"),
+        ("Passes", "accurate_passes", "Pases precisos"),
+        ("Passes", "long_passes", "Pases largos"),
+        ("Passes", "accurate_long_passes", "Pases largos precisos"),
+        ("Passes", "final_third_passes", "Pases en último tercio"),
+        ("Passes", "accurate_final_third_passes", "Pases precisos en último tercio"),
+        ("Passes", "crosses", "Centros"),
+        ("Passes", "accurate_crosses", "Centros precisos"),
+        ("Passes", "expected_assists", "Asistencias esperadas (xA)"),
+        ("Passes", "key_passes", "Pases clave"),
+        ("Passes", "throw_ins", "Saques de banda"),
+        ("Defense", "fouls", "Faltas"),
+        ("Defense", "duels_won", "Duelos ganados"),
+        ("Defense", "tackles", "Entradas"),
+        ("Defense", "tackles_won", "Entradas ganadas"),
+        ("Defense", "interceptions", "Intercepciones"),
+        ("Defense", "clearances", "Despejes"),
+        ("Defense", "errors_leading_to_shot", "Errores que provocan remate"),
+        ("Defense", "errors_leading_to_goal", "Errores que provocan gol"),
+        ("Goalkeeping", "goalkeeper_saves", "Paradas del portero"),
+        ("Goalkeeping", "expected_goals_on_target_faced", "xGOT recibido"),
+        ("Goalkeeping", "goals_conceded", "Goles recibidos"),
+        ("Goalkeeping", "goals_prevented", "Goles evitados"),
+        ("Goalkeeping", "goal_kicks", "Saques de meta"),
+    ]
+
     @classmethod
     def normalizar_stats(cls, event: Dict[str, Any]) -> Dict[str, Any]:
         """
