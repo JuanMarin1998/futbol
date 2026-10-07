@@ -106,6 +106,60 @@ function renderOpportunities(v1,v2){
          '<div><div class="ld-title">🧠 V2 · motor multifactorial</div>'+renderOpportunityItems(v2,true)+'</div>';
 }
 
+function renderExperiment(exp){
+  const box=document.getElementById('experiment-content');
+  const start=document.getElementById('exp-start');
+  const stop=document.getElementById('exp-stop');
+  if(!exp){
+    start.style.display='inline-block'; stop.style.display='none';
+    box.innerHTML='<div class="ld-muted">El experimento está detenido. Pulsa <strong>Simular</strong> para iniciar.</div>';
+    return;
+  }
+  const status=exp.status==='RUNNING'?'🟢 Ejecutando':(exp.status==='FINISHED'?'🏁 Finalizado':'⏹️ Detenido');
+  start.style.display=exp.status==='RUNNING'?'none':'inline-block';
+  stop.style.display=exp.status==='RUNNING'?'inline-block':'none';
+  const diff1=exp.v1_lives-100, diff2=exp.v2_lives-100;
+  const entries=(exp.entries||[]).map(e=>{
+    const cls=e.level===1?'exp-level-1':(e.level===2?'exp-level-2':'exp-level-3');
+    const result=e.status==='WON'?'✅ Ganada':(e.status==='LOST'?'❌ Perdida':(e.status==='CANCELLED'?'⚪ Cancelada':'⏳ Abierta'));
+    return '<div class="exp-entry"><div style="display:flex;justify-content:space-between;gap:.5rem"><strong>'+esc(e.motor)+' · '+esc(e.selection)+'</strong><span>'+result+'</span></div>'+
+      '<div class="ld-muted">'+esc(e.placed_minute||'')+' · nivel <span class="'+cls+'">'+e.level+' · '+esc(e.level_name)+'</span> · unidad '+Number(e.stake).toFixed(2)+'</div>'+
+      '<div class="ld-muted" style="margin-top:.25rem"><strong>Justificativo:</strong> '+esc(e.reason||'')+'</div>'+
+      (e.pnl!==0?'<div class="ld-muted" style="margin-top:.2rem">Variación: '+(e.pnl>0?'+':'')+Number(e.pnl).toFixed(2)+' vidas</div>':'')+
+      '</div>';
+  }).join('');
+  box.innerHTML='<div class="ld-muted" style="margin-bottom:.7rem">'+status+' · '+esc(exp.home_team)+' '+(exp.last_home_score??0)+' - '+(exp.last_away_score??0)+' '+esc(exp.away_team)+' · '+esc(exp.last_minute||'')+'</div>'+
+    '<div class="exp-grid">'+
+      '<div class="exp-box"><div><strong>🧪 V1</strong></div><div class="exp-life '+(diff1>=0?'exp-positive':'exp-negative')+'">'+Number(exp.v1_lives).toFixed(2)+' vidas</div><div class="ld-muted">Máx '+Number(exp.v1_max_lives).toFixed(2)+' · Mín '+Number(exp.v1_min_lives).toFixed(2)+' · '+exp.v1_wins+'W / '+exp.v1_losses+'L</div></div>'+
+      '<div class="exp-box"><div><strong>🧠 V2</strong></div><div class="exp-life '+(diff2>=0?'exp-positive':'exp-negative')+'">'+Number(exp.v2_lives).toFixed(2)+' vidas</div><div class="ld-muted">Máx '+Number(exp.v2_max_lives).toFixed(2)+' · Mín '+Number(exp.v2_min_lives).toFixed(2)+' · '+exp.v2_wins+'W / '+exp.v2_losses+'L</div></div>'+
+    '</div>'+
+    '<div class="ld-title" style="margin-top:.9rem">📜 Historial de decisiones</div>'+
+    (entries||'<div class="ld-muted">Todavía ningún motor ha tomado una oportunidad.</div>');
+}
+function csrfToken(){
+  return document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+}
+async function postExperiment(url){
+  const r=await fetch(url,{method:'POST',headers:{'X-CSRFToken':csrfToken()},mode:'same-origin'});
+  const d=await r.json();
+  if(!r.ok||!d.ok)throw new Error(d.error||'No se pudo actualizar el experimento');
+  return d.experiment;
+}
+async function iniciarExperimento(){
+  try{
+    const exp=await postExperiment("{% url 'estadisticas:api_live_experiment_start' ecuabet_event_id %}");
+    renderExperiment(exp);
+    await cargar();
+  }catch(err){alert(err.message);}
+}
+async function pararExperimento(){
+  try{
+    const exp=await postExperiment("{% url 'estadisticas:api_live_experiment_stop' ecuabet_event_id %}");
+    renderExperiment(exp);
+    await cargar();
+  }catch(err){alert(err.message);}
+}
+
 function render(e, flash){
   const teams=e.competitors||[], parts=(e.name||'').split(/\s+vs\.?\s+/i);
   const home=teams[0]?.name||parts[0]||'Local', away=teams[1]?.name||parts[1]||'Visitante', score=e.score||[];
@@ -125,6 +179,7 @@ async function cargar(){
     const d=await r.json(); if(!r.ok||!d.ok)throw new Error(d.error||'No disponible');
     const flash=d.match || null;
     document.getElementById('match').innerHTML=render(d.event,flash);
+    renderExperiment(d.experiment || null);
   }catch(err){document.getElementById('match').innerHTML='<div class="ld-card ld-muted">'+esc(err.message)+'</div>';}
 }
 cargar();setInterval(cargar,POLL_MS);
