@@ -75,10 +75,15 @@ class EcuabetClient:
         for item in self._walk(payload):
             event_id = item.get("id") or item.get("eventId")
             competitors = item.get("competitors")
-            if not event_id or not isinstance(competitors, list) or len(competitors) < 2:
-                continue
-            names = [c.get("name", "") for c in competitors if isinstance(c, dict)]
+            names = []
+            if isinstance(competitors, list):
+                names = [c.get("name", "") for c in competitors if isinstance(c, dict)]
             if len(names) < 2:
+                event_name = str(item.get("name", ""))
+                parts = re.split(r"\\s+vs\\.?\\s+|\\s+-\\s+", event_name, maxsplit=1, flags=re.IGNORECASE)
+                if len(parts) == 2:
+                    names = parts
+            if not event_id or len(names) < 2:
                 continue
             hs = len(home_target & self._tokens(names[0]))
             aws = len(away_target & self._tokens(names[1]))
