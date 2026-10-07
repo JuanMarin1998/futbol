@@ -93,7 +93,8 @@ function renderHistory(entries){
 function renderData(d){
   const e=d.event, teams=e.competitors||[], parts=(e.name||'').split(/\s+vs\.?\s+/i);
   const home=teams[0]?.name||parts[0]||'Local',away=teams[1]?.name||parts[1]||'Visitante',score=e.score||[];
-  document.getElementById('match-info').innerHTML='<div class="ex-teams"><div><strong>'+esc(home)+'</strong></div><div><div class="ex-score">'+(score[0]??0)+' - '+(score[1]??0)+'</div><div class="ex-minute">'+esc(e.liveTime||e.live_time||e.live_status||'LIVE')+'</div></div><div class="ex-away"><strong>'+esc(away)+'</strong></div></div><div class="muted" style="text-align:center;margin-top:.5rem">🏆 '+esc(e.champ?.name||'')+' · Ecuabet ID '+esc(e.id)+'</div>';
+  const finalLabel=(e.status==='FINISHED'||String(e.live_status||'').toLowerCase().includes('final'))?'🏁 FINALIZADO':(e.liveTime||e.live_time||e.live_status||'LIVE');
+  document.getElementById('match-info').innerHTML='<div class="ex-teams"><div><strong>'+esc(home)+'</strong></div><div><div class="ex-score">'+(score[0]??0)+' - '+(score[1]??0)+'</div><div class="ex-minute">'+esc(finalLabel)+'</div></div><div class="ex-away"><strong>'+esc(away)+'</strong></div></div><div class="muted" style="text-align:center;margin-top:.5rem">🏆 '+esc(e.champ?.name||'')+' · Ecuabet ID '+esc(e.id)+'</div>';
   const match=d.match, v1=match?.opportunities||[],v2=match?.opportunities_v2||[], exp=d.experiment||null;
   renderMotor('v1',exp,'V1',v1);renderMotor('v2',exp,'V2',v2);renderHistory(exp?.entries||[]);
   document.getElementById('start-btn').style.display=exp?.status==='RUNNING'?'none':'inline-block';
@@ -102,8 +103,15 @@ function renderData(d){
 async function cargarPartidos(){
   const r=await fetch("{% url 'estadisticas:api_ecuabet_live' %}",{cache:'no-store'}),d=await r.json();
   const s=document.getElementById('match-select'),prev=s.value;
-  s.innerHTML='<option value="">Selecciona un partido LIVE...</option>'+(d.events||[]).map(e=>'<option value="'+e.id+'">'+esc(e.name)+' · '+esc(e.live_time||e.live_status||'LIVE')+'</option>').join('');
-  if(prev&&d.events.some(e=>String(e.id)===String(prev))){s.value=prev;await cargarDetalle();} else {document.getElementById('dashboard').style.display='none';document.getElementById('empty').style.display='block';}
+  const liveEvents=d.events||[];
+  const stillLive=prev&&liveEvents.some(e=>String(e.id)===String(prev));
+  let options='<option value="">Selecciona un partido LIVE...</option>'+liveEvents.map(e=>'<option value="'+e.id+'">'+esc(e.name)+' · '+esc(e.live_time||e.live_status||'LIVE')+'</option>').join('');
+  if(prev&&!stillLive){
+    options+='<option value="'+esc(prev)+'">🏁 Partido seleccionado · finalizado</option>';
+  }
+  s.innerHTML=options;
+  if(prev&&(stillLive||!stillLive)){s.value=prev;await cargarDetalle();}
+  else {document.getElementById('dashboard').style.display='none';document.getElementById('empty').style.display='block';}
 }
 async function cargarDetalle(){
   selectedEvent=document.getElementById('match-select').value;if(!selectedEvent)return;
