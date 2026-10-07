@@ -72,18 +72,24 @@ class EcuabetClient:
         if not home_target or not away_target:
             raise EcuabetAPIError(f"Nombres de equipos inválidos: {local} vs {visitante}")
 
+        # GetEvents es la fuente real de eventos/mercados de Ecuabet.
+        # Cuando no conocemos el campeonato, algunos eventos no aparecen
+        # con champIds=0. Probamos primero la consulta solicitada y luego
+        # campeonatos conocidos sin volver a GetTopEvents (que no devuelve
+        # este partido).
         payloads = [
             ("GetEvents", {
                 "eventCount": 0,
                 "sportId": sport_id,
                 "champIds": champ_id,
             }),
-            ("GetTopEvents", {
-                "eventCount": 0,
-                "sportId": 1,
-                "timePeriod": 1,
-            }),
         ]
+        if int(champ_id or 0) != 2950:
+            payloads.append(("GetEvents", {
+                "eventCount": 0,
+                "sportId": 0,
+                "champIds": 2950,
+            }))
 
         candidates = []
         for path, params in payloads:
@@ -183,17 +189,21 @@ class EcuabetClient:
             raise EcuabetAPIError(f"El mercado 1X2 {event_id} no contiene cuotas")
         return {"market_id": market.get("id"), "market_type_id": market.get("typeId"), "selections": selections}
 
-    def obtener_cuotas_1x2(self, event_id):
+    def obtener_cuotas_1x2(self, event_id, sport_id=0, champ_id=0):
         """
         Obtiene las cuotas 1X2 directamente desde GetEvents.
 
         Ecuabet relaciona:
             evento -> marketIds -> markets -> oddIds -> odds
 
-        No usamos GetEventDetails ni dependemos de desktopOddIds porque
-        esa respuesta puede variar y provocar falsos 502 en la API local.
+        Se conservan sport_id/champ_id porque un evento puede no aparecer
+        en una consulta GetEvents genérica con champIds=0.
         """
-        detalle = self.obtener_mercados_evento(event_id, sport_id=0, champ_id=0)
+        detalle = self.obtener_mercados_evento(
+            event_id,
+            sport_id=sport_id,
+            champ_id=champ_id,
+        )
         market = next(
             (m for m in detalle["markets"] if int(m.get("market_type_id") or 0) == 1),
             None,
