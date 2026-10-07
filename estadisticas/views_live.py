@@ -216,6 +216,10 @@ def api_detalle_partido_en_vivo(request, fixture_id):
         return JsonResponse({"error": str(exc)}, status=502)
 
 
+def experimento_live(request):
+    return render(request, "estadisticas/experimento_live.html", {"live_poll_ms": 5000})
+
+
 def ecuabet_live(request):
     poll_seconds = 5
     return render(
