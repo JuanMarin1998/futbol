@@ -389,6 +389,150 @@ def api_live_match_sources(request, ecuabet_event_id, flashscore_event_id):
         )
 
 
+def _experimento_live_payload():
+    """Obtiene todos los partidos LIVE y devuelve su payload completo."""
+    payload = EcuabetClient()._request(
+        "GET", "GetLivenow", {"eventCount": 0, "sportId": 66}
+    )
+    return payload, payload.get("events", []) or []
+
+
+def _experimento_estado_global():
+    """Procesa todos los experimentos activos y devuelve V1/V2 separados por partido."""
+    from django.db import transaction
+
+    payload, live_events = _experimento_live_payload()
+    live_ids = {int(e.get("id")) for e in live_events if e.get("id") is not None}
+    collector = LiveMatchCollector()
+
+    running = list(
+        LiveExperiment.objects.filter(status="RUNNING").order_by("-started_at")
+    )
+
+    # Procesar cada partido que sigue LIVE.
+    for event in live_events:
+        if event.get("id") is None:
+            continue
+        event_id = int(event["id"])
+        try:
+            experiment = next(
+                (x for x in running if int(x.ecuabet_event_id) == event_id), None
+            )
+            if experiment is None:
+                continue
+            match = collector.construir_automatico(event_id)
+            LiveExperimentManager.process(match)
+        except Exception:
+            # Un partido defectuoso no debe detener el laboratorio completo.
+            continue
+
+    # Si Ecuabet ya retiró un partido, intentar confirmar el final con Flashscore.
+    for experiment in running:
+        if int(experiment.ecuabet_event_id) in live_ids:
+            continue
+        if not experiment.flashscore_event_id:
+            continue
+        try:
+            match = collector.construir_desde_flashscore(
+                experiment.flashscore_event_id,
+                ecuabet_event_id=experiment.ecuabet_event_id,
+                home_team=experiment.home_team,
+                away_team=experiment.away_team,
+            )
+            if match.is_finished:
+                LiveExperimentManager.process(match)
+        except Exception:
+            continue
+
+    experiments = list(
+        LiveExperiment.objects
+        .filter(status__in=["RUNNING", "FINISHED", "STOPPED"])
+        .order_by("-updated_at")[:100]
+    )
+    serialized = [LiveExperimentManager.serialize(x) for x in experiments]
+
+    entries = []
+    for exp in serialized:
+        for entry in exp.get("entries", []):
+            entry["experiment_id"] = exp.get("id")
+            entry["match_status"] = exp.get("status")
+            entries.append(entry)
+
+    entries.sort(
+        key=lambda x: x.get("placed_at") or "",
+        reverse=True,
+    )
+
+    return {
+        "ok": True,
+        "running": any(x.get("status") == "RUNNING" for x in serialized),
+        "experiments": serialized,
+        "entries": entries,
+        "live_count": len(live_events),
+    }
+
+
+def api_live_experiment_start_all(request):
+    if request.method != "POST":
+        return JsonResponse({"ok": False, "error": "Método no permitido."}, status=405)
+    try:
+        _, live_events = _experimento_live_payload()
+        collector = LiveMatchCollector()
+        created = 0
+        skipped = 0
+
+        for event in live_events:
+            if event.get("id") is None:
+                continue
+            event_id = int(event["id"])
+            if LiveExperiment.objects.filter(
+                ecuabet_event_id=event_id, status="RUNNING"
+            ).exists():
+                skipped += 1
+                continue
+            try:
+                match = collector.construir_automatico(event_id)
+                if match.is_finished:
+                    continue
+                LiveExperimentManager.start(match)
+                created += 1
+            except Exception:
+                continue
+
+        state = _experimento_estado_global()
+        state.update({"created": created, "skipped": skipped})
+        return JsonResponse(state)
+    except Exception as exc:
+        return JsonResponse({"ok": False, "error": str(exc)}, status=502)
+
+
+def api_live_experiment_stop_all(request):
+    if request.method != "POST":
+        return JsonResponse({"ok": False, "error": "Método no permitido."}, status=405)
+    try:
+        running = list(LiveExperiment.objects.filter(status="RUNNING"))
+        stopped = 0
+        for experiment in running:
+            try:
+                LiveExperimentManager.stop(experiment.id)
+                stopped += 1
+            except Exception:
+                continue
+        state = _experimento_estado_global()
+        return JsonResponse({**state, "stopped": stopped})
+    except Exception as exc:
+        return JsonResponse({"ok": False, "error": str(exc)}, status=502)
+
+
+def api_live_experiment_state(request):
+    if request.method != "GET":
+        return JsonResponse({"ok": False, "error": "Método no permitido."}, status=405)
+    try:
+        return JsonResponse(_experimento_estado_global())
+    except Exception as exc:
+        return JsonResponse({"ok": False, "error": str(exc)}, status=502)
+
+
 def api_live_experiment_start(request, ecuabet_event_id):
     if request.method != "POST":
         return JsonResponse({"ok": False, "error": "Método no permitido."}, status=405)
@@ -426,7 +570,6 @@ def api_live_experiment_stop(request, ecuabet_event_id):
         })
     except Exception as exc:
         return JsonResponse({"ok": False, "error": str(exc)}, status=502)
-
 
 def ecuabet_live_detalle(request, ecuabet_event_id):
     poll_seconds = 5
