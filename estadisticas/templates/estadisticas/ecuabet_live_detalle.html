@@ -27,11 +27,10 @@
   <button class="ld-btn" onclick="cargar()">Actualizar ahora</button>
 </div>
 
-<div id="match"><div class="ld-card ld-muted">Cargando partido...</div></div>
-<div class="ld-card ld-section" id="experiment-panel">
+<div class="ld-card ld-section" id="experiment-panel" style="margin-top:0;margin-bottom:1rem">
   {% csrf_token %}
   <div class="ld-head" style="margin-bottom:.7rem">
-    <div><div class="ld-title" style="margin-bottom:.15rem">🧪 Experimento</div><div class="ld-muted">Simulación virtual de 100 vidas · V1 vs V2</div></div>
+    <div><div class="ld-title" style="margin-bottom:.15rem;font-size:1.15rem">🧪 Experimento V1 vs V2</div><div class="ld-muted">Simulación virtual · cada motor comienza con <strong>100 vidas</strong> y decide automáticamente según sus oportunidades LIVE.</div></div>
     <div class="exp-actions">
       <button class="exp-btn exp-start" id="exp-start" onclick="iniciarExperimento()">▶ Simular</button>
       <button class="exp-btn exp-stop" id="exp-stop" onclick="pararExperimento()" style="display:none">■ Parar</button>
@@ -39,6 +38,10 @@
   </div>
   <div id="experiment-content" class="ld-muted">El experimento está detenido. Pulsa <strong>Simular</strong> para iniciar.</div>
 </div>
+
+<div id="match"><div class="ld-card ld-muted">Cargando partido...</div></div>
+<div class="ld-card ld-section" id="experiment-panel-old" style="display:none">
+
 
 <script>
 const EVENT_ID={{ ecuabet_event_id }};
