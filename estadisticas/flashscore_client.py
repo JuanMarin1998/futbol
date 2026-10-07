@@ -283,77 +283,123 @@ class FlashscoreClient:
             if target:
                 walk_stats(target, participant.get("stats"))
 
-        for group, stat_type, label in cls.STAT_CATALOG:
-            for target in ("home", "away"):
-                if stat_type not in result[target]:
-                    result[target][stat_type] = {
-                        "name": label, "label": label, "value": None,
-                        "raw_value": None, "group": group,
-                    }
-            if stat_type not in result["raw_types"]:
-                result["raw_types"].append(stat_type)
+
 
         return result
 
+    @staticmethod
+    def _slug_stat(label: str) -> str:
+        import re
+        import unicodedata
+
+        text = unicodedata.normalize("NFKD", str(label or ""))
+        text = "".join(ch for ch in text if not unicodedata.combining(ch))
+        text = re.sub(r"[^a-zA-Z0-9]+", "_", text).strip("_").lower()
+        return text or "stat"
+
     @classmethod
     def _normalizar_stats_feed(cls, raw: str) -> Dict[str, Any]:
-        """Parsea df_st_1, la fuente de estadísticas de partido de Flashscore."""
+        """Parsea df_st_1 conservando TODAS las estadísticas reales del feed."""
         result = {"home": {}, "away": {}, "raw_types": []}
-        name_map = {
-            "Expected goals (xG)": ("expected_goals", "Expected goals (xG)"),
-            "Ball possession": ("ball_possession", "Posesión"),
-            "Total shots": ("goal_attempts", "Remates totales"),
-            "Shots on target": ("shots_on_goal", "Remates a puerta"),
-            "Shots off target": ("shots_off_goal", "Remates fuera"),
-            "Blocked shots": ("blocked_shots", "Remates bloqueados"),
-            "Free kicks": ("free_kicks", "Tiros libres"),
-            "Corner kicks": ("corner_kicks", "Córneres"),
-            "Offsides": ("offsides", "Fueras de juego"),
-            "Throw-ins": ("throw_ins", "Saques de banda"),
-            "Goalkeeper saves": ("goalkeeper_saves", "Paradas del portero"),
-            "Red cards": ("red_cards", "Tarjetas rojas"),
-            "Yellow cards": ("yellow_cards", "Tarjetas amarillas"),
-            "Fouls": ("fouls", "Faltas"),
-            "Passes": ("passes", "Pases"),
-            "Accurate passes": ("accurate_passes", "Pases precisos"),
-            "Long passes": ("long_passes", "Pases largos"),
-            "Accurate long passes": ("accurate_long_passes", "Pases largos precisos"),
-            "Crosses": ("crosses", "Centros"),
-            "Accurate crosses": ("accurate_crosses", "Centros precisos"),
-            "Key passes": ("key_passes", "Pases clave"),
-            "Expected assists (xA)": ("expected_assists", "Asistencias esperadas (xA)"),
-            "Big chances": ("big_chances", "Grandes ocasiones"),
-            "Big chances missed": ("big_chances_missed", "Grandes ocasiones falladas"),
-            "Touches in opposition box": ("touches_in_opposition_box", "Toques en el área rival"),
-            "Shots inside box": ("shots_inside_box", "Remates dentro del área"),
-            "Shots outside box": ("shots_outside_box", "Remates fuera del área"),
-            "Expected goals on target": ("expected_goals_on_target", "xG a puerta (xGOT)"),
+
+        aliases = {
+            "expected goals (xg)": ("expected_goals", "Expected goals (xG)"),
+            "goles esperados (xg)": ("expected_goals", "Expected goals (xG)"),
+            "ball possession": ("ball_possession", "Posesión"),
+            "posesión": ("ball_possession", "Posesión"),
+            "posesion": ("ball_possession", "Posesión"),
+            "posesión del balón": ("ball_possession", "Posesión"),
+            "total shots": ("goal_attempts", "Remates totales"),
+            "goal attempts": ("goal_attempts", "Remates totales"),
+            "remates totales": ("goal_attempts", "Remates totales"),
+            "shots on target": ("shots_on_goal", "Remates a puerta"),
+            "shots on goal": ("shots_on_goal", "Remates a puerta"),
+            "remates a puerta": ("shots_on_goal", "Remates a puerta"),
+            "shots off target": ("shots_off_goal", "Remates fuera"),
+            "shots off goal": ("shots_off_goal", "Remates fuera"),
+            "remates fuera": ("shots_off_goal", "Remates fuera"),
+            "blocked shots": ("blocked_shots", "Remates bloqueados"),
+            "remates bloqueados": ("blocked_shots", "Remates bloqueados"),
+            "free kicks": ("free_kicks", "Tiros libres"),
+            "tiros libres": ("free_kicks", "Tiros libres"),
+            "corner kicks": ("corner_kicks", "Córneres"),
+            "corner": ("corner_kicks", "Córneres"),
+            "córneres": ("corner_kicks", "Córneres"),
+            "corners": ("corner_kicks", "Córneres"),
+            "offsides": ("offsides", "Fueras de juego"),
+            "fueras de juego": ("offsides", "Fueras de juego"),
+            "throw-ins": ("throw_ins", "Saques de banda"),
+            "throw-in": ("throw_ins", "Saques de banda"),
+            "saques de banda": ("throw_ins", "Saques de banda"),
+            "goalkeeper saves": ("goalkeeper_saves", "Paradas del portero"),
+            "paradas del portero": ("goalkeeper_saves", "Paradas del portero"),
+            "red cards": ("red_cards", "Tarjetas rojas"),
+            "tarjetas rojas": ("red_cards", "Tarjetas rojas"),
+            "yellow cards": ("yellow_cards", "Tarjetas amarillas"),
+            "tarjetas amarillas": ("yellow_cards", "Tarjetas amarillas"),
+            "fouls": ("fouls", "Faltas"),
+            "faltas": ("fouls", "Faltas"),
+            "passes": ("passes", "Pases"),
+            "pases": ("passes", "Pases"),
+            "accurate passes": ("accurate_passes", "Pases precisos"),
+            "pases precisos": ("accurate_passes", "Pases precisos"),
+            "long passes": ("long_passes", "Pases largos"),
+            "pases largos": ("long_passes", "Pases largos"),
+            "accurate long passes": ("accurate_long_passes", "Pases largos precisos"),
+            "pases largos precisos": ("accurate_long_passes", "Pases largos precisos"),
+            "crosses": ("crosses", "Centros"),
+            "centros": ("crosses", "Centros"),
+            "accurate crosses": ("accurate_crosses", "Centros precisos"),
+            "centros precisos": ("accurate_crosses", "Centros precisos"),
+            "key passes": ("key_passes", "Pases clave"),
+            "pases clave": ("key_passes", "Pases clave"),
+            "expected assists (xa)": ("expected_assists", "Asistencias esperadas (xA)"),
+            "asistencias esperadas (xa)": ("expected_assists", "Asistencias esperadas (xA)"),
+            "big chances": ("big_chances", "Grandes ocasiones"),
+            "grandes ocasiones": ("big_chances", "Grandes ocasiones"),
+            "big chances missed": ("big_chances_missed", "Grandes ocasiones falladas"),
+            "grandes ocasiones falladas": ("big_chances_missed", "Grandes ocasiones falladas"),
+            "touches in opposition box": ("touches_in_opposition_box", "Toques en el área rival"),
+            "toques en el área rival": ("touches_in_opposition_box", "Toques en el área rival"),
+            "shots inside box": ("shots_inside_box", "Remates dentro del área"),
+            "remates dentro del área": ("shots_inside_box", "Remates dentro del área"),
+            "shots outside box": ("shots_outside_box", "Remates fuera del área"),
+            "remates fuera del área": ("shots_outside_box", "Remates fuera del área"),
+            "expected goals on target": ("expected_goals_on_target", "xG a puerta (xGOT)"),
         }
+
         for block in (raw or "").split("~"):
             fields = {}
             for field in block.split("¬"):
                 if "÷" not in field:
                     continue
                 key, value = field.split("÷", 1)
-                fields[key] = value
-            name = fields.get("SG") or fields.get("SN")
-            if not name:
-                continue
-            mapped = name_map.get(name.strip())
-            if not mapped:
-                continue
-            stat_type, label = mapped
+                fields[key.strip()] = value
+
+            label = (fields.get("SG") or fields.get("SN") or "").strip()
             home_raw, away_raw = fields.get("SH"), fields.get("SI")
-            if home_raw is None or away_raw is None:
+            if not label or home_raw is None or away_raw is None:
                 continue
+
+            normalized = label.casefold()
+            stat_type, display_label = aliases.get(
+                normalized,
+                (cls._slug_stat(label), label),
+            )
+
+            group = fields.get("SF") or "Estadísticas"
             for target, raw_value in (("home", home_raw), ("away", away_raw)):
                 result[target][stat_type] = {
-                    "name": label, "label": label,
+                    "name": display_label,
+                    "label": display_label,
                     "value": cls._parse_numeric(raw_value),
-                    "raw_value": raw_value, "group": fields.get("SF") or "Estadísticas",
+                    "raw_value": raw_value,
+                    "group": group,
                 }
+
             if stat_type not in result["raw_types"]:
                 result["raw_types"].append(stat_type)
+
         return result
 
     def obtener_stats_feed(self, event_id: str) -> Dict[str, Any]:
