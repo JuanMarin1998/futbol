@@ -13,7 +13,13 @@ class EcuabetClient:
     # Caché por proceso para no redescubrir la competición en cada polling.
     # Las cuotas sí se consultan en cada petición.
     _EVENT_CACHE = {}
+    _LEAGUE_CHAMP_CACHE = {}
     _EVENT_CACHE_TTL = 600
+
+    # IDs confirmados en respuestas reales de Ecuabet.
+    _KNOWN_CHAMPIONS = {
+        "bundesliga": 2950,
+    }
 
     BASE_URL = os.getenv("ECUABET_WIDGET_BASE_URL", "https://sb2frontend-altenar2.biahosted.com/api/widget")
     DEFAULT_PARAMS = {
@@ -148,7 +154,7 @@ class EcuabetClient:
         return candidates[:5]
 
     def buscar_evento(self, local, visitante, sport_id=66, champ_id=0, league_name=""):
-        """Busca un partido sin bloquear recorriendo todos los campeonatos."""
+        """Busca un partido priorizando el campeonato para minimizar latencia."""
         home_target, away_target = self._tokens(local), self._tokens(visitante)
         if not home_target or not away_target:
             raise EcuabetAPIError(f"Nombres de equipos inválidos: {local} vs {visitante}")
@@ -163,16 +169,8 @@ class EcuabetClient:
         if cached and time.time() - cached["cached_at"] < self._EVENT_CACHE_TTL:
             return dict(cached["data"])
 
-        # 1) Primero probamos la consulta general. Es barata y muchas veces
-        # ya contiene el evento solicitado.
-        try:
-            payload = self._request("GET", "GetEvents", {
-                "eventCount": 0,
-                "sportId": sport_id or 66,
-                "champIds": 0,
-            })
-        except EcuabetAPIError:
-            payload = {}
+        normalized_league = self._normalize(league_name)
+        resolved_sport = sport_id or 66
 
         def find_in_payload(data, current_champ=0):
             for item in data.get("events", []) if isinstance(data, dict) else []:
@@ -218,29 +216,50 @@ class EcuabetClient:
                 }
             return None
 
-        found = find_in_payload(payload)
-        if found:
-            self._EVENT_CACHE[cache_key] = {"cached_at": time.time(), "data": found}
-            return found
-
-        # 2) Solo si no apareció, descubrimos los campeonatos disponibles y
-        # consultamos los que coinciden con la liga del partido.
+        # Primero usamos campeonato conocido/cacheado. Así el primer acceso
+        # de una liga conocida evita la consulta general.
         champ_ids = []
         if int(champ_id or 0):
             champ_ids.append(int(champ_id))
 
-        for _, discovered_id, _ in self._candidate_championships(
-            sport_id=sport_id or 66,
-            league_name=league_name,
-        ):
-            if discovered_id not in champ_ids:
-                champ_ids.append(discovered_id)
+        cached_champ = self._LEAGUE_CHAMP_CACHE.get(normalized_league)
+        if cached_champ and cached_champ not in champ_ids:
+            champ_ids.append(cached_champ)
+
+        known_champ = self._KNOWN_CHAMPIONS.get(normalized_league)
+        if known_champ and known_champ not in champ_ids:
+            champ_ids.append(known_champ)
+
+        # Solo para ligas desconocidas hacemos descubrimiento.
+        if not champ_ids:
+            for _, discovered_id, _ in self._candidate_championships(
+                sport_id=resolved_sport,
+                league_name=league_name,
+            ):
+                if discovered_id not in champ_ids:
+                    champ_ids.append(discovered_id)
+
+        # Último recurso para una liga desconocida.
+        if not champ_ids:
+            try:
+                payload = self._request("GET", "GetEvents", {
+                    "eventCount": 0,
+                    "sportId": resolved_sport,
+                    "champIds": 0,
+                })
+                found = find_in_payload(payload)
+                if found:
+                    self._LEAGUE_CHAMP_CACHE[normalized_league] = int(found["champ_id"] or 0)
+                    self._EVENT_CACHE[cache_key] = {"cached_at": time.time(), "data": found}
+                    return found
+            except EcuabetAPIError:
+                pass
 
         for current_champ_id in champ_ids:
             try:
                 data = self._request("GET", "GetEvents", {
                     "eventCount": 0,
-                    "sportId": sport_id or 66,
+                    "sportId": resolved_sport,
                     "champIds": current_champ_id,
                 })
             except EcuabetAPIError:
@@ -248,6 +267,7 @@ class EcuabetClient:
 
             found = find_in_payload(data, current_champ_id)
             if found:
+                self._LEAGUE_CHAMP_CACHE[normalized_league] = int(found["champ_id"] or current_champ_id)
                 self._EVENT_CACHE[cache_key] = {
                     "cached_at": time.time(),
                     "data": found,
@@ -350,21 +370,7 @@ class EcuabetClient:
 
         event = next((e for e in payload.get("events", []) if int(e.get("id", -1)) == int(event_id)), None)
 
-        # Si el evento ya está guardado en la BD pero no conocemos su
-        # campeonato, repetir la consulta con Bundesliga (champId 2950).
-        if not event and int(champ_id or 0) != 2950:
-            payload = self._request("GET", "GetEvents", {
-                "eventCount": 0,
-                "sportId": 0,
-                "champIds": 2950,
-            })
-            event = next(
-                (e for e in payload.get("events", [])
-                 if int(e.get("id", -1)) == int(event_id)),
-                None,
-            )
-
-        if not event:
+undefined        if not event:
             raise EcuabetAPIError(f"No se encontró el evento {event_id}")
 
         odds_by_id = {int(o["id"]): o for o in payload.get("odds", []) if o.get("id") is not None}
