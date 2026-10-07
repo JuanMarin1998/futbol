@@ -28,4 +28,4 @@ class APIFootballLiveClient:
 
     def obtener_detalle_partido(self, fixture_id):
         """Obtiene fixture + eventos + alineaciones + estadísticas + jugadores en una sola llamada."""
-        return self._get({"ids": str(fixture_id)})
+        return self._get({"id": str(fixture_id)})
