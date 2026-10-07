@@ -2,21 +2,195 @@
 {% block titulo %}⚽ Detalle del partido · Fútbol Stats{% endblock %}
 {% block contenido %}
 <style>
-.back{color:#94a3b8;text-decoration:none}.match-hero{background:#1e293b;border:1px solid #334155;border-radius:14px;padding:1.5rem;margin:1rem 0}.hero-teams{display:grid;grid-template-columns:1fr 120px 1fr;align-items:center;gap:1rem}.hero-team{font-size:1.15rem;font-weight:800}.hero-team.away{text-align:right}.hero-score{text-align:center;font-size:2.3rem;font-weight:900}.hero-status{text-align:center;color:#f87171;font-size:.85rem;margin-top:.2rem}.section{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:1.2rem;margin:1rem 0}.section h3{margin-top:0}.event{display:flex;gap:.8rem;padding:.65rem 0;border-bottom:1px solid #334155}.event:last-child{border-bottom:0}.minute{min-width:42px;color:#38bdf8;font-weight:700}.event-team{color:#94a3b8}.stat-row{display:grid;grid-template-columns:1fr 150px 1fr;gap:.5rem;align-items:center;padding:.55rem 0;border-bottom:1px solid #334155}.stat-row span:nth-child(2){text-align:center;font-weight:700}.stat-row span:last-child{text-align:right}.lineup-grid,.players-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}.side{background:#0f172a;border-radius:9px;padding:1rem}.side h4{margin-top:0}.player{display:flex;justify-content:space-between;gap:.5rem;padding:.45rem 0;border-bottom:1px solid #334155;font-size:.9rem}.muted{color:#94a3b8}.empty-small{color:#94a3b8;padding:.5rem 0}@media(max-width:700px){.hero-teams{grid-template-columns:1fr}.hero-team.away{text-align:left}.lineup-grid,.players-grid{grid-template-columns:1fr}.stat-row{grid-template-columns:1fr 110px 1fr}}
+.back{color:#94a3b8;text-decoration:none}
+.match-hero,.section{background:#1e293b;border:1px solid #334155;border-radius:14px;padding:1.2rem;margin:1rem 0}
+.match-hero{padding:1.5rem}.hero-teams{display:grid;grid-template-columns:1fr 140px 1fr;align-items:center;gap:1rem}
+.hero-team{font-size:1.15rem;font-weight:800}.hero-team.away{text-align:right}.hero-score{text-align:center;font-size:2.3rem;font-weight:900}
+.hero-status{text-align:center;color:#f87171;font-size:.85rem;margin-top:.2rem}.section h3{margin-top:0}
+.event{display:grid;grid-template-columns:48px 1fr;gap:.8rem;padding:.65rem 0;border-bottom:1px solid #334155}.event:last-child{border-bottom:0}
+.minute{color:#38bdf8;font-weight:700}.event-team,.muted,.empty-small{color:#94a3b8}
+.stat-table{width:100%;border-collapse:collapse}.stat-table th,.stat-table td{padding:.65rem .4rem;border-bottom:1px solid #334155}
+.stat-table th{text-align:center;color:#94a3b8;font-size:.85rem}.stat-table td:first-child{text-align:right;font-weight:800;width:35%}
+.stat-table td:nth-child(2){text-align:center;color:#cbd5e1;font-weight:700;width:30%}.stat-table td:last-child{font-weight:800;width:35%}
+.stat-section{overflow-x:auto}.lineup-grid,.players-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.side{background:#0f172a;border-radius:9px;padding:1rem}.side h4{margin-top:0}.player{display:flex;justify-content:space-between;gap:.5rem;padding:.45rem 0;border-bottom:1px solid #334155;font-size:.9rem}
+.summary{display:flex;gap:.5rem;flex-wrap:wrap;margin:.8rem 0}.badge{background:#0f172a;border:1px solid #334155;border-radius:999px;padding:.35rem .65rem;color:#cbd5e1;font-size:.8rem}
+@media(max-width:700px){.hero-teams{grid-template-columns:1fr}.hero-team.away{text-align:left}.lineup-grid,.players-grid{grid-template-columns:1fr}.stat-table{font-size:.88rem}}
 </style>
+
 <a class="back" href="{% url 'estadisticas:partidos_en_vivo' %}">← Volver a LIVE</a>
 <div id="match-detail"><div class="section">Cargando detalle del partido...</div></div>
+
 <script>
-const FIXTURE_ID={{ fixture_id }};const POLL_MS={{ live_poll_ms }};
-function esc(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
-function teamName(t){return esc(t?.name||'Equipo')}
-function minute(e){return (e?.time?.elapsed??'')+(e?.time?.extra?('+'+e.time.extra):'')}
-function eventText(e){const p=e?.player?.name||'';const a=e?.assist?.name||'';const d=e?.detail||e?.type||'';return esc(d)+(p?' · '+esc(p):'')+(a?' · Asistencia: '+esc(a):'')}
-function renderEvents(title,items,empty){return '<div class="section"><h3>'+title+'</h3>'+(items.length?items.map(e=>'<div class="event"><div class="minute">'+esc(minute(e))+"' </div><div><strong>"+eventText(e)+'</strong><div class="event-team">'+esc(e?.team?.name||'')+'</div></div></div>').join(''):'<div class="empty-small">'+empty+'</div>')+'</div>'}
-function renderStats(stats){if(!stats.length)return '<div class="section"><h3>🎯 Tiros · 📊 Posesión · 🚩 Córners</h3><div class="empty-small">Estadísticas no disponibles para esta competición.</div></div>';const maps={"Total Shots":"Tiros totales","Shots on Goal":"Tiros al arco","Shots off Goal":"Tiros fuera","Blocked Shots":"Tiros bloqueados","Ball Possession":"Posesión","Corner Kicks":"Córners","Fouls":"Faltas","Offsides":"Fuera de juego","Total passes":"Pases","Passes accurate":"Pases precisos","Goalkeeper Saves":"Atajadas"};const all=[];stats.forEach(s=>(s.statistics||[]).forEach(x=>{if(!all.includes(x.type))all.push(x.type)}));return '<div class="section"><h3>🎯 Tiros · 📊 Posesión · 🚩 Córners y estadísticas</h3>'+all.map(k=>{const vals=stats.map(s=>{const x=(s.statistics||[]).find(z=>z.type===k);return x?.value??'-'});return '<div class="stat-row"><span>'+esc(vals[0]??'-')+'</span><span>'+esc(maps[k]||k)+'</span><span>'+esc(vals[1]??'-')+'</span></div>'}).join('')+'</div>'}
-function renderLineups(lineups){if(!lineups.length)return '<div class="section"><h3>👥 Alineaciones</h3><div class="empty-small">Alineaciones aún no disponibles.</div></div>';return '<div class="section"><h3>👥 Alineaciones</h3><div class="lineup-grid">'+lineups.map(l=>'<div class="side"><h4>'+teamName(l.team)+' <span class="muted">'+esc(l.formation||'')+'</span></h4>'+(l.startXI||[]).map(x=>'<div class="player"><span>'+esc(x.player?.name)+'</span><span class="muted">'+esc(x.player?.pos||'')+'</span></div>').join('')+'<h4>Suplentes</h4>'+(l.substitutes||[]).map(x=>'<div class="player"><span>'+esc(x.player?.name)+'</span><span class="muted">'+esc(x.player?.pos||'')+'</span></div>').join('')+'</div>').join('')+'</div></div>'}
-function renderPlayers(players){if(!players.length)return '<div class="section"><h3>⭐ Estadísticas de jugadores</h3><div class="empty-small">Estadísticas de jugadores no disponibles todavía.</div></div>';return '<div class="section"><h3>⭐ Estadísticas de jugadores</h3><div class="players-grid">'+players.map(g=>'<div class="side"><h4>'+teamName(g.team)+'</h4>'+(g.players||[]).map(p=>{const x=p.statistics?.[0]||{};return '<div class="player"><span>'+esc(p.player?.name)+'</span><span class="muted">'+esc(x.rating||'-')+' ⭐ · '+esc(x.goals?.total??0)+' ⚽</span></div>'}).join('')+'</div>').join('')+'</div></div>'}
-async function cargarDetalle(){try{const r=await fetch('/api/live/'+FIXTURE_ID+'/',{cache:'no-store'});const d=await r.json();if(!r.ok)throw new Error(d.error||'Error');const st=d.fixture.status||{};document.getElementById('match-detail').innerHTML='<div class="match-hero"><div class="muted">'+teamName(d.league)+' · '+esc(d.league?.country||'')+'</div><div class="hero-teams"><div class="hero-team">'+teamName(d.home)+'</div><div><div class="hero-score">'+(d.score?.home??0)+' - '+(d.score?.away??0)+'</div><div class="hero-status">'+esc(st.long||st.short||'')+(st.elapsed?' '+esc(st.elapsed)+"'":'')+'</div></div><div class="hero-team away">'+teamName(d.away)+'</div></div></div>'+renderEvents('⚽ Goles',d.goals_events||[],'No hay goles registrados.')+renderEvents('🟨 Amarillas / 🟥 Rojas',d.cards||[],'No hay tarjetas registradas.')+renderEvents('🔄 Cambios',d.substitutions||[],'No hay cambios registrados.')+renderStats(d.statistics||[])+renderLineups(d.lineups||[])+renderPlayers(d.players||[])+renderEvents('📈 Evolución del partido',d.events||[],'No hay eventos registrados.');}catch(e){document.getElementById('match-detail').innerHTML='<div class="section">'+esc(e.message)+'</div>';}}
-cargarDetalle();setInterval(cargarDetalle,POLL_MS);
+const FIXTURE_ID={{ fixture_id }};
+const POLL_MS={{ live_poll_ms }};
+
+function esc(v){
+    return String(v ?? '').replace(/[&<>'"]/g,c=>({
+        '&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'
+    }[c]));
+}
+
+function teamName(t){return esc(t?.name || 'Equipo');}
+
+function minute(e){
+    const elapsed=e?.time?.elapsed ?? '';
+    const extra=e?.time?.extra;
+    return elapsed + (extra ? '+'+extra : '');
+}
+
+function eventText(e){
+    const p=e?.player?.name || '';
+    const a=e?.assist?.name || '';
+    const detail=e?.detail || e?.type || '';
+    let text=detail;
+    if(p) text+=' · '+p;
+    if(a) text+=' · Asistencia: '+a;
+    return esc(text);
+}
+
+function renderEvents(title,items,empty){
+    return '<div class="section"><h3>'+title+'</h3>'+
+        (items.length
+            ? items.map(e=>'<div class="event"><div class="minute">'+esc(minute(e))+"'</div><div><strong>"+eventText(e)+'</strong><div class="event-team">'+esc(e?.team?.name || '')+'</div></div></div>').join('')
+            : '<div class="empty-small">'+empty+'</div>'
+        )+'</div>';
+}
+
+const STAT_LABELS={
+    'Total Shots':'Tiros totales',
+    'Shots on Goal':'Tiros al arco',
+    'Shots off Goal':'Tiros fuera',
+    'Blocked Shots':'Tiros bloqueados',
+    'Shots insidebox':'Tiros dentro del área',
+    'Shots outsidebox':'Tiros fuera del área',
+    'Ball Possession':'Posesión',
+    'Corner Kicks':'Córners',
+    'Fouls':'Faltas',
+    'Offsides':'Fuera de juego',
+    'Total passes':'Pases',
+    'Passes accurate':'Pases precisos',
+    'Passes %':'Precisión de pases',
+    'Goalkeeper Saves':'Atajadas',
+    'Yellow Cards':'Tarjetas amarillas',
+    'Red Cards':'Tarjetas rojas',
+    'Free Kicks':'Tiros libres'
+};
+
+function renderStats(stats,home,away){
+    if(!stats.length){
+        return '<div class="section"><h3>📊 Estadísticas del partido</h3><div class="empty-small">No hay estadísticas disponibles todavía.</div></div>';
+    }
+
+    const byTeam=new Map();
+    stats.forEach(s=>{
+        const id=s?.team?.id;
+        if(id!=null) byTeam.set(String(id),s.values || {});
+    });
+
+    const homeValues=byTeam.get(String(home?.id)) || stats[0]?.values || {};
+    const awayValues=byTeam.get(String(away?.id)) || stats[1]?.values || {};
+    const keys=[];
+    Object.keys({...homeValues,...awayValues}).forEach(k=>{
+        if(!keys.includes(k)) keys.push(k);
+    });
+
+    const preferred=[
+        'Total Shots','Shots on Goal','Shots off Goal','Blocked Shots',
+        'Shots insidebox','Shots outsidebox','Ball Possession','Corner Kicks',
+        'Fouls','Offsides','Total passes','Passes accurate','Passes %',
+        'Goalkeeper Saves','Yellow Cards','Red Cards','Free Kicks'
+    ];
+    keys.sort((a,b)=>{
+        const ia=preferred.indexOf(a), ib=preferred.indexOf(b);
+        return (ia<0?999:ia)-(ib<0?999:ib);
+    });
+
+    return '<div class="section stat-section"><h3>🎯 Tiros · 📊 Posesión · 🚩 Córners</h3>'+
+        '<table class="stat-table"><thead><tr><th>'+teamName(home)+'</th><th>Estadística</th><th>'+teamName(away)+'</th></tr></thead><tbody>'+
+        keys.map(k=>'<tr><td>'+esc(homeValues[k] ?? '-')+'</td><td>'+esc(STAT_LABELS[k] || k)+'</td><td>'+esc(awayValues[k] ?? '-')+'</td></tr>').join('')+
+        '</tbody></table></div>';
+}
+
+function renderLineups(lineups){
+    if(!lineups.length){
+        return '<div class="section"><h3>👥 Alineaciones</h3><div class="empty-small">Alineaciones aún no disponibles.</div></div>';
+    }
+
+    return '<div class="section"><h3>👥 Alineaciones</h3><div class="lineup-grid">'+
+        lineups.map(l=>{
+            const starters=l?.startXI || [];
+            const substitutes=l?.substitutes || [];
+            return '<div class="side"><h4>'+teamName(l.team)+' <span class="muted">'+esc(l.formation || '')+'</span></h4>'+
+                (starters.length
+                    ? starters.map(x=>'<div class="player"><span>'+esc(x?.player?.name || '')+'</span><span class="muted">'+esc(x?.player?.pos || '')+'</span></div>').join('')
+                    : '<div class="empty-small">Titulares no disponibles.</div>')+
+                '<h4>Suplentes</h4>'+
+                (substitutes.length
+                    ? substitutes.map(x=>'<div class="player"><span>'+esc(x?.player?.name || '')+'</span><span class="muted">'+esc(x?.player?.pos || '')+'</span></div>').join('')
+                    : '<div class="empty-small">Suplentes no disponibles.</div>')+
+                '</div>';
+        }).join('')+'</div></div>';
+}
+
+function renderPlayers(players){
+    if(!players.length){
+        return '<div class="section"><h3>⭐ Estadísticas de jugadores</h3><div class="empty-small">Estadísticas de jugadores no disponibles todavía.</div></div>';
+    }
+
+    return '<div class="section"><h3>⭐ Estadísticas de jugadores</h3><div class="players-grid">'+
+        players.map(g=>{
+            return '<div class="side"><h4>'+teamName(g.team)+'</h4>'+
+                (g.players || []).map(p=>{
+                    const x=p?.statistics?.[0] || {};
+                    const games=x.games || {};
+                    const goals=x.goals || {};
+                    const cards=x.cards || {};
+                    return '<div class="player"><span>'+esc(p?.player?.name || '')+'</span><span class="muted">'+
+                        esc(games.rating || '-')+' ⭐ · '+esc(goals.total ?? 0)+' ⚽ · '+esc(cards.yellow ?? 0)+' 🟨</span></div>';
+                }).join('')+
+                '</div>';
+        }).join('')+'</div></div>';
+}
+
+async function cargarDetalle(){
+    try{
+        const r=await fetch('/api/live/'+FIXTURE_ID+'/?t='+Date.now(),{cache:'no-store'});
+        const d=await r.json();
+        if(!r.ok) throw new Error(d.error || 'Error al obtener el partido');
+
+        const st=d.fixture?.status || {};
+        const meta=d.meta || {};
+
+        document.getElementById('match-detail').innerHTML=
+            '<div class="match-hero">'+
+                '<div class="muted">'+teamName(d.league)+' · '+esc(d.league?.country || '')+'</div>'+
+                '<div class="hero-teams">'+
+                    '<div class="hero-team">'+teamName(d.home)+'</div>'+
+                    '<div><div class="hero-score">'+(d.score?.home ?? 0)+' - '+(d.score?.away ?? 0)+'</div>'+
+                    '<div class="hero-status">'+esc(st.long || st.short || '')+(st.elapsed ? ' '+esc(st.elapsed)+"'" : '')+'</div></div>'+
+                    '<div class="hero-team away">'+teamName(d.away)+'</div>'+
+                '</div>'+
+                '<div class="summary">'+
+                    '<span class="badge">⚽ '+meta.goals+' goles</span>'+
+                    '<span class="badge">🟨🟥 '+meta.cards+' tarjetas</span>'+
+                    '<span class="badge">🔄 '+meta.substitutions+' cambios</span>'+
+                    '<span class="badge">📊 '+meta.statistics+' equipos con estadísticas</span>'+
+                '</div>'+
+            '</div>'+
+            renderEvents('⚽ Goles',d.goals_events || [],'No hay goles registrados.')+
+            renderEvents('🟨 Amarillas / 🟥 Rojas',d.cards || [],'No hay tarjetas registradas.')+
+            renderEvents('🔄 Cambios',d.substitutions || [],'No hay cambios registrados.')+
+            renderStats(d.statistics_normalized || [],d.home,d.away)+
+            renderLineups(d.lineups || [])+
+            renderPlayers(d.players || [])+
+            renderEvents('📈 Evolución del partido',d.events || [],'No hay eventos registrados.');
+    }catch(e){
+        document.getElementById('match-detail').innerHTML='<div class="section"><strong>No fue posible cargar el partido.</strong><div class="empty-small">'+esc(e.message)+'</div></div>';
+    }
+}
+
+cargarDetalle();
+setInterval(cargarDetalle,POLL_MS);
 </script>
 {% endblock %}
