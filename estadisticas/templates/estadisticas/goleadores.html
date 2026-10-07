@@ -2,6 +2,15 @@
 {% block titulo %}{{ nombre_liga }} — Goleadores{% endblock %}
 {% block contenido %}
     <h2>{{ nombre_liga }} — Tabla de goleadores</h2>
+    <form method="get" style="margin: 16px 0;">
+        <label for="temporada">Temporada:</label>
+        <select id="temporada" name="temporada" onchange="this.form.submit()" style="margin-left:8px; padding:6px;">
+            {% for t in temporadas %}
+                <option value="{{ t }}" {% if t == temporada %}selected{% endif %}>{{ t }}</option>
+            {% endfor %}
+        </select>
+        <noscript><button type="submit">Ver temporada</button></noscript>
+    </form>
 
     {% if error %}
         <div class="error">
