@@ -201,6 +201,7 @@ class FlashscoreClient:
                         "label": stat.get("label", ""),
                         "value": parsed,
                         "raw_value": stat.get("value"),
+                        "group": stats_group.get("name") or stats_group.get("label") or stats_group.get("type") or "",
                     }
                     if stat_type not in result["raw_types"]:
                         result["raw_types"].append(stat_type)
