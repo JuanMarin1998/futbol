@@ -1,28 +1,53 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from ..ecuabet_client import EcuabetClient
 from ..flashscore_client import FlashscoreClient
+from .match_mapper import MatchMapper, MatchMappingError
 from .models import LiveMatch
 
 
 class LiveMatchCollector:
-    """
-    Une un evento LIVE de Ecuabet con las estadísticas del evento Flashscore.
+    """Une un evento LIVE de Ecuabet con datos LIVE de Flashscore."""
 
-    El mapeo automático de IDs se implementará aparte; mientras tanto, el
-    collector recibe ambos IDs para evitar asociaciones incorrectas.
-    """
-
-    def __init__(self, ecuabet_client=None, flashscore_client=None):
+    def __init__(self, ecuabet_client=None, flashscore_client=None, mapper=None):
         self.ecuabet = ecuabet_client or EcuabetClient()
         self.flashscore = flashscore_client or FlashscoreClient()
+        self.mapper = mapper or MatchMapper()
 
-    def construir(
-        self,
-        ecuabet_event_id: int,
-        flashscore_event_id: str,
-    ) -> LiveMatch:
+    def construir(self, ecuabet_event_id: int, flashscore_event_id: str) -> LiveMatch:
         ecuabet = self._obtener_ecuabet_evento(ecuabet_event_id)
+        return self._construir_desde_evento(ecuabet, flashscore_event_id, 1.0)
+
+    def construir_automatico(self, ecuabet_event_id: int) -> LiveMatch:
+        """Encuentra automáticamente el ID Flashscore y construye el LiveMatch."""
+        ecuabet = self._obtener_ecuabet_evento(ecuabet_event_id)
+        mapping = self.mapper.mapear(ecuabet, self.flashscore)
+
+        if not mapping.get("matched"):
+            reason = mapping.get("reason", "sin coincidencia")
+            confidence = mapping.get("confidence", 0.0)
+            raise MatchMappingError(
+                f"No se pudo vincular Ecuabet {ecuabet_event_id} con Flashscore "
+                f"(confianza={confidence:.2f}, motivo={reason})."
+            )
+
+        return self._construir_desde_evento(
+            ecuabet,
+            mapping["flashscore_event_id"],
+            mapping["confidence"],
+        )
+
+    def mapear_automaticamente(self, ecuabet_event_id: int) -> Dict[str, Any]:
+        """Expone el resultado del MatchMapper para diagnóstico/UI."""
+        ecuabet = self._obtener_ecuabet_evento(ecuabet_event_id)
+        return self.mapper.mapear(ecuabet, self.flashscore)
+
+    def _construir_desde_evento(
+        self,
+        ecuabet: Dict[str, Any],
+        flashscore_event_id: str,
+        mapping_confidence: float,
+    ) -> LiveMatch:
         flashscore = self.flashscore.obtener_live_match(flashscore_event_id)
 
         event = flashscore.get("raw_event") or {}
@@ -47,33 +72,30 @@ class LiveMatchCollector:
         if not isinstance(score, list):
             score = [None, None]
 
-        match = LiveMatch(
+        stats = flashscore.get("stats", {})
+        return LiveMatch(
             ecuabet_event_id=int(ecuabet.get("id")),
             flashscore_event_id=flashscore.get("flashscore_event_id"),
             home_team=self._participant_name(home) or self._split_ecuabet_name(ecuabet)[0],
             away_team=self._participant_name(away) or self._split_ecuabet_name(ecuabet)[1],
             league=(ecuabet.get("champ") or {}).get("name", ""),
             country=(ecuabet.get("category") or {}).get("name", ""),
-            start_time=ecuabet.get("start_date"),
-            minute=ecuabet.get("live_time"),
-            period=ecuabet.get("live_status"),
+            start_time=ecuabet.get("startDate"),
+            minute=ecuabet.get("liveTime"),
+            period=ecuabet.get("ls"),
             home_score=score[0] if len(score) > 0 else None,
             away_score=score[1] if len(score) > 1 else None,
             odds=self._flatten_odds(ecuabet.get("markets", [])),
-            performance=flashscore.get("stats", {}),
-            mapping_confidence=1.0,
-            data_quality=self._calculate_data_quality(flashscore.get("stats", {})),
+            performance=stats,
+            mapping_confidence=mapping_confidence,
+            data_quality=self._calculate_data_quality(stats),
         )
-        return match
 
     def _obtener_ecuabet_evento(self, event_id: int) -> Dict[str, Any]:
         payload = self.ecuabet._request(
             "GET",
             "GetLivenow",
-            {
-                "eventCount": 0,
-                "sportId": 66,
-            },
+            {"eventCount": 0, "sportId": 66},
         )
         event = next(
             (
@@ -182,5 +204,4 @@ class LiveMatchCollector:
         available = len(set(home) | set(away))
         if available == 0:
             return 0.0
-        # Por ahora medimos cobertura, no calidad predictiva.
         return round(min(1.0, available / 10.0), 3)
