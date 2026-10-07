@@ -15,7 +15,7 @@
 .ld-market h4{margin:0;padding:.6rem .7rem;background:#0f172a}
 .ld-table{width:100%;border-collapse:collapse}.ld-table td{padding:.5rem .65rem;border-bottom:1px solid #334155}
 .ld-price{font-weight:900;text-align:right}
-.stat-grid{display:grid;gap:.55rem}.stat-row{display:grid;grid-template-columns:1fr 55px 1fr;gap:.5rem;align-items:center}
+.stat-grid{display:grid;gap:.55rem}.ld-stat-group{margin-bottom:1rem}.ld-stat-group:last-child{margin-bottom:0}.ld-stat-group-title{font-size:.88rem;font-weight:900;color:#e2e8f0;padding:.55rem .65rem;background:#0f172a;border-radius:8px;margin-bottom:.45rem}.stat-row{display:grid;grid-template-columns:1fr 55px 1fr;gap:.5rem;align-items:center}
 .stat-val{text-align:center;font-weight:800}.stat-label{text-align:center;color:#94a3b8;font-size:.78rem}
 .bar{height:5px;background:#0f172a;border-radius:5px;overflow:hidden}.bar>i{display:block;height:100%;background:#64748b}
 .ld-muted{color:#94a3b8;font-size:.85rem}.ld-back{color:#60a5fa;text-decoration:none}
@@ -36,30 +36,38 @@ const POLL_MS={{ live_poll_ms }};
 function esc(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
 function price(v){return v==null?'—':Number(v).toFixed(3).replace(/0+$/,'').replace(/\.$/,'');}
 function statValue(side,type){return side?.[type]?.value ?? null;}
-function statLabel(side,type){return side?.[type]?.label ?? '—';}
+function statText(side,type){
+  const item=side?.[type];
+  if(!item)return '—';
+  return item.raw_value ?? item.value ?? '—';
+}
+function statDisplayName(home,away,type){
+  return home?.[type]?.label || away?.[type]?.label || home?.[type]?.name || away?.[type]?.name || type;
+}
+function statGroupName(home,away,type){
+  return home?.[type]?.group || away?.[type]?.group || 'Estadísticas';
+}
 
 function renderStats(stats){
   const home=stats?.home||{}, away=stats?.away||{};
-  const known=[
-    ['ball_possession','Posesión'],
-    ['goal_attempts','Remates'],
-    ['shots_on_goal','Remates a puerta'],
-    ['shots_off_goal','Remates fuera'],
-    ['blocked_shots','Remates bloqueados'],
-    ['corner_kicks','Corners'],
-    ['fouls','Faltas'],
-    ['yellow_cards','Tarjetas amarillas'],
-    ['red_cards','Tarjetas rojas'],
-    ['expected_goals','xG']
-  ];
-  const available=known.filter(x=>home[x[0]]||away[x[0]]);
-  const extra=(stats?.raw_types||[]).filter(t=>!known.some(x=>x[0]===t));
-  extra.forEach(t=>available.push([t,(home[t]?.name||away[t]?.name||t)]));
-  if(!available.length)return '<div class="ld-muted">Aún no hay estadísticas de Flashscore para este partido.</div>';
-  return '<div class="stat-grid">'+available.map(([type,label])=>{
-    const a=statLabel(home,type), b=statLabel(away,type);
-    return '<div class="stat-row"><div style="text-align:right">'+esc(a)+'</div><div class="stat-label">'+esc(label)+'</div><div>'+esc(b)+'</div></div>';
-  }).join('')+'</div>';
+  const types=[...new Set([...(stats?.raw_types||[]),...Object.keys(home),...Object.keys(away)])];
+  if(!types.length)return '<div class="ld-muted">Aún no hay estadísticas de Flashscore para este partido.</div>';
+
+  const groups={};
+  types.forEach(type=>{
+    const group=statGroupName(home,away,type);
+    if(!groups[group])groups[group]=[];
+    groups[group].push(type);
+  });
+
+  return Object.entries(groups).map(([group,groupTypes])=>
+    '<div class="ld-stat-group"><div class="ld-stat-group-title">'+esc(group)+'</div>'+
+    '<div class="stat-grid">'+groupTypes.map(type=>{
+      const a=statText(home,type), b=statText(away,type);
+      const label=statDisplayName(home,away,type);
+      return '<div class="stat-row"><div style="text-align:right;font-weight:800">'+esc(a)+'</div><div class="stat-label">'+esc(label)+'</div><div style="font-weight:800">'+esc(b)+'</div></div>';
+    }).join('')+'</div></div>'
+  ).join('');
 }
 
 function render(e, flash){
