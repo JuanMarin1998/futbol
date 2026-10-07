@@ -1,6 +1,6 @@
 # Fútbol Stats
 
-Proyecto de análisis estadístico de fútbol con Django, datos reales de [football-data.org](https://www.football-data.org/).
+Proyecto de análisis estadístico y predicción de fútbol con Django. Integra API-Football como fuente principal de datos futbolísticos, Open-Meteo para clima histórico y football-data.org como fuente secundaria.
 
 ## Cómo correrlo en tu PC (Windows)
 
@@ -13,7 +13,7 @@ Proyecto de análisis estadístico de fútbol con Django, datos reales de [footb
    ```powershell
    pip install -r requirements.txt
    ```
-4. Crea tu archivo `.env` copiando `.env.example` y pegando tu token real de football-data.org:
+4. Crea tu archivo `.env` copiando `.env.example` y configura `API_FOOTBALL_KEY` (y opcionalmente `FOOTBALL_DATA_TOKEN`):
    ```powershell
    copy .env.example .env
    notepad .env
@@ -29,6 +29,25 @@ Proyecto de análisis estadístico de fútbol con Django, datos reales de [footb
 7. Abre en tu navegador: http://127.0.0.1:8000/
 
 Deberías ver las 5 ligas principales, y al entrar a cada una, partidos reales (próximos y resultados recientes) y la tabla de posiciones.
+
+## Sincronizar datos desde API-Football
+
+Después de configurar `API_FOOTBALL_KEY` y aplicar las migraciones:
+
+```powershell
+python manage.py migrate
+python manage.py sincronizar_api_football --liga PD --temporada 2026 --partidos 20
+```
+
+Códigos disponibles: `PD`, `PL`, `BL1`, `SA`, `FL1`.
+
+Para enriquecer partidos guardados con estadísticas y clima histórico:
+
+```powershell
+python manage.py enriquecer_partidos --partidos 5
+```
+
+`Open-Meteo` no requiere API key.
 
 ## Opcional: cargar equipos a la base de datos
 
