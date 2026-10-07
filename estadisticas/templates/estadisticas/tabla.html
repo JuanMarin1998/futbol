@@ -1,0 +1,50 @@
+{% extends "estadisticas/base.html" %}
+{% block titulo %}{{ nombre_liga }} — Tabla{% endblock %}
+{% block contenido %}
+    <h2>{{ nombre_liga }} — Tabla de posiciones</h2>
+    <p>
+        <a href="{% url 'estadisticas:partidos_liga' codigo_liga %}" style="color:#38bdf8;">← Ver partidos</a>
+    </p>
+
+    {% if error %}
+        <div class="error">
+            <strong>No se pudo conectar con la API:</strong><br>
+            {{ error }}
+        </div>
+    {% else %}
+        <div class="tarjeta">
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Equipo</th>
+                        <th>PJ</th>
+                        <th>G</th>
+                        <th>E</th>
+                        <th>P</th>
+                        <th>GF</th>
+                        <th>GC</th>
+                        <th>DG</th>
+                        <th>Pts</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for fila in tabla %}
+                    <tr>
+                        <td>{{ fila.position }}</td>
+                        <td>{{ fila.team.name }}</td>
+                        <td>{{ fila.playedGames }}</td>
+                        <td>{{ fila.won }}</td>
+                        <td>{{ fila.draw }}</td>
+                        <td>{{ fila.lost }}</td>
+                        <td>{{ fila.goalsFor }}</td>
+                        <td>{{ fila.goalsAgainst }}</td>
+                        <td>{{ fila.goalDifference }}</td>
+                        <td><strong>{{ fila.points }}</strong></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+{% endblock %}
