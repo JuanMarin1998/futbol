@@ -460,10 +460,34 @@ def api_ecuabet_live_detalle(request, ecuabet_event_id):
             # experimento y liquidar las entradas con el marcador final.
             finished_experiment = (
                 LiveExperiment.objects
-                .filter(ecuabet_event_id=ecuabet_event_id, status="RUNNING")
+                .filter(ecuabet_event_id=ecuabet_event_id)
                 .order_by("-started_at")
                 .first()
             )
+            if finished_experiment and finished_experiment.status == "FINISHED":
+                return JsonResponse({
+                    "ok": True,
+                    "event": {
+                        "id": ecuabet_event_id,
+                        "name": f"{finished_experiment.home_team} vs. {finished_experiment.away_team}",
+                        "live_time": "Final",
+                        "live_status": "Finalizado",
+                        "score": [
+                            finished_experiment.final_home_score,
+                            finished_experiment.final_away_score,
+                        ],
+                        "status": "FINISHED",
+                    },
+                    "flashscore": {
+                        "matched": True,
+                        "flashscore_event_id": finished_experiment.flashscore_event_id,
+                        "confidence": 1.0,
+                        "reason": "Partido finalizado y experimento ya liquidado.",
+                    },
+                    "match": None,
+                    "experiment": LiveExperimentManager.serialize(finished_experiment),
+                })
+
             if finished_experiment and finished_experiment.flashscore_event_id:
                 try:
                     collector = LiveMatchCollector()
