@@ -75,6 +75,13 @@ class LiveMatchCollector:
             score = [None, None]
 
         stats = flashscore.get("stats", {})
+        raw_event = flashscore.get("raw_event") or {}
+        match_status, is_finished = self._extract_match_status(
+            raw_event,
+            ecuabet.get("status"),
+            ecuabet.get("ls"),
+            ecuabet.get("liveTime"),
+        )
         match = LiveMatch(
             ecuabet_event_id=int(ecuabet.get("id")),
             flashscore_event_id=flashscore.get("flashscore_event_id"),
@@ -93,6 +100,113 @@ class LiveMatchCollector:
             data_quality=self._calculate_data_quality(stats),
         )
         # V1 se conserva intacto; V2 se calcula en paralelo para comparar ambos motores.
+        match.opportunities = LiveOpportunityEngine.evaluate(match)
+        match.opportunities_v2 = LiveOpportunityEngineV2.evaluate(match)
+        return match
+
+    @classmethod
+    def _extract_match_status(cls, raw_event, ecuabet_status=None, ecuabet_period=None, ecuabet_minute=None):
+        """Normaliza el estado del partido y determina si ya terminó."""
+        raw_event = raw_event if isinstance(raw_event, dict) else {}
+        status = raw_event.get("status")
+        candidates = []
+
+        def collect(value):
+            if isinstance(value, dict):
+                for k, v in value.items():
+                    if str(k).lower() in {
+                        "type", "code", "short", "long", "name", "status",
+                        "period", "periodname", "description",
+                    }:
+                        candidates.append(str(v))
+                    if isinstance(v, (dict, list)):
+                        collect(v)
+            elif isinstance(value, list):
+                for item in value:
+                    collect(item)
+            elif value is not None:
+                candidates.append(str(value))
+
+        collect(status)
+        if not candidates:
+            candidates.extend(
+                str(value) for value in (
+                    raw_event.get("statusCode"),
+                    raw_event.get("statusType"),
+                    raw_event.get("statusName"),
+                    ecuabet_status,
+                    ecuabet_period,
+                    ecuabet_minute,
+                ) if value is not None
+            )
+
+        normalized = " ".join(candidates).strip()
+        lowered = normalized.casefold()
+        finished_tokens = (
+            "finished", "final", "finalizado", "terminado",
+            "full time", "match finished", "after extra time",
+            "after penalties", "ft",
+        )
+        cancelled_tokens = (
+            "cancelled", "canceled", "cancelado", "abandoned", "suspendido"
+        )
+        is_finished = any(token in lowered for token in finished_tokens)
+        if any(token in lowered for token in cancelled_tokens):
+            is_finished = True
+        return normalized or None, is_finished
+
+    def construir_desde_flashscore(
+        self,
+        flashscore_event_id: str,
+        ecuabet_event_id: int = None,
+        home_team: str = "",
+        away_team: str = "",
+    ) -> LiveMatch:
+        """Construye un snapshot actual/final solo desde Flashscore."""
+        flashscore = self.flashscore.obtener_live_match(flashscore_event_id)
+        raw_event = flashscore.get("raw_event") or {}
+        participants = raw_event.get("eventParticipants", []) or []
+        home = next(
+            (p for p in participants if ((p.get("type") or {}).get("side") or "").upper() == "HOME"),
+            {},
+        )
+        away = next(
+            (p for p in participants if ((p.get("type") or {}).get("side") or "").upper() == "AWAY"),
+            {},
+        )
+        home_name = self._participant_name(home) or home_team
+        away_name = self._participant_name(away) or away_team
+        status, is_finished = self._extract_match_status(raw_event)
+
+        score = raw_event.get("score")
+        if isinstance(score, dict):
+            home_score = score.get("home") or score.get("currentHome")
+            away_score = score.get("away") or score.get("currentAway")
+        elif isinstance(score, list):
+            home_score = score[0] if len(score) > 0 else None
+            away_score = score[1] if len(score) > 1 else None
+        else:
+            home_score = raw_event.get("homeScore")
+            away_score = raw_event.get("awayScore")
+
+        stats = flashscore.get("stats", {})
+        match = LiveMatch(
+            ecuabet_event_id=ecuabet_event_id,
+            flashscore_event_id=flashscore.get("flashscore_event_id"),
+            home_team=home_name,
+            away_team=away_name,
+            start_time=None,
+            minute=raw_event.get("minute") or raw_event.get("time"),
+            period=raw_event.get("period"),
+            match_status=status,
+            is_finished=is_finished,
+            home_score=home_score,
+            away_score=away_score,
+            odds=[],
+            performance=stats,
+            mapping_confidence=1.0,
+            data_quality=self._calculate_data_quality(stats),
+        )
         match.opportunities = LiveOpportunityEngine.evaluate(match)
         match.opportunities_v2 = LiveOpportunityEngineV2.evaluate(match)
         return match
