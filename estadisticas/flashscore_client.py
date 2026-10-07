@@ -388,6 +388,8 @@ class FlashscoreClient:
             )
 
             group = fields.get("SF") or "Estadísticas"
+            if stat_type in result["home"]:
+                stat_type = f"{stat_type}__{cls._slug_stat(group)}"
             for target, raw_value in (("home", home_raw), ("away", away_raw)):
                 result[target][stat_type] = {
                     "name": display_label,
