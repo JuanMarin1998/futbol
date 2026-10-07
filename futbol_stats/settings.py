@@ -6,24 +6,21 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()
-
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# ADVERTENCIA DE SEGURIDAD: cambia esto antes de desplegar en producción.
+# Cargar .env desde la raíz del proyecto.
+load_dotenv(BASE_DIR / ".env")
+
 SECRET_KEY = os.getenv(
     "DJANGO_SECRET_KEY",
     "django-insecure-clave-temporal-solo-para-desarrollo-local",
 )
 
-# ADVERTENCIA DE SEGURIDAD: no corras con DEBUG=True en producción.
 DEBUG = True
-
 ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
 
-# Token de la API de football-data.org (se guarda en el archivo .env, nunca en el código)
+# Token de football-data.org. Nunca colocar el token real en el código.
 FOOTBALL_DATA_TOKEN = os.getenv("FOOTBALL_DATA_TOKEN", "")
-API_FOOTBALL_KEY = os.getenv("API_FOOTBALL_KEY", "")
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -57,7 +54,7 @@ TEMPLATES = [
                 "django.template.context_processors.debug",
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
-                "django.contrib.messages.context_processors.messages",
+                "django.contrib.auth.context_processors.messages",
             ],
         },
     },
@@ -65,27 +62,12 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "futbol_stats.wsgi.application"
 
-# Base de datos
-# Empezamos con SQLite (cero configuración). Cuando quieras pasar a PostgreSQL
-# solo hay que cambiar este bloque por el motor de postgres y los datos de conexión.
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "db.sqlite3",
     }
 }
-
-# Para migrar a PostgreSQL más adelante, comenta el bloque de arriba y descomenta este:
-# DATABASES = {
-#     "default": {
-#         "ENGINE": "django.db.backends.postgresql",
-#         "NAME": os.getenv("DB_NAME", "futbol_stats"),
-#         "USER": os.getenv("DB_USER", "postgres"),
-#         "PASSWORD": os.getenv("DB_PASSWORD", ""),
-#         "HOST": os.getenv("DB_HOST", "localhost"),
-#         "PORT": os.getenv("DB_PORT", "5432"),
-#     }
-# }
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
@@ -100,5 +82,4 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "static/"
-
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
