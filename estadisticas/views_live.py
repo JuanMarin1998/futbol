@@ -13,7 +13,7 @@ def partidos_en_vivo(request):
 
 def api_partidos_en_vivo(request):
     try:
-        cache_key = "api_football_live_matches"
+        cache_key = "api_football_live_matches_v2"
         payload = cache.get(cache_key)
         if payload is None:
             payload = APIFootballLiveClient().obtener_en_vivo()
@@ -49,20 +49,33 @@ def api_partidos_en_vivo(request):
 
 def detalle_partido_en_vivo(request, fixture_id):
     poll_seconds = getattr(settings, "LIVE_POLL_SECONDS", 60)
-    return render(request, "estadisticas/live_detalle.html", {"fixture_id": fixture_id, "live_poll_ms": poll_seconds * 1000})
+    return render(
+        request,
+        "estadisticas/live_detalle.html",
+        {"fixture_id": fixture_id, "live_poll_ms": poll_seconds * 1000},
+    )
 
 
 def api_detalle_partido_en_vivo(request, fixture_id):
     try:
-        cache_key = f"api_football_live_detail_{fixture_id}"
+        # Versioned key avoids serving an old response after parser/template changes.
+        cache_key = f"api_football_live_detail_v2_{fixture_id}"
         payload = cache.get(cache_key)
+
         if payload is None:
             payload = APIFootballLiveClient().obtener_detalle_partido(fixture_id)
-            cache.set(cache_key, payload, getattr(settings, "LIVE_CACHE_SECONDS", 50))
+            cache.set(
+                cache_key,
+                payload,
+                getattr(settings, "LIVE_CACHE_SECONDS", 50),
+            )
 
         response = payload.get("response", [])
         if not response:
-            return JsonResponse({"error": "No se encontró el partido solicitado."}, status=404)
+            return JsonResponse(
+                {"error": "No se encontró el partido solicitado."},
+                status=404,
+            )
 
         item = response[0]
         fixture = item.get("fixture", {})
@@ -70,24 +83,68 @@ def api_detalle_partido_en_vivo(request, fixture_id):
         teams = item.get("teams", {})
         goals = item.get("goals", {})
         status = fixture.get("status", {})
-        events = item.get("events", []) or []
-        statistics = item.get("statistics", []) or []
-        lineups = item.get("lineups", []) or []
-        players = item.get("players", []) or []
+        events = item.get("events") or []
+        statistics = item.get("statistics") or []
+        lineups = item.get("lineups") or []
+        players = item.get("players") or []
+
+        # Normalize the data once in the backend. The browser then receives
+        # exactly the structures needed by the detail page.
+        stats_normalized = []
+        for team_stats in statistics:
+            team = team_stats.get("team") or {}
+            values = {}
+            for stat in team_stats.get("statistics") or []:
+                stat_type = stat.get("type")
+                if stat_type:
+                    values[stat_type] = stat.get("value")
+            stats_normalized.append({
+                "team": team,
+                "values": values,
+            })
+
+        cards = [
+            event for event in events
+            if (event.get("type") or "").lower() == "card"
+        ]
+        goals_events = [
+            event for event in events
+            if (event.get("type") or "").lower() == "goal"
+        ]
+        substitutions = [
+            event for event in events
+            if (event.get("type") or "").lower() in {"subst", "substitution"}
+        ]
 
         return JsonResponse({
-            "fixture": {"id": fixture.get("id"), "date": fixture.get("date"), "venue": fixture.get("venue", {}), "referee": fixture.get("referee"), "status": status},
+            "fixture": {
+                "id": fixture.get("id"),
+                "date": fixture.get("date"),
+                "venue": fixture.get("venue", {}),
+                "referee": fixture.get("referee"),
+                "status": status,
+            },
             "league": league,
             "home": teams.get("home", {}),
             "away": teams.get("away", {}),
             "score": goals,
             "events": events,
-            "goals_events": [e for e in events if e.get("type") == "Goal"],
-            "cards": [e for e in events if e.get("type") == "Card"],
-            "substitutions": [e for e in events if e.get("type") == "subst"],
+            "goals_events": goals_events,
+            "cards": cards,
+            "substitutions": substitutions,
             "statistics": statistics,
+            "statistics_normalized": stats_normalized,
             "lineups": lineups,
             "players": players,
+            "meta": {
+                "events": len(events),
+                "goals": len(goals_events),
+                "cards": len(cards),
+                "substitutions": len(substitutions),
+                "statistics": len(statistics),
+                "lineups": len(lineups),
+                "players": len(players),
+            },
         })
     except Exception as exc:
         return JsonResponse({"error": str(exc)}, status=502)
