@@ -5,7 +5,7 @@ from django.conf import settings
 
 from .api_football_live import APIFootballLiveClient
 from .ecuabet_client import EcuabetClient
-from .live_engine.collector import LiveMatchCollector
+from .live_engine.collector import LiveMatchCollector\nfrom .live_engine.match_mapper import MatchMappingError
 
 
 def partidos_en_vivo(request):
@@ -384,13 +384,11 @@ def api_live_match_sources(request, ecuabet_event_id, flashscore_event_id):
 
 def ecuabet_live_detalle(request, ecuabet_event_id):
     poll_seconds = 5
-    flashscore_event_id = request.GET.get("flashscore_event_id", "")
     return render(
         request,
         "estadisticas/ecuabet_live_detalle.html",
         {
             "ecuabet_event_id": ecuabet_event_id,
-            "flashscore_event_id": flashscore_event_id,
             "live_poll_ms": poll_seconds * 1000,
         },
     )
@@ -411,7 +409,10 @@ def api_ecuabet_live_detalle(request, ecuabet_event_id):
             None,
         )
         if not event:
-            return JsonResponse({"ok": False, "error": "El partido ya no está LIVE."}, status=404)
+            return JsonResponse(
+                {"ok": False, "error": "El partido ya no está LIVE."},
+                status=404,
+            )
 
         markets = {
             int(m["id"]): m for m in payload.get("markets", []) or []
@@ -425,7 +426,6 @@ def api_ecuabet_live_detalle(request, ecuabet_event_id):
             int(x["id"]): x for x in payload.get("competitors", []) or []
             if x.get("id") is not None
         }
-
         event["competitors"] = [
             competitors.get(int(cid), {"id": cid, "name": str(cid)})
             for cid in event.get("competitorIds", []) or []
@@ -455,6 +455,49 @@ def api_ecuabet_live_detalle(request, ecuabet_event_id):
                     "selections": selections,
                 })
 
-        return JsonResponse({"ok": True, "event": event})
+        # El mapeo se cachea brevemente porque el ID Flashscore no cambia
+        # mientras el partido sigue siendo el mismo.
+        mapper_cache_key = f"live_match_mapping_{ecuabet_event_id}"
+        mapping = cache.get(mapper_cache_key)
+        collector = LiveMatchCollector()
+
+        if mapping is None:
+            mapping = collector.mapper.mapear(event, collector.flashscore)
+            cache.set(mapper_cache_key, mapping, 30)
+
+        match_dict = None
+        if mapping.get("matched") and mapping.get("flashscore_event_id"):
+            try:
+                match = collector._construir_desde_evento(
+                    event,
+                    mapping["flashscore_event_id"],
+                    mapping.get("confidence", 0.0),
+                )
+                match_dict = match.to_dict()
+            except Exception as exc:
+                mapping = {
+                    **mapping,
+                    "matched": False,
+                    "reason": f"flashscore_stats_error: {exc}",
+                }
+
+        return JsonResponse({
+            "ok": True,
+            "event": event,
+            "flashscore": mapping,
+            "match": match_dict,
+        })
+    except MatchMappingError as exc:
+        return JsonResponse({
+            "ok": True,
+            "event": event if "event" in locals() else None,
+            "flashscore": {
+                "matched": False,
+                "flashscore_event_id": None,
+                "confidence": 0.0,
+                "reason": str(exc),
+            },
+            "match": None,
+        })
     except Exception as exc:
         return JsonResponse({"ok": False, "error": str(exc)}, status=502)
