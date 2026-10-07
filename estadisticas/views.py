@@ -1,34 +1,80 @@
 from django.shortcuts import render
-from . import api_client
-from .api_client import LIGAS_PRINCIPALES, FootballDataError
+from django.db.models import Q
+
+from .api_client import LIGAS_PRINCIPALES
+from .models import (
+    Liga,
+    Equipo,
+    Jugador,
+    Partido,
+    TablaPosicion,
+    GoleadorTemporada,
+)
 
 
 def inicio(request):
-    """Página principal: selector de ligas."""
     return render(request, "estadisticas/inicio.html", {"ligas": LIGAS_PRINCIPALES})
 
 
+def _equipo_dict(equipo):
+    return {
+        "id": equipo.id_externo,
+        "name": equipo.nombre,
+        "shortName": equipo.nombre_corto,
+        "crest": equipo.escudo_url,
+        "founded": equipo.fundado,
+        "venue": equipo.estadio or (equipo.estadio_obj.nombre if equipo.estadio_obj else ""),
+    }
+
+
+def _partido_dict(partido):
+    return {
+        "id": partido.id_externo,
+        "utcDate": partido.fecha.isoformat(),
+        "status": partido.estado_api,
+        "homeTeam": {
+            "id": partido.equipo_local.id_externo,
+            "name": partido.equipo_local.nombre,
+        },
+        "awayTeam": {
+            "id": partido.equipo_visitante.id_externo,
+            "name": partido.equipo_visitante.nombre,
+        },
+        "score": {
+            "fullTime": {
+                "home": partido.goles_local,
+                "away": partido.goles_visitante,
+            }
+        },
+        "competition": {
+            "name": partido.liga.nombre,
+        },
+    }
+
+
 def partidos_liga(request, codigo_liga):
-    """Muestra los partidos recientes y próximos de una liga, con datos reales de la API."""
     nombre_liga = LIGAS_PRINCIPALES.get(codigo_liga, codigo_liga)
+    liga = Liga.objects.filter(codigo=codigo_liga).first()
+
+    partidos = {"finalizados": [], "programados": []}
     error = None
-    partidos = []
 
-    try:
-        partidos_raw = api_client.obtener_partidos(codigo_liga)
-        # Nos quedamos con los últimos 15 partidos jugados y los próximos 10 programados
-        finalizados = [p for p in partidos_raw if p["status"] == "FINISHED"]
-        programados = [p for p in partidos_raw if p["status"] == "SCHEDULED"]
+    if liga:
+        qs = Partido.objects.filter(liga=liga).select_related(
+            "equipo_local", "equipo_visitante", "liga"
+        )
 
-        finalizados = sorted(finalizados, key=lambda p: p["utcDate"], reverse=True)[:15]
-        programados = sorted(programados, key=lambda p: p["utcDate"])[:10]
+        finalizados = qs.filter(estado="FINALIZADO").order_by("-fecha")[:15]
+        programados = qs.filter(
+            estado__in=["PROGRAMADO", "EN_JUEGO"]
+        ).order_by("fecha")[:10]
 
         partidos = {
-            "finalizados": finalizados,
-            "programados": programados,
+            "finalizados": [_partido_dict(p) for p in finalizados],
+            "programados": [_partido_dict(p) for p in programados],
         }
-    except FootballDataError as e:
-        error = str(e)
+    else:
+        error = "No existen datos de esta liga en la base de datos. Ejecuta la sincronización."
 
     return render(
         request,
@@ -45,31 +91,86 @@ def partidos_liga(request, codigo_liga):
 
 
 def equipo_detalle(request, id_equipo):
-    """Muestra el detalle de un equipo: plantilla de jugadores y estadísticas recientes."""
+    equipo = (
+        Equipo.objects.select_related("liga", "estadio_obj")
+        .filter(id_externo=id_equipo)
+        .first()
+    )
     error = None
-    equipo = None
     estadisticas = None
     partidos_recientes = []
-
-    try:
-        equipo = api_client.obtener_equipo(id_equipo)
-        partidos_recientes = api_client.obtener_partidos_equipo(id_equipo, limite=10)
-        estadisticas = api_client.calcular_estadisticas_equipo(id_equipo, partidos_recientes)
-    except FootballDataError as e:
-        error = str(e)
-
-    # Agrupamos la plantilla por posición para que se vea más ordenada
     plantilla_por_posicion = {}
-    if equipo:
-        for jugador in equipo.get("squad", []):
-            posicion = jugador.get("position") or "Sin posición"
-            plantilla_por_posicion.setdefault(posicion, []).append(jugador)
+
+    if not equipo:
+        error = "Equipo no encontrado en la base de datos."
+    else:
+        partidos = Partido.objects.filter(
+            Q(equipo_local=equipo) | Q(equipo_visitante=equipo),
+            estado="FINALIZADO",
+        ).select_related("equipo_local", "equipo_visitante", "liga").order_by("-fecha")
+
+        recientes = list(partidos[:10])
+        victorias = empates = derrotas = goles_favor = goles_contra = 0
+        racha = []
+
+        for partido in recientes:
+            if partido.equipo_local_id == equipo.id:
+                gf, gc = partido.goles_local, partido.goles_visitante
+            else:
+                gf, gc = partido.goles_visitante, partido.goles_local
+
+            if gf is None or gc is None:
+                continue
+
+            goles_favor += gf
+            goles_contra += gc
+
+            if gf > gc:
+                victorias += 1
+                racha.append("G")
+            elif gf == gc:
+                empates += 1
+                racha.append("E")
+            else:
+                derrotas += 1
+                racha.append("P")
+
+        jugados = victorias + empates + derrotas
+        estadisticas = {
+            "jugados": jugados,
+            "victorias": victorias,
+            "empates": empates,
+            "derrotas": derrotas,
+            "goles_favor": goles_favor,
+            "goles_contra": goles_contra,
+            "diferencia_goles": goles_favor - goles_contra,
+            "promedio_goles_favor": round(goles_favor / jugados, 2) if jugados else 0,
+            "promedio_goles_contra": round(goles_contra / jugados, 2) if jugados else 0,
+            "racha": racha,
+        }
+        partidos_recientes = [_partido_dict(p) for p in recientes]
+
+        jugadores = Jugador.objects.filter(equipo=equipo).order_by("posicion", "nombre")
+        nombres_posicion = {
+            "POR": "Portero",
+            "DEF": "Defensa",
+            "MED": "Mediocampista",
+            "DEL": "Delantero",
+            "": "Sin posición",
+        }
+        for jugador in jugadores:
+            posicion = nombres_posicion.get(jugador.posicion, jugador.posicion or "Sin posición")
+            plantilla_por_posicion.setdefault(posicion, []).append({
+                "name": jugador.nombre,
+                "nationality": jugador.nacionalidad,
+                "dateOfBirth": jugador.fecha_nacimiento,
+            })
 
     return render(
         request,
         "estadisticas/equipo.html",
         {
-            "equipo": equipo,
+            "equipo": _equipo_dict(equipo) if equipo else None,
             "estadisticas": estadisticas,
             "partidos_recientes": partidos_recientes,
             "plantilla_por_posicion": plantilla_por_posicion,
@@ -80,15 +181,46 @@ def equipo_detalle(request, id_equipo):
 
 
 def tabla_liga(request, codigo_liga):
-    """Muestra la tabla de posiciones de una liga."""
     nombre_liga = LIGAS_PRINCIPALES.get(codigo_liga, codigo_liga)
-    error = None
-    tabla = []
+    liga = Liga.objects.filter(codigo=codigo_liga).first()
+    temporada = request.GET.get("temporada")
 
-    try:
-        tabla = api_client.obtener_tabla_posiciones(codigo_liga)
-    except FootballDataError as e:
-        error = str(e)
+    if temporada:
+        try:
+            temporada = int(temporada)
+        except ValueError:
+            temporada = None
+
+    if temporada is None:
+        ultima = TablaPosicion.objects.filter(liga=liga).order_by("-temporada").first() if liga else None
+        temporada = ultima.temporada if ultima else None
+
+    filas = []
+    error = None
+
+    if liga and temporada:
+        posiciones = TablaPosicion.objects.filter(
+            liga=liga, temporada=temporada
+        ).select_related("equipo").order_by("posicion")
+
+        for fila in posiciones:
+            filas.append({
+                "position": fila.posicion,
+                "team": {
+                    "id": fila.equipo.id_externo,
+                    "name": fila.equipo.nombre,
+                },
+                "playedGames": fila.partidos_jugados,
+                "won": fila.victorias,
+                "draw": fila.empates,
+                "lost": fila.derrotas,
+                "goalsFor": fila.goles_favor,
+                "goalsAgainst": fila.goles_contra,
+                "goalDifference": fila.diferencia_goles,
+                "points": fila.puntos,
+            })
+    else:
+        error = "No hay tabla guardada para esta liga. Ejecuta la sincronización."
 
     return render(
         request,
@@ -96,7 +228,8 @@ def tabla_liga(request, codigo_liga):
         {
             "codigo_liga": codigo_liga,
             "nombre_liga": nombre_liga,
-            "tabla": tabla,
+            "tabla": filas,
+            "temporada": temporada,
             "error": error,
             "ligas": LIGAS_PRINCIPALES,
             "seccion": "tabla",
@@ -105,15 +238,42 @@ def tabla_liga(request, codigo_liga):
 
 
 def goleadores_liga(request, codigo_liga):
-    """Muestra el ranking de goleadores de una liga."""
     nombre_liga = LIGAS_PRINCIPALES.get(codigo_liga, codigo_liga)
-    error = None
-    goleadores = []
+    liga = Liga.objects.filter(codigo=codigo_liga).first()
+    temporada = request.GET.get("temporada")
 
-    try:
-        goleadores = api_client.obtener_goleadores(codigo_liga, limite=20)
-    except FootballDataError as e:
-        error = str(e)
+    if temporada:
+        try:
+            temporada = int(temporada)
+        except ValueError:
+            temporada = None
+
+    if temporada is None:
+        ultimo = GoleadorTemporada.objects.filter(liga=liga).order_by("-temporada").first() if liga else None
+        temporada = ultimo.temporada if ultimo else None
+
+    goleadores = []
+    error = None
+
+    if liga and temporada:
+        registros = GoleadorTemporada.objects.filter(
+            liga=liga, temporada=temporada
+        ).select_related("jugador", "equipo").order_by("posicion")
+
+        for g in registros:
+            goleadores.append({
+                "player": {"name": g.jugador.nombre},
+                "team": {
+                    "id": g.equipo.id_externo,
+                    "name": g.equipo.nombre,
+                },
+                "goals": g.goles,
+                "assists": g.asistencias,
+                "penalties": g.penaltis,
+                "playedMatches": g.partidos_jugados,
+            })
+    else:
+        error = "No hay goleadores guardados para esta liga. Ejecuta la sincronización."
 
     return render(
         request,
@@ -122,6 +282,7 @@ def goleadores_liga(request, codigo_liga):
             "codigo_liga": codigo_liga,
             "nombre_liga": nombre_liga,
             "goleadores": goleadores,
+            "temporada": temporada,
             "error": error,
             "ligas": LIGAS_PRINCIPALES,
             "seccion": "goleadores",
@@ -130,38 +291,58 @@ def goleadores_liga(request, codigo_liga):
 
 
 def enfrentamiento(request, codigo_liga):
-    """
-    Formulario + resultado de head-to-head: el usuario elige dos equipos de la liga
-    y se muestra el historial real de enfrentamientos directos entre ambos.
-    """
     nombre_liga = LIGAS_PRINCIPALES.get(codigo_liga, codigo_liga)
-    error = None
-    equipos = []
-    resultado = None
+    liga = Liga.objects.filter(codigo=codigo_liga).first()
+    equipos = list(
+        Equipo.objects.filter(liga=liga).order_by("nombre")
+    ) if liga else []
 
     id_equipo_a = request.GET.get("equipo_a")
     id_equipo_b = request.GET.get("equipo_b")
+    resultado = None
+    error = None
 
-    try:
-        equipos = api_client.obtener_equipos(codigo_liga)
-    except FootballDataError as e:
-        error = str(e)
-
-    if not error and id_equipo_a and id_equipo_b and id_equipo_a != id_equipo_b:
+    if id_equipo_a and id_equipo_b and id_equipo_a != id_equipo_b:
         try:
-            id_a, id_b = int(id_equipo_a), int(id_equipo_b)
+            a = Equipo.objects.get(id_externo=int(id_equipo_a))
+            b = Equipo.objects.get(id_externo=int(id_equipo_b))
 
-            # Buscamos entre los partidos de ambos equipos (pasados y futuros,
-            # sin restringir a la liga actual) alguno jugado entre ellos.
-            partidos_a = api_client.obtener_partidos_equipo(id_a, limite=50, estado=None)
-            partido_encontrado = api_client.buscar_proximo_o_ultimo_enfrentamiento(id_a, id_b, partidos_a)
+            partidos = Partido.objects.filter(
+                Q(equipo_local=a, equipo_visitante=b)
+                | Q(equipo_local=b, equipo_visitante=a),
+                estado="FINALIZADO",
+            ).select_related("equipo_local", "equipo_visitante", "liga").order_by("-fecha")
 
-            if not partido_encontrado:
-                error = "No se encontró ningún partido entre estos dos equipos en el historial disponible por la API."
-            else:
-                resultado = api_client.obtener_head2head(partido_encontrado["id"], limite=10)
-        except FootballDataError as e:
-            error = str(e)
+            victorias_a = victorias_b = empates = goles_totales = 0
+
+            for partido in partidos:
+                if partido.goles_local is None or partido.goles_visitante is None:
+                    continue
+
+                if partido.equipo_local_id == a.id:
+                    ga, gb = partido.goles_local, partido.goles_visitante
+                else:
+                    ga, gb = partido.goles_visitante, partido.goles_local
+
+                goles_totales += ga + gb
+                if ga > gb:
+                    victorias_a += 1
+                elif ga < gb:
+                    victorias_b += 1
+                else:
+                    empates += 1
+
+            resultado = {
+                "aggregates": {
+                    "numberOfMatches": len(partidos),
+                    "homeTeam": {"name": a.nombre, "wins": victorias_a, "draws": empates},
+                    "awayTeam": {"name": b.nombre, "wins": victorias_b},
+                    "totalGoals": goles_totales,
+                },
+                "matches": [_partido_dict(p) for p in partidos],
+            }
+        except (Equipo.DoesNotExist, ValueError):
+            error = "No se encontraron los equipos seleccionados en la base de datos."
 
     return render(
         request,
@@ -169,7 +350,7 @@ def enfrentamiento(request, codigo_liga):
         {
             "codigo_liga": codigo_liga,
             "nombre_liga": nombre_liga,
-            "equipos": equipos,
+            "equipos": [_equipo_dict(e) for e in equipos],
             "resultado": resultado,
             "id_equipo_a": id_equipo_a,
             "id_equipo_b": id_equipo_b,
