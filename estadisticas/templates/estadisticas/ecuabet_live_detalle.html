@@ -60,7 +60,13 @@ function renderStats(stats){
     groups[group].push(type);
   });
 
-  return Object.entries(groups).map(([group,groupTypes])=>
+  const groupOrder=['General','Shots','Attack','Passes','Defense','Goalkeeping','Discipline','Estadísticas'];
+  const orderedGroups=Object.entries(groups).sort((a,b)=>{
+    const ai=groupOrder.indexOf(a[0]), bi=groupOrder.indexOf(b[0]);
+    return (ai<0?99:ai)-(bi<0?99:bi);
+  });
+
+  return orderedGroups.map(([group,groupTypes])=>
     '<div class="ld-stat-group"><div class="ld-stat-group-title">'+esc(group)+'</div>'+
     '<div class="stat-grid">'+groupTypes.map(type=>{
       const a=statText(home,type), b=statText(away,type);
