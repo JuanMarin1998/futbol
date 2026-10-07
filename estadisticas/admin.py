@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Liga, Equipo, Jugador, Partido
+from .models import Liga, Equipo, Jugador, Partido, Cuota1X2Snapshot
 
 
 @admin.register(Liga)
@@ -26,3 +26,10 @@ class PartidoAdmin(admin.ModelAdmin):
     list_display = ["equipo_local", "equipo_visitante", "fecha", "resultado", "estado"]
     list_filter = ["liga", "estado"]
     date_hierarchy = "fecha"
+
+
+@admin.register(Cuota1X2Snapshot)
+class Cuota1X2SnapshotAdmin(admin.ModelAdmin):
+    list_display = ["partido", "cuota_local", "cuota_empate", "cuota_visitante", "es_live", "minuto", "observado_en"]
+    list_filter = ["es_live"]
+    date_hierarchy = "observado_en"
