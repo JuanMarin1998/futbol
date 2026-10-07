@@ -40,11 +40,6 @@ class Command(BaseCommand):
         )
         parser.add_argument("--desde")
         parser.add_argument("--hasta")
-        parser.add_argument(
-            "--sin-plantillas",
-            action="store_true",
-            help="No descargar las plantillas de jugadores de cada equipo.",
-        )
 
     def guardar_jugador(self, datos, equipo):
         posicion_api = (datos.get("position") or "").lower()
@@ -264,14 +259,6 @@ class Command(BaseCommand):
                     self.style.SUCCESS(
                         f"  {len(equipos)} equipos, {guardados} partidos, "
                         f"{len(tabla)} posiciones y {len(goleadores)} goleadores guardados."
-                    )
-                )
-
-                self.stdout.write(
-                    self.style.SUCCESS(
-                        f"  {len(equipos)} equipos, {guardados} partidos, "
-                        f"{len(tabla)} posiciones, {len(goleadores)} goleadores "
-                        f"y {jugadores_guardados} jugadores guardados."
                     )
                 )
 
