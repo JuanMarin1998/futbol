@@ -18,7 +18,7 @@
 .stat-grid{display:grid;gap:.55rem}.ld-stat-group{margin-bottom:1rem}.ld-stat-group:last-child{margin-bottom:0}.ld-stat-group-title{font-size:.88rem;font-weight:900;color:#e2e8f0;padding:.55rem .65rem;background:#0f172a;border-radius:8px;margin-bottom:.45rem}.stat-row{display:grid;grid-template-columns:1fr 55px 1fr;gap:.5rem;align-items:center}
 .stat-val{text-align:center;font-weight:800}.stat-label{text-align:center;color:#94a3b8;font-size:.78rem}
 .bar{height:5px;background:#0f172a;border-radius:5px;overflow:hidden}.bar>i{display:block;height:100%;background:#64748b}
-.ld-muted{color:#94a3b8;font-size:.85rem}.ld-back{color:#60a5fa;text-decoration:none}
+.ld-muted{color:#94a3b8;font-size:.85rem}.exp-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}.exp-box{background:#0f172a;border:1px solid #334155;border-radius:10px;padding:.75rem}.exp-life{font-size:1.65rem;font-weight:900}.exp-positive{color:#4ade80}.exp-negative{color:#f87171}.exp-actions{display:flex;gap:.6rem;flex-wrap:wrap}.exp-btn{border:0;border-radius:8px;padding:.65rem .9rem;font-weight:800;cursor:pointer}.exp-start{background:#16a34a;color:#fff}.exp-stop{background:#dc2626;color:#fff}.exp-badge{display:inline-block;border-radius:999px;padding:.2rem .5rem;font-size:.72rem;font-weight:900;background:#334155}.exp-entry{border:1px solid #334155;border-radius:9px;padding:.65rem;margin-top:.55rem}.exp-level-1{color:#4ade80}.exp-level-2{color:#facc15}.exp-level-3{color:#fb923c}.ld-muted{color:#94a3b8;font-size:.85rem}.ld-back{color:#60a5fa;text-decoration:none}
 @media(max-width:800px){.ld-layout{grid-template-columns:1fr}}
 </style>
 
@@ -28,6 +28,17 @@
 </div>
 
 <div id="match"><div class="ld-card ld-muted">Cargando partido...</div></div>
+<div class="ld-card ld-section" id="experiment-panel">
+  {% csrf_token %}
+  <div class="ld-head" style="margin-bottom:.7rem">
+    <div><div class="ld-title" style="margin-bottom:.15rem">🧪 Experimento</div><div class="ld-muted">Simulación virtual de 100 vidas · V1 vs V2</div></div>
+    <div class="exp-actions">
+      <button class="exp-btn exp-start" id="exp-start" onclick="iniciarExperimento()">▶ Simular</button>
+      <button class="exp-btn exp-stop" id="exp-stop" onclick="pararExperimento()" style="display:none">■ Parar</button>
+    </div>
+  </div>
+  <div id="experiment-content" class="ld-muted">El experimento está detenido. Pulsa <strong>Simular</strong> para iniciar.</div>
+</div>
 
 <script>
 const EVENT_ID={{ ecuabet_event_id }};
@@ -82,7 +93,7 @@ function renderOpportunityItems(items, v2=false){
     const support=(o.supporting_factors||[]).map(x=>'<li>'+esc(x)+'</li>').join('');
     const contra=(o.contradicting_factors||[]).map(x=>'<li>'+esc(x)+'</li>').join('');
     return '<div class="ld-market" style="border-left:3px solid '+(v2?'#60a5fa':'#22c55e')+'">'+
-      '<div style="display:flex;justify-content:space-between;gap:.6rem;align-items:center"><strong>'+esc(o.selection||'')+(o.line?' · '+esc(o.line):'')+'</strong><span class="ld-price">'+Number(o.price).toFixed(2)+'</span></div>'+
+      '<div style="display:flex;justify-content:space-between;gap:.6rem;align-items:center"><strong>'+esc(o.selection||'')+(o.line?' · '+esc(o.line):'')+'</strong><span><span class="exp-badge exp-level-'+(o.level||0)+'">'+esc(o.level_label||'Sin nivel')+'</span> <span class="ld-price">'+Number(o.price).toFixed(2)+'</span></span></div>'+
       '<div class="ld-muted" style="margin-top:.4rem">Modelo '+(o.model_probability*100).toFixed(1)+'% · Implícita '+(o.implied_probability*100).toFixed(1)+'% · Ventaja <strong>'+((o.edge_pct>=0)?'+':'')+Number(o.edge_pct).toFixed(1)+'%</strong></div>'+
       '<div class="ld-muted" style="margin-top:.2rem">Confianza '+(o.confidence*100).toFixed(0)+'% · Señal '+esc(o.signal_strength||'')+' · Cobertura '+((o.data_coverage||0)*100).toFixed(0)+'%</div>'+
       (v2?'<div style="margin-top:.55rem"><strong style="font-size:.82rem">✅ Indicadores que apoyan</strong><ul class="ld-muted" style="margin:.3rem 0 .5rem 1.1rem">'+(support||'<li>No hay indicadores adicionales.</li>')+'</ul><strong style="font-size:.82rem">⚠️ Indicadores que contradicen</strong><ul class="ld-muted" style="margin:.3rem 0 0 1.1rem">'+(contra||'<li>No se detectaron contradicciones relevantes.</li>')+'</ul></div>':'')+
