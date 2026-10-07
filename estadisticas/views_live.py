@@ -88,21 +88,31 @@ def api_detalle_partido_en_vivo(request, fixture_id):
         lineups = item.get("lineups") or []
         players = item.get("players") or []
 
+        client = APIFootballLiveClient()
+        coverage = client.obtener_cobertura_liga(league.get("id"), league.get("season"))
+        fixtures_coverage = coverage.get("fixtures") or {}
+        data_availability = {
+            "statistics": fixtures_coverage.get("statistics_fixtures") is not False,
+            "lineups": fixtures_coverage.get("lineups") is not False,
+            "players": fixtures_coverage.get("statistics_players") is not False,
+            "coverage_known": bool(coverage),
+        }
+
         # Normalmente /fixtures?id=... ya trae estos bloques.
         # Si una competición omite alguno, consultamos solo el bloque faltante
         # y lo dejamos en caché para no multiplicar llamadas innecesariamente.
         fallback_used = []
 
-        if not statistics:
-            statistics = APIFootballLiveClient().obtener_estadisticas_partido(fixture_id)
+        if not statistics and data_availability["statistics"]:
+            statistics = client.obtener_estadisticas_partido(fixture_id)
             fallback_used.append("statistics")
 
-        if not lineups:
-            lineups = APIFootballLiveClient().obtener_alineaciones_partido(fixture_id)
+        if not lineups and data_availability["lineups"]:
+            lineups = client.obtener_alineaciones_partido(fixture_id)
             fallback_used.append("lineups")
 
-        if not players:
-            players = APIFootballLiveClient().obtener_jugadores_partido(fixture_id)
+        if not players and data_availability["players"]:
+            players = client.obtener_jugadores_partido(fixture_id)
             fallback_used.append("players")
 
         # Normalize the data once in the backend. The browser then receives
@@ -162,7 +172,9 @@ def api_detalle_partido_en_vivo(request, fixture_id):
                 "lineups": len(lineups),
                 "players": len(players),
                 "fallback_used": fallback_used,
-                "source": "fixtures?ids=FIXTURE_ID + fallback endpoints",
+                "coverage": coverage,
+                "data_availability": data_availability,
+                "source": "fixtures?id=FIXTURE_ID + coverage-aware fallbacks",
                 "main_payload": {
                     "results": payload.get("results"),
                     "errors": payload.get("errors") or {},
