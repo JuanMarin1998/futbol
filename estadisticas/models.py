@@ -96,6 +96,7 @@ class Partido(models.Model):
     id_externo = models.IntegerField(unique=True, null=True, blank=True)
     api_football_id = models.IntegerField(unique=True, null=True, blank=True)
     liga = models.ForeignKey(Liga, on_delete=models.CASCADE, related_name="partidos")
+    temporada = models.IntegerField()
     equipo_local = models.ForeignKey(Equipo, on_delete=models.CASCADE, related_name="partidos_local")
     equipo_visitante = models.ForeignKey(Equipo, on_delete=models.CASCADE, related_name="partidos_visitante")
     estadio = models.ForeignKey(Estadio, on_delete=models.SET_NULL, null=True, blank=True, related_name="partidos")
@@ -114,6 +115,11 @@ class Partido(models.Model):
         verbose_name = "Partido"
         verbose_name_plural = "Partidos"
         ordering = ["-fecha"]
+        indexes = [
+            models.Index(fields=["liga", "temporada", "estado", "fecha"], name="idx_partido_liga_temp_estado_fecha"),
+            models.Index(fields=["equipo_local", "estado", "fecha"], name="idx_partido_local_estado_fecha"),
+            models.Index(fields=["equipo_visitante", "estado", "fecha"], name="idx_partido_visitante_estado_fecha"),
+        ]
 
     def __str__(self):
         return f"{self.equipo_local} vs {self.equipo_visitante} ({self.fecha.strftime('%Y-%m-%d')})"
@@ -202,6 +208,12 @@ class TablaPosicion(models.Model):
                 fields=["liga", "temporada", "equipo"],
                 name="uniq_tabla_liga_temporada_equipo",
             )
+        ]
+        indexes = [
+            models.Index(fields=["liga", "temporada", "posicion"], name="idx_goleador_liga_temp_pos"),
+        ]
+        indexes = [
+            models.Index(fields=["liga", "temporada", "posicion"], name="idx_tabla_liga_temp_pos"),
         ]
 
 
