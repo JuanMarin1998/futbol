@@ -164,6 +164,7 @@ class Command(BaseCommand):
                         id_externo=item.get("id"),
                         defaults={
                             "liga": liga,
+                            "temporada": options["temporada"],
                             "equipo_local": equipos[local_id],
                             "equipo_visitante": equipos[visitante_id],
                             "fecha": fecha,
