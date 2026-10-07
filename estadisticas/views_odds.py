@@ -7,9 +7,13 @@ from .ecuabet_client import EcuabetAPIError, EcuabetClient
 from .models import Cuota1X2Snapshot, Partido
 
 
-def _event_id(partido, client):
+def _event_info(partido, client):
     if partido.ecuabet_event_id:
-        return partido.ecuabet_event_id
+        return {
+            "event_id": partido.ecuabet_event_id,
+            "sport_id": 0,
+            "champ_id": 0,
+        }
 
     found = client.buscar_evento(
         partido.equipo_local.nombre,
@@ -17,7 +21,7 @@ def _event_id(partido, client):
     )
     partido.ecuabet_event_id = found["event_id"]
     partido.save(update_fields=["ecuabet_event_id"])
-    return found["event_id"]
+    return found
 
 
 def _save_snapshot(partido, quotes):
@@ -89,8 +93,13 @@ def _serialize_snapshot(snapshot):
 
 def _data(partido):
     client = EcuabetClient()
-    event_id = _event_id(partido, client)
-    quotes = client.obtener_cuotas_1x2(event_id)
+    event = _event_info(partido, client)
+    event_id = event["event_id"]
+    quotes = client.obtener_cuotas_1x2(
+        event_id,
+        sport_id=event.get("sport_id") or 0,
+        champ_id=event.get("champ_id") or 0,
+    )
     snapshot = _save_snapshot(partido, quotes)
 
     previous = (
