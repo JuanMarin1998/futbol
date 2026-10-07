@@ -99,9 +99,14 @@ class LiveMatchCollector:
             mapping_confidence=mapping_confidence,
             data_quality=self._calculate_data_quality(stats),
         )
-        # V1 se conserva intacto; V2 se calcula en paralelo para comparar ambos motores.
-        match.opportunities = LiveOpportunityEngine.evaluate(match)
-        match.opportunities_v2 = LiveOpportunityEngineV2.evaluate(match)
+        # Si el proveedor confirma FINAL, los motores dejan de generar
+        # oportunidades nuevas. El experimento solo debe liquidar las abiertas.
+        if match.is_finished:
+            match.opportunities = []
+            match.opportunities_v2 = []
+        else:
+            match.opportunities = LiveOpportunityEngine.evaluate(match)
+            match.opportunities_v2 = LiveOpportunityEngineV2.evaluate(match)
         return match
 
     @classmethod
