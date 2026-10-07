@@ -26,7 +26,7 @@
             {% if partidos.programados %}
                 <table>
                     <thead>
-                        <tr><th>Fecha</th><th>Local</th><th></th><th>Visitante</th></tr>
+                        <tr><th>Fecha</th><th>Local</th><th></th><th>Visitante</th><th>Cuotas</th></tr>
                     </thead>
                     <tbody>
                         {% for p in partidos.programados %}
@@ -35,6 +35,7 @@
                             <td><a href="{% url 'estadisticas:equipo_detalle' p.homeTeam.id %}" style="color:#e2e8f0; text-decoration:none;">{{ p.homeTeam.name }}</a></td>
                             <td class="resultado">vs</td>
                             <td><a href="{% url 'estadisticas:equipo_detalle' p.awayTeam.id %}" style="color:#e2e8f0; text-decoration:none;">{{ p.awayTeam.name }}</a></td>
+                            <td><a href="{% url 'estadisticas:cuotas_partido' p.id %}" style="color:#38bdf8; text-decoration:none;">Ver</a></td>
                         </tr>
                         {% endfor %}
                     </tbody>
