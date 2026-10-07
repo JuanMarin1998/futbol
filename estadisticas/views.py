@@ -222,6 +222,13 @@ def tabla_liga(request, codigo_liga):
         ultima = TablaPosicion.objects.filter(liga=liga).order_by("-temporada").first() if liga else None
         temporada = ultima.temporada if ultima else None
 
+    temporadas = list(
+        TablaPosicion.objects.filter(liga=liga)
+        .values_list("temporada", flat=True)
+        .distinct()
+        .order_by("-temporada")
+    ) if liga else []
+
     filas = []
     error = None
 
@@ -257,6 +264,7 @@ def tabla_liga(request, codigo_liga):
             "nombre_liga": nombre_liga,
             "tabla": filas,
             "temporada": temporada,
+            "temporadas": temporadas,
             "error": error,
             "ligas": ligas_menu,
             "seccion": "tabla",
@@ -279,6 +287,13 @@ def goleadores_liga(request, codigo_liga):
     if temporada is None:
         ultimo = GoleadorTemporada.objects.filter(liga=liga).order_by("-temporada").first() if liga else None
         temporada = ultimo.temporada if ultimo else None
+
+    temporadas = list(
+        GoleadorTemporada.objects.filter(liga=liga)
+        .values_list("temporada", flat=True)
+        .distinct()
+        .order_by("-temporada")
+    ) if liga else []
 
     goleadores = []
     error = None
@@ -311,6 +326,7 @@ def goleadores_liga(request, codigo_liga):
             "nombre_liga": nombre_liga,
             "goleadores": goleadores,
             "temporada": temporada,
+            "temporadas": temporadas,
             "error": error,
             "ligas": ligas_menu,
             "seccion": "goleadores",
