@@ -176,3 +176,53 @@ class ClimaPartido(models.Model):
     class Meta:
         verbose_name = "Clima del partido"
         verbose_name_plural = "Clima de partidos"
+
+
+class TablaPosicion(models.Model):
+    liga = models.ForeignKey(Liga, on_delete=models.CASCADE, related_name="tablas_posicion")
+    temporada = models.IntegerField()
+    equipo = models.ForeignKey(Equipo, on_delete=models.CASCADE, related_name="posiciones")
+    posicion = models.IntegerField()
+    partidos_jugados = models.IntegerField(default=0)
+    victorias = models.IntegerField(default=0)
+    empates = models.IntegerField(default=0)
+    derrotas = models.IntegerField(default=0)
+    goles_favor = models.IntegerField(default=0)
+    goles_contra = models.IntegerField(default=0)
+    diferencia_goles = models.IntegerField(default=0)
+    puntos = models.IntegerField(default=0)
+    forma = models.CharField(max_length=30, blank=True)
+
+    class Meta:
+        verbose_name = "Posición en tabla"
+        verbose_name_plural = "Posiciones en tablas"
+        ordering = ["liga", "temporada", "posicion"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["liga", "temporada", "equipo"],
+                name="uniq_tabla_liga_temporada_equipo",
+            )
+        ]
+
+
+class GoleadorTemporada(models.Model):
+    liga = models.ForeignKey(Liga, on_delete=models.CASCADE, related_name="goleadores")
+    temporada = models.IntegerField()
+    jugador = models.ForeignKey(Jugador, on_delete=models.CASCADE, related_name="registros_goleador")
+    equipo = models.ForeignKey(Equipo, on_delete=models.CASCADE, related_name="goleadores")
+    posicion = models.IntegerField(default=0)
+    goles = models.IntegerField(default=0)
+    asistencias = models.IntegerField(null=True, blank=True)
+    penaltis = models.IntegerField(null=True, blank=True)
+    partidos_jugados = models.IntegerField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Goleador de temporada"
+        verbose_name_plural = "Goleadores de temporadas"
+        ordering = ["liga", "temporada", "posicion"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["liga", "temporada", "jugador", "equipo"],
+                name="uniq_goleador_liga_temporada_jugador_equipo",
+            )
+        ]
