@@ -26,18 +26,19 @@
   </div>
 </div>
 
+<div class="ex-card" id="control-top">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap">
+    <div><strong>Control del experimento</strong><div class="muted">Selecciona un partido y luego inicia la simulación. Cada motor comienza con 100 vidas.</div></div>
+    <div class="ex-toolbar">
+      <button class="ex-btn ex-start" id="start-btn" onclick="iniciar()" disabled>▶ Simular</button>
+      <button class="ex-btn ex-stop" id="stop-btn" onclick="parar()" style="display:none">■ Parar</button>
+    </div>
+  </div>
+</div>
+
 <div id="empty" class="ex-card muted">Selecciona un partido LIVE para comenzar a observar los motores.</div>
 <div id="dashboard" style="display:none">
   <div class="ex-card" id="match-info"></div>
-  <div class="ex-card">
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap">
-      <div><strong>Control del experimento</strong><div class="muted">Cada motor inicia con 100 vidas. Las decisiones y justificativos se guardan en la base de datos.</div></div>
-      <div class="ex-toolbar">
-        <button class="ex-btn ex-start" id="start-btn" onclick="iniciar()">▶ Simular</button>
-        <button class="ex-btn ex-stop" id="stop-btn" onclick="parar()" style="display:none">■ Parar</button>
-      </div>
-    </div>
-  </div>
 
   <div class="ex-card" id="comparison"></div>
   <div class="ex-grid">
@@ -115,8 +116,11 @@ function renderData(d){
     '<tr><td>Decisiones</td><td>'+m1.decisions+'</td><td>'+m2.decisions+'</td></tr>'+
     '<tr><td>P/L</td><td>'+Number(m1.total_pnl||0).toFixed(2)+'</td><td>'+Number(m2.total_pnl||0).toFixed(2)+'</td></tr></table></div>'+
     '<div style="margin-top:.7rem;font-weight:800">'+safest+'</div>';
-  document.getElementById('start-btn').style.display=exp?.status==='RUNNING'?'none':'inline-block';
-  document.getElementById('stop-btn').style.display=exp?.status==='RUNNING'?'inline-block':'none';
+  const startBtn=document.getElementById('start-btn');
+  const stopBtn=document.getElementById('stop-btn');
+  startBtn.style.display=exp?.status==='RUNNING'?'none':'inline-block';
+  startBtn.disabled=!selectedEvent||exp?.status==='RUNNING';
+  stopBtn.style.display=exp?.status==='RUNNING'?'inline-block':'none';
 }
 async function cargarPartidos(){
   const r=await fetch("{% url 'estadisticas:api_ecuabet_live' %}",{cache:'no-store'}),d=await r.json();
@@ -132,7 +136,14 @@ async function cargarPartidos(){
   else {document.getElementById('dashboard').style.display='none';document.getElementById('empty').style.display='block';}
 }
 async function cargarDetalle(){
-  selectedEvent=document.getElementById('match-select').value;if(!selectedEvent)return;
+  selectedEvent=document.getElementById('match-select').value;
+  const startBtn=document.getElementById('start-btn');
+  startBtn.disabled=!selectedEvent;
+  if(!selectedEvent){
+    document.getElementById('dashboard').style.display='none';
+    document.getElementById('empty').style.display='block';
+    return;
+  }
   document.getElementById('empty').style.display='none';document.getElementById('dashboard').style.display='block';
   try{
     const r=await fetch("/api/live/ecuabet/"+encodeURIComponent(selectedEvent)+"/",{cache:'no-store'}),d=await r.json();
