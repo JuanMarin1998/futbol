@@ -13,6 +13,7 @@ urlpatterns = [
     path("api/live/<int:fixture_id>/", views_live.api_detalle_partido_en_vivo, name="api_live_detail"),
     path("live/ecuabet/", views_live.ecuabet_live, name="ecuabet_live"),
     path("api/live/ecuabet/", views_live.api_ecuabet_live, name="api_ecuabet_live"),
+    path("api/live/match/<int:ecuabet_event_id>/flashscore/<str:flashscore_event_id>/", views_live.api_live_match_sources, name="api_live_match_sources"),
     path("partido/<int:partido_id>/cuotas/", views_odds.cuotas_partido, name="cuotas_partido"),
     path("api/partido/<int:partido_id>/cuotas/", views_odds.api_cuotas_partido, name="api_cuotas_partido"),
     path("liga/<str:codigo_liga>/partidos/", views.partidos_liga, name="partidos_liga"),
