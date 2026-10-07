@@ -66,64 +66,81 @@ class EcuabetClient:
             for child in value:
                 yield from EcuabetClient._walk(child)
 
-    def buscar_evento(self, local, visitante):
-        payload = self._request("GET", "GetTopEvents", {
-            "eventCount": 0, "sportId": 1, "timePeriod": 1
-        })
+    def buscar_evento(self, local, visitante, sport_id=0, champ_id=0):
+        """Busca un evento en GetEvents y devuelve su ID y nombre."""
         home_target, away_target = self._tokens(local), self._tokens(visitante)
+        if not home_target or not away_target:
+            raise EcuabetAPIError(f"Nombres de equipos inválidos: {local} vs {visitante}")
+
+        payloads = [
+            ("GetEvents", {
+                "eventCount": 0,
+                "sportId": sport_id,
+                "champIds": champ_id,
+            }),
+            ("GetTopEvents", {
+                "eventCount": 0,
+                "sportId": 1,
+                "timePeriod": 1,
+            }),
+        ]
+
         candidates = []
-        for item in self._walk(payload):
-            event_id = item.get("id") or item.get("eventId")
-            competitors = item.get("competitors")
-            names = []
-            if isinstance(competitors, list):
-                names = [c.get("name", "") for c in competitors if isinstance(c, dict)]
-            if len(names) < 2:
-                event_name = str(item.get("name", ""))
-                parts = re.split(r"\\s+vs\\.?\\s+|\\s+-\\s+", event_name, maxsplit=1, flags=re.IGNORECASE)
-                if len(parts) == 2:
-                    names = parts
-            if not event_id or len(names) < 2:
-                continue
-            hs = len(home_target & self._tokens(names[0]))
-            aws = len(away_target & self._tokens(names[1]))
-            if hs and aws:
-                candidates.append((hs + aws, int(event_id), item.get("name", f"{names[0]} vs {names[1]}")))
-        if not candidates:
+        for path, params in payloads:
             try:
-                payload = self._request("GET", "GetTopEvents", {
-                    "eventCount": 0, "sportId": 1, "timePeriod": 0
-                })
-                for item in self._walk(payload):
-                    event_id = item.get("id") or item.get("eventId")
-                    competitors = item.get("competitors")
-                    names = []
-                    if isinstance(competitors, list):
-                        names = [c.get("name", "") for c in competitors if isinstance(c, dict)]
-                    if len(names) < 2:
-                        event_name = str(item.get("name", ""))
-                        parts = re.split(r"\\s+vs\\.?\\s+|\\s+-\\s+", event_name, maxsplit=1, flags=re.IGNORECASE)
-                        if len(parts) == 2:
-                            names = parts
-                    if not event_id or len(names) < 2:
-                        continue
-                    hs = len(home_target & self._tokens(names[0]))
-                    aws = len(away_target & self._tokens(names[1]))
-                    if hs and aws:
-                        candidates.append((hs + aws, int(event_id), item.get("name", f"{names[0]} vs {names[1]}")))
-                    else:
-                        hs = len(home_target & self._tokens(names[1]))
-                        aws = len(away_target & self._tokens(names[0]))
-                        if hs and aws:
-                            candidates.append((hs + aws - 0.5, int(event_id), item.get("name", f"{names[0]} vs {names[1]}")))
+                payload = self._request("GET", path, params)
             except EcuabetAPIError:
-                pass
+                continue
+
+            for item in payload.get("events", []) if isinstance(payload, dict) else []:
+                event_id = item.get("id") or item.get("eventId")
+                event_name = str(item.get("name", ""))
+
+                if not event_id or not event_name:
+                    continue
+
+                # Ecuabet entrega normalmente "Equipo A vs. Equipo B".
+                parts = re.split(r"\\s+vs\\.?\\s+|\\s+-\\s+", event_name, maxsplit=1, flags=re.IGNORECASE)
+                if len(parts) != 2:
+                    continue
+
+                names = parts
+                hs = len(home_target & self._tokens(names[0]))
+                aws = len(away_target & self._tokens(names[1]))
+
+                # También aceptamos el orden invertido por seguridad.
+                if hs and aws:
+                    score = hs + aws
+                else:
+                    hs = len(home_target & self._tokens(names[1]))
+                    aws = len(away_target & self._tokens(names[0]))
+                    if not (hs and aws):
+                        continue
+                    score = hs + aws - 0.5
+
+                candidates.append((
+                    score,
+                    int(event_id),
+                    event_name,
+                    item.get("sportId"),
+                    item.get("champId"),
+                ))
+
+            if candidates:
+                break
 
         if not candidates:
             raise EcuabetAPIError(f"No se encontró en Ecuabet: {local} vs {visitante}")
-        candidates.sort(reverse=True)
-        score, event_id, name = candidates[0]
-        return {"event_id": event_id, "name": name, "match_score": score}
+
+        candidates.sort(key=lambda x: x[0], reverse=True)
+        score, event_id, name, found_sport_id, found_champ_id = candidates[0]
+        return {
+            "event_id": event_id,
+            "name": name,
+            "match_score": score,
+            "sport_id": found_sport_id,
+            "champ_id": found_champ_id,
+        }
 
     def obtener_detalle_evento(self, event_id):
         return self._request("GET", "GetEventDetails", {
