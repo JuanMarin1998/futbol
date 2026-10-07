@@ -1,0 +1,92 @@
+{% extends "estadisticas/base.html" %}
+{% block titulo %}🟢 Partido LIVE · Ecuabet + Estadísticas{% endblock %}
+{% block contenido %}
+<style>
+.ld-head{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:1rem}
+.ld-btn{background:#334155;color:#fff;border:0;border-radius:8px;padding:.6rem .9rem;cursor:pointer}
+.ld-layout{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(300px,1fr);gap:1rem}
+.ld-card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:1rem}
+.ld-score{text-align:center;font-size:2rem;font-weight:900}
+.ld-teams{display:grid;grid-template-columns:1fr auto 1fr;gap:1rem;align-items:center}
+.ld-team{font-weight:800;font-size:1.05rem}.ld-away{text-align:right}
+.ld-minute{text-align:center;color:#f87171;font-weight:700}
+.ld-section{margin-top:1rem}.ld-title{font-size:1rem;font-weight:800;margin-bottom:.65rem}
+.ld-market{border:1px solid #334155;border-radius:9px;margin-bottom:.7rem;overflow:hidden}
+.ld-market h4{margin:0;padding:.6rem .7rem;background:#0f172a}
+.ld-table{width:100%;border-collapse:collapse}.ld-table td{padding:.5rem .65rem;border-bottom:1px solid #334155}
+.ld-price{font-weight:900;text-align:right}
+.stat-grid{display:grid;gap:.55rem}.stat-row{display:grid;grid-template-columns:1fr 55px 1fr;gap:.5rem;align-items:center}
+.stat-val{text-align:center;font-weight:800}.stat-label{text-align:center;color:#94a3b8;font-size:.78rem}
+.bar{height:5px;background:#0f172a;border-radius:5px;overflow:hidden}.bar>i{display:block;height:100%;background:#64748b}
+.ld-muted{color:#94a3b8;font-size:.85rem}.ld-back{color:#60a5fa;text-decoration:none}
+@media(max-width:800px){.ld-layout{grid-template-columns:1fr}}
+</style>
+
+<div class="ld-head">
+  <div><a class="ld-back" href="{% url 'estadisticas:ecuabet_live' %}">← Partidos LIVE</a><h2 style="margin:.35rem 0">🟢 Partido en vivo</h2></div>
+  <button class="ld-btn" onclick="cargar()">Actualizar ahora</button>
+</div>
+
+<div id="match"><div class="ld-card ld-muted">Cargando partido...</div></div>
+
+<script>
+const EVENT_ID={{ ecuabet_event_id }};
+const FLASH_ID={{ flashscore_event_id|default:""|safe|escapejs|json_script:"x" }};
+const POLL_MS={{ live_poll_ms }};
+
+function esc(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
+function price(v){return v==null?'—':Number(v).toFixed(3).replace(/0+$/,'').replace(/\.$/,'');}
+function statValue(side,type){return side?.[type]?.value ?? null;}
+function statLabel(side,type){return side?.[type]?.label ?? '—';}
+
+function renderStats(stats){
+  const home=stats?.home||{}, away=stats?.away||{};
+  const known=[
+    ['ball_possession','Posesión'],
+    ['goal_attempts','Remates'],
+    ['shots_on_goal','Remates a puerta'],
+    ['shots_off_goal','Remates fuera'],
+    ['blocked_shots','Remates bloqueados'],
+    ['corner_kicks','Corners'],
+    ['fouls','Faltas'],
+    ['yellow_cards','Tarjetas amarillas'],
+    ['red_cards','Tarjetas rojas'],
+    ['expected_goals','xG']
+  ];
+  const available=known.filter(x=>home[x[0]]||away[x[0]]);
+  const extra=(stats?.raw_types||[]).filter(t=>!known.some(x=>x[0]===t));
+  extra.forEach(t=>available.push([t,(home[t]?.name||away[t]?.name||t)]));
+  if(!available.length)return '<div class="ld-muted">Aún no hay estadísticas de Flashscore para este partido.</div>';
+  return '<div class="stat-grid">'+available.map(([type,label])=>{
+    const a=statLabel(home,type), b=statLabel(away,type);
+    return '<div class="stat-row"><div style="text-align:right">'+esc(a)+'</div><div class="stat-label">'+esc(label)+'</div><div>'+esc(b)+'</div></div>';
+  }).join('')+'</div>';
+}
+
+function render(e, flash){
+  const teams=e.competitors||[], parts=(e.name||'').split(/\s+vs\.?\s+/i);
+  const home=teams[0]?.name||parts[0]||'Local', away=teams[1]?.name||parts[1]||'Visitante', score=e.score||[];
+  const markets=e.markets||[];
+  let stats=flash?.stats;
+  return '<div class="ld-layout">'+
+    '<main><div class="ld-card"><div class="ld-teams"><div class="ld-team">'+esc(home)+'</div><div><div class="ld-score">'+(score[0]??0)+' - '+(score[1]??0)+'</div><div class="ld-minute">'+esc(e.live_time||e.live_status||'LIVE')+'</div></div><div class="ld-team ld-away">'+esc(away)+'</div></div><div class="ld-muted" style="text-align:center;margin-top:.7rem">'+esc(e.champ?.name||'')+'</div></div>'+
+    '<div class="ld-card ld-section"><div class="ld-title">📊 Estadísticas en línea</div>'+renderStats(stats)+'</div></main>'+
+    '<aside><div class="ld-card"><div class="ld-title">💰 Cuotas Ecuabet</div>'+ (markets.length?markets.map(m=>'<div class="ld-market"><h4>'+esc(m.name)+(m.line?' · '+esc(m.line):'')+'</h4>'+m.selections.map(o=>'<div style="display:flex;justify-content:space-between;padding:.55rem .7rem;border-bottom:1px solid #334155"><span>'+esc(o.name)+'</span><span class="ld-price">'+price(o.price)+'</span></div>').join('')+'</div>').join(''):'<div class="ld-muted">Sin mercados disponibles.</div>')+'</div>'+
+    '<div class="ld-card ld-section"><div class="ld-title">🔗 Fuente estadística</div>'+ (flash?'<div class="ld-muted">Flashscore conectado · ID '+esc(flash.flashscore_event_id)+'</div>':'<div class="ld-muted">El partido está seleccionado, pero aún falta vincular su ID de Flashscore.</div>')+'</div></aside></div>';
+}
+
+async function cargar(){
+  try{
+    const r=await fetch("{% url 'estadisticas:api_ecuabet_live_detalle' ecuabet_event_id %}",{cache:'no-store'});
+    const d=await r.json(); if(!r.ok||!d.ok)throw new Error(d.error||'No disponible');
+    let flash=null;
+    {% if flashscore_event_id %}
+    const fr=await fetch("{% url 'estadisticas:api_live_match_sources' ecuabet_event_id flashscore_event_id %}",{cache:'no-store'});
+    if(fr.ok){const fd=await fr.json();if(fd.ok)flash=fd.match;}
+    {% endif %}
+    document.getElementById('match').innerHTML=render(d.event,flash);
+  }catch(err){document.getElementById('match').innerHTML='<div class="ld-card ld-muted">'+esc(err.message)+'</div>';}
+}
+cargar();setInterval(cargar,POLL_MS);
+</script>
+{% endblock %}
