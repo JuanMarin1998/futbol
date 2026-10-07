@@ -17,7 +17,7 @@ class Migration(migrations.Migration):
             model_name="partido",
             index=models.Index(
                 fields=["liga", "temporada", "estado", "fecha"],
-                name="idx_partido_liga_temp_est_fecha",
+                name="idx_pto_lig_tmp_est_fecha",
             ),
         ),
         migrations.AddIndex(
