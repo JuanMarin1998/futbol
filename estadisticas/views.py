@@ -43,6 +43,41 @@ def partidos_liga(request, codigo_liga):
     )
 
 
+def equipo_detalle(request, id_equipo):
+    """Muestra el detalle de un equipo: plantilla de jugadores y estadísticas recientes."""
+    error = None
+    equipo = None
+    estadisticas = None
+    partidos_recientes = []
+
+    try:
+        equipo = api_client.obtener_equipo(id_equipo)
+        partidos_recientes = api_client.obtener_partidos_equipo(id_equipo, limite=10)
+        estadisticas = api_client.calcular_estadisticas_equipo(id_equipo, partidos_recientes)
+    except FootballDataError as e:
+        error = str(e)
+
+    # Agrupamos la plantilla por posición para que se vea más ordenada
+    plantilla_por_posicion = {}
+    if equipo:
+        for jugador in equipo.get("squad", []):
+            posicion = jugador.get("position") or "Sin posición"
+            plantilla_por_posicion.setdefault(posicion, []).append(jugador)
+
+    return render(
+        request,
+        "estadisticas/equipo.html",
+        {
+            "equipo": equipo,
+            "estadisticas": estadisticas,
+            "partidos_recientes": partidos_recientes,
+            "plantilla_por_posicion": plantilla_por_posicion,
+            "error": error,
+            "ligas": LIGAS_PRINCIPALES,
+        },
+    )
+
+
 def tabla_liga(request, codigo_liga):
     """Muestra la tabla de posiciones de una liga."""
     nombre_liga = LIGAS_PRINCIPALES.get(codigo_liga, codigo_liga)

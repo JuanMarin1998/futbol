@@ -1,0 +1,97 @@
+{% extends "estadisticas/base.html" %}
+{% block titulo %}{% if equipo %}{{ equipo.name }}{% else %}Equipo{% endif %}{% endblock %}
+{% block contenido %}
+    {% if error %}
+        <div class="error">
+            <strong>No se pudo conectar con la API:</strong><br>
+            {{ error }}
+        </div>
+    {% else %}
+        <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem;">
+            {% if equipo.crest %}
+                <img src="{{ equipo.crest }}" alt="{{ equipo.name }}" style="width:56px; height:56px;">
+            {% endif %}
+            <div>
+                <h2 style="margin:0;">{{ equipo.name }}</h2>
+                <div style="color:#64748b; font-size:0.9rem;">
+                    {{ equipo.venue|default:"Estadio desconocido" }}
+                    {% if equipo.founded %} · Fundado en {{ equipo.founded }}{% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="tarjeta">
+            <div class="seccion-titulo">Rendimiento — últimos {{ estadisticas.jugados }} partidos</div>
+            {% if estadisticas.jugados %}
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(110px, 1fr)); gap:1rem; margin-bottom:1rem;">
+                    <div><div style="font-size:1.6rem; font-weight:700; color:#4ade80;">{{ estadisticas.victorias }}</div><div style="color:#94a3b8; font-size:0.8rem;">Victorias</div></div>
+                    <div><div style="font-size:1.6rem; font-weight:700; color:#facc15;">{{ estadisticas.empates }}</div><div style="color:#94a3b8; font-size:0.8rem;">Empates</div></div>
+                    <div><div style="font-size:1.6rem; font-weight:700; color:#f87171;">{{ estadisticas.derrotas }}</div><div style="color:#94a3b8; font-size:0.8rem;">Derrotas</div></div>
+                    <div><div style="font-size:1.6rem; font-weight:700;">{{ estadisticas.goles_favor }}</div><div style="color:#94a3b8; font-size:0.8rem;">Goles a favor</div></div>
+                    <div><div style="font-size:1.6rem; font-weight:700;">{{ estadisticas.goles_contra }}</div><div style="color:#94a3b8; font-size:0.8rem;">Goles en contra</div></div>
+                    <div><div style="font-size:1.6rem; font-weight:700;">{{ estadisticas.diferencia_goles }}</div><div style="color:#94a3b8; font-size:0.8rem;">Dif. de gol</div></div>
+                </div>
+                <div style="color:#94a3b8; font-size:0.85rem;">
+                    Promedio: {{ estadisticas.promedio_goles_favor }} goles a favor / {{ estadisticas.promedio_goles_contra }} goles en contra por partido
+                </div>
+                <div style="margin-top:0.8rem;">
+                    <span style="color:#94a3b8; font-size:0.85rem;">Racha reciente:</span>
+                    {% for r in estadisticas.racha %}
+                        <span style="display:inline-block; width:22px; height:22px; line-height:22px; text-align:center; border-radius:4px; font-size:0.75rem; font-weight:700; margin-left:4px;
+                            {% if r == 'G' %}background:#166534; color:#bbf7d0;{% elif r == 'E' %}background:#854d0e; color:#fef08a;{% else %}background:#7f1d1d; color:#fecaca;{% endif %}">{{ r }}</span>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p style="color:#64748b;">No hay suficientes partidos finalizados para calcular estadísticas.</p>
+            {% endif %}
+        </div>
+
+        <div class="tarjeta">
+            <div class="seccion-titulo">Últimos partidos</div>
+            {% if partidos_recientes %}
+                <table>
+                    <thead>
+                        <tr><th>Fecha</th><th>Local</th><th>Resultado</th><th>Visitante</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for p in partidos_recientes %}
+                        <tr>
+                            <td>{{ p.utcDate|slice:":10" }}</td>
+                            <td>{{ p.homeTeam.name }}</td>
+                            <td class="resultado">{{ p.score.fullTime.home }} - {{ p.score.fullTime.away }}</td>
+                            <td>{{ p.awayTeam.name }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p style="color:#64748b;">Sin partidos recientes disponibles.</p>
+            {% endif %}
+        </div>
+
+        <div class="tarjeta">
+            <div class="seccion-titulo">Plantilla</div>
+            {% if plantilla_por_posicion %}
+                {% for posicion, jugadores in plantilla_por_posicion.items %}
+                    <h4 style="color:#94a3b8; margin-bottom:0.4rem;">{{ posicion }}</h4>
+                    <table style="margin-bottom:1.2rem;">
+                        <thead>
+                            <tr><th>Nombre</th><th>Nacionalidad</th><th>Fecha nac.</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for j in jugadores %}
+                            <tr>
+                                <td>{{ j.name }}</td>
+                                <td>{{ j.nationality|default:"—" }}</td>
+                                <td>{{ j.dateOfBirth|default:"—" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% endfor %}
+            {% else %}
+                <p style="color:#64748b;">No hay información de plantilla disponible (puede depender del plan de la API).</p>
+            {% endif %}
+        </div>
+    {% endif %}
+{% endblock %}

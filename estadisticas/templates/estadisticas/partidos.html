@@ -23,9 +23,9 @@
                         {% for p in partidos.programados %}
                         <tr>
                             <td>{{ p.utcDate|slice:":10" }}</td>
-                            <td>{{ p.homeTeam.name }}</td>
+                            <td><a href="{% url 'estadisticas:equipo_detalle' p.homeTeam.id %}" style="color:#e2e8f0; text-decoration:none;">{{ p.homeTeam.name }}</a></td>
                             <td class="resultado">vs</td>
-                            <td>{{ p.awayTeam.name }}</td>
+                            <td><a href="{% url 'estadisticas:equipo_detalle' p.awayTeam.id %}" style="color:#e2e8f0; text-decoration:none;">{{ p.awayTeam.name }}</a></td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -46,9 +46,9 @@
                         {% for p in partidos.finalizados %}
                         <tr>
                             <td>{{ p.utcDate|slice:":10" }}</td>
-                            <td>{{ p.homeTeam.name }}</td>
+                            <td><a href="{% url 'estadisticas:equipo_detalle' p.homeTeam.id %}" style="color:#e2e8f0; text-decoration:none;">{{ p.homeTeam.name }}</a></td>
                             <td class="resultado">{{ p.score.fullTime.home }} - {{ p.score.fullTime.away }}</td>
-                            <td>{{ p.awayTeam.name }}</td>
+                            <td><a href="{% url 'estadisticas:equipo_detalle' p.awayTeam.id %}" style="color:#e2e8f0; text-decoration:none;">{{ p.awayTeam.name }}</a></td>
                         </tr>
                         {% endfor %}
                     </tbody>

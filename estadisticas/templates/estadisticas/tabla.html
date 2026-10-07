@@ -32,7 +32,7 @@
                     {% for fila in tabla %}
                     <tr>
                         <td>{{ fila.position }}</td>
-                        <td>{{ fila.team.name }}</td>
+                        <td><a href="{% url 'estadisticas:equipo_detalle' fila.team.id %}" style="color:#e2e8f0; text-decoration:none;">{{ fila.team.name }}</a></td>
                         <td>{{ fila.playedGames }}</td>
                         <td>{{ fila.won }}</td>
                         <td>{{ fila.draw }}</td>
