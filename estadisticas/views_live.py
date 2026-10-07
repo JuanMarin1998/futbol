@@ -4,6 +4,7 @@ from django.core.cache import cache
 from django.conf import settings
 
 from .api_football_live import APIFootballLiveClient
+from .ecuabet_client import EcuabetClient
 
 
 def partidos_en_vivo(request):
@@ -227,7 +228,7 @@ def api_ecuabet_live(request):
         payload = cache.get(cache_key)
 
         if payload is None:
-            client = __import__("estadisticas.ecuabet_client", fromlist=["EcuabetClient"]).EcuabetClient()
+            client = EcuabetClient()
             payload = client._request("GET", "GetLivenow", {
                 "eventCount": 0,
                 "sportId": 0,
