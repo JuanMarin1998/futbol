@@ -5,7 +5,8 @@ from django.conf import settings
 
 from .api_football_live import APIFootballLiveClient
 from .ecuabet_client import EcuabetClient
-from .live_engine.collector import LiveMatchCollector\nfrom .live_engine.match_mapper import MatchMappingError
+from .live_engine.collector import LiveMatchCollector
+from .live_engine.match_mapper import MatchMappingError
 
 
 def partidos_en_vivo(request):
