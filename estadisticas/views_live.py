@@ -231,7 +231,7 @@ def api_ecuabet_live(request):
             client = EcuabetClient()
             payload = client._request("GET", "GetLivenow", {
                 "eventCount": 0,
-                "sportId": 0,
+                "sportId": 66,
             })
             cache.set(cache_key, payload, 3)
 
