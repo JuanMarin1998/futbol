@@ -170,6 +170,9 @@ class LiveMatchCollector:
         """Construye un snapshot actual/final solo desde Flashscore."""
         flashscore = self.flashscore.obtener_live_match(flashscore_event_id)
         raw_event = flashscore.get("raw_event") or {}
+        feed_match = self.flashscore.obtener_partido_por_id(flashscore_event_id)
+        if feed_match:
+            raw_event = {**raw_event, "feed_status": feed_match.get("status")}
         participants = raw_event.get("eventParticipants", []) or []
         home = next(
             (p for p in participants if ((p.get("type") or {}).get("side") or "").upper() == "HOME"),
@@ -182,6 +185,9 @@ class LiveMatchCollector:
         home_name = self._participant_name(home) or home_team
         away_name = self._participant_name(away) or away_team
         status, is_finished = self._extract_match_status(raw_event)
+        if feed_match and feed_match.get("finished"):
+            status = "FINISHED"
+            is_finished = True
 
         score = raw_event.get("score")
         if isinstance(score, dict):
