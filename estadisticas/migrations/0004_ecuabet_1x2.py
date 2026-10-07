@@ -1,4 +1,5 @@
-from django.db import migrations, models, deletion
+from django.db import migrations, models
+from django.db.models.deletion import CASCADE
 
 
 class Migration(migrations.Migration):
@@ -25,7 +26,7 @@ class Migration(migrations.Migration):
                 ("marcador_local", models.IntegerField(blank=True, null=True)),
                 ("marcador_visitante", models.IntegerField(blank=True, null=True)),
                 ("observado_en", models.DateTimeField(auto_now_add=True)),
-                ("partido", models.ForeignKey(on_delete=deletion.CASCADE, related_name="cuotas_1x2", to="estadisticas.partido")),
+                ("partido", models.ForeignKey(on_delete=CASCADE, related_name="cuotas_1x2", to="estadisticas.partido")),
             ],
             options={"verbose_name":"Snapshot de cuota 1X2","verbose_name_plural":"Snapshots de cuotas 1X2","ordering":["-observado_en"]},
         ),
