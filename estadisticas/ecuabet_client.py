@@ -198,3 +198,53 @@ class EcuabetClient:
                 "last_update": state.get("lst"),
             })
         return {"event_id": int(event_id), "market_id": market["market_id"], "selections": selections}
+
+    def obtener_mercados_evento(self, event_id, sport_id=0, champ_id=0):
+        """Obtiene el evento y relaciona markets -> oddIds -> odds."""
+        payload = self._request("GET", "GetEvents", {
+            "eventCount": 0,
+            "sportId": sport_id,
+            "champIds": champ_id,
+        })
+
+        event = next((e for e in payload.get("events", []) if int(e.get("id", -1)) == int(event_id)), None)
+        if not event:
+            raise EcuabetAPIError(f"No se encontró el evento {event_id}")
+
+        odds_by_id = {int(o["id"]): o for o in payload.get("odds", []) if o.get("id") is not None}
+        markets_by_id = {int(m["id"]): m for m in payload.get("markets", []) if m.get("id") is not None}
+
+        markets = []
+        for market_id in event.get("marketIds", []):
+            market = markets_by_id.get(int(market_id))
+            if not market:
+                continue
+            selections = []
+            for odd_id in market.get("oddIds", []):
+                odd = odds_by_id.get(int(odd_id))
+                if not odd:
+                    continue
+                selections.append({
+                    "odd_id": int(odd_id),
+                    "type_id": odd.get("typeId"),
+                    "name": odd.get("name", ""),
+                    "price": odd.get("price"),
+                    "competitor_id": odd.get("competitorId"),
+                })
+            markets.append({
+                "market_id": int(market["id"]),
+                "market_type_id": market.get("typeId"),
+                "name": market.get("name", ""),
+                "line": market.get("sv") or market.get("sn"),
+                "selections": selections,
+            })
+
+        return {
+            "event_id": int(event["id"]),
+            "name": event.get("name", ""),
+            "start_date": event.get("startDate"),
+            "sport_id": event.get("sportId"),
+            "cat_id": event.get("catId"),
+            "champ_id": event.get("champId"),
+            "markets": markets,
+        }
