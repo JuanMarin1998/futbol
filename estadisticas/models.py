@@ -265,3 +265,146 @@ class Cuota1X2Snapshot(models.Model):
             models.Index(fields=["partido", "-observado_en"], name="idx_cuota_part_obs"),
             models.Index(fields=["ecuabet_event_id", "-observado_en"], name="idx_cuota_event_obs"),
         ]
+
+
+class LiveExperiment(models.Model):
+    """
+    Experimento reproducible de los motores V1/V2 sobre un partido LIVE.
+    Las "vidas" son unidades virtuales; no representan dinero real.
+    """
+    STATUS = [
+        ("RUNNING", "Ejecutando"),
+        ("STOPPED", "Detenido"),
+        ("FINISHED", "Finalizado"),
+    ]
+
+    ecuabet_event_id = models.BigIntegerField(db_index=True)
+    flashscore_event_id = models.CharField(max_length=80, blank=True)
+    home_team = models.CharField(max_length=150)
+    away_team = models.CharField(max_length=150)
+    status = models.CharField(max_length=12, choices=STATUS, default="RUNNING")
+    initial_lives = models.DecimalField(max_digits=12, decimal_places=4, default=100)
+    v1_lives = models.DecimalField(max_digits=12, decimal_places=4, default=100)
+    v2_lives = models.DecimalField(max_digits=12, decimal_places=4, default=100)
+    v1_max_lives = models.DecimalField(max_digits=12, decimal_places=4, default=100)
+    v2_max_lives = models.DecimalField(max_digits=12, decimal_places=4, default=100)
+    v1_min_lives = models.DecimalField(max_digits=12, decimal_places=4, default=100)
+    v2_min_lives = models.DecimalField(max_digits=12, decimal_places=4, default=100)
+    v1_wins = models.PositiveIntegerField(default=0)
+    v1_losses = models.PositiveIntegerField(default=0)
+    v2_wins = models.PositiveIntegerField(default=0)
+    v2_losses = models.PositiveIntegerField(default=0)
+    last_minute = models.CharField(max_length=30, blank=True)
+    last_period = models.CharField(max_length=60, blank=True)
+    last_home_score = models.IntegerField(null=True, blank=True)
+    last_away_score = models.IntegerField(null=True, blank=True)
+    final_home_score = models.IntegerField(null=True, blank=True)
+    final_away_score = models.IntegerField(null=True, blank=True)
+    started_at = models.DateTimeField(auto_now_add=True)
+    stopped_at = models.DateTimeField(null=True, blank=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Experimento LIVE"
+        verbose_name_plural = "Experimentos LIVE"
+        ordering = ["-started_at"]
+        indexes = [
+            models.Index(fields=["ecuabet_event_id", "status"], name="idx_live_exp_event_status"),
+        ]
+
+    @property
+    def total_v1_pnl(self):
+        return float(self.v1_lives) - float(self.initial_lives)
+
+    @property
+    def total_v2_pnl(self):
+        return float(self.v2_lives) - float(self.initial_lives)
+
+
+class LiveExperimentEntry(models.Model):
+    """Una decisión tomada por un motor dentro de un experimento."""
+
+    STATUS = [
+        ("OPEN", "Abierta"),
+        ("WON", "Ganada"),
+        ("LOST", "Perdida"),
+        ("CANCELLED", "Cancelada"),
+    ]
+    MOTOR = [
+        ("V1", "Motor V1"),
+        ("V2", "Motor V2"),
+    ]
+
+    experiment = models.ForeignKey(
+        LiveExperiment,
+        on_delete=models.CASCADE,
+        related_name="entries",
+    )
+    motor = models.CharField(max_length=2, choices=MOTOR)
+    opportunity_key = models.CharField(max_length=255)
+    market = models.CharField(max_length=150, blank=True)
+    selection = models.CharField(max_length=150)
+    line = models.CharField(max_length=80, blank=True)
+    price = models.DecimalField(max_digits=10, decimal_places=4)
+    model_probability = models.FloatField()
+    implied_probability = models.FloatField()
+    edge = models.FloatField()
+    level = models.PositiveSmallIntegerField()
+    level_name = models.CharField(max_length=40)
+    stake = models.DecimalField(max_digits=12, decimal_places=4)
+    potential_profit = models.DecimalField(max_digits=12, decimal_places=4)
+    reason = models.TextField()
+    supporting_factors = models.JSONField(default=list, blank=True)
+    contradicting_factors = models.JSONField(default=list, blank=True)
+    opportunity_snapshot = models.JSONField(default=dict, blank=True)
+    status = models.CharField(max_length=12, choices=STATUS, default="OPEN")
+    pnl = models.DecimalField(max_digits=12, decimal_places=4, default=0)
+    placed_minute = models.CharField(max_length=30, blank=True)
+    placed_home_score = models.IntegerField(null=True, blank=True)
+    placed_away_score = models.IntegerField(null=True, blank=True)
+    placed_at = models.DateTimeField(auto_now_add=True)
+    settled_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Entrada de experimento"
+        verbose_name_plural = "Entradas de experimento"
+        ordering = ["-placed_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["experiment", "motor", "opportunity_key"],
+                name="uniq_live_exp_motor_opportunity",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["experiment", "motor", "status"], name="idx_live_exp_entry_motor"),
+        ]
+
+
+class LiveExperimentSnapshot(models.Model):
+    """Fotografía de cada decisión/análisis LIVE para auditoría del experimento."""
+
+    experiment = models.ForeignKey(
+        LiveExperiment,
+        on_delete=models.CASCADE,
+        related_name="snapshots",
+    )
+    motor = models.CharField(max_length=2, choices=LiveExperimentEntry.MOTOR)
+    minute = models.CharField(max_length=30, blank=True)
+    period = models.CharField(max_length=60, blank=True)
+    home_score = models.IntegerField(null=True, blank=True)
+    away_score = models.IntegerField(null=True, blank=True)
+    lives_before = models.DecimalField(max_digits=12, decimal_places=4)
+    lives_after = models.DecimalField(max_digits=12, decimal_places=4)
+    selected_opportunity = models.JSONField(null=True, blank=True)
+    all_opportunities = models.JSONField(default=list, blank=True)
+    decision_reason = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Snapshot de experimento"
+        verbose_name_plural = "Snapshots de experimento"
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["experiment", "motor", "-created_at"], name="idx_live_exp_snap_motor"),
+        ]
