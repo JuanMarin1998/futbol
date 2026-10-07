@@ -116,9 +116,9 @@ class Partido(models.Model):
         verbose_name_plural = "Partidos"
         ordering = ["-fecha"]
         indexes = [
-            models.Index(fields=["liga", "temporada", "estado", "fecha"], name="idx_partido_liga_temp_estado_fecha"),
+            models.Index(fields=["liga", "temporada", "estado", "fecha"], name="idx_partido_liga_temp_est_fecha"),
             models.Index(fields=["equipo_local", "estado", "fecha"], name="idx_partido_local_estado_fecha"),
-            models.Index(fields=["equipo_visitante", "estado", "fecha"], name="idx_partido_visitante_estado_fecha"),
+            models.Index(fields=["equipo_visitante", "estado", "fecha"], name="idx_partido_visit_est_fecha"),
         ]
 
     def __str__(self):
