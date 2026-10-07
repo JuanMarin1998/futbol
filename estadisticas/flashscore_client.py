@@ -1,5 +1,5 @@
 import os
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import requests
 
@@ -26,6 +26,11 @@ class FlashscoreClient:
     GEO_IP_CODE = os.getenv("FLASHSCORE_GEO_IP_CODE", "")
     GEO_IP_SUBDIVISION_CODE = os.getenv("FLASHSCORE_GEO_IP_SUBDIVISION_CODE", "")
     TIMEOUT = int(os.getenv("FLASHSCORE_TIMEOUT", "8"))
+    LIVE_FEED_URL = os.getenv(
+        "FLASHSCORE_LIVE_FEED_URL",
+        "https://local-global.flashscore.ninja/13/x/feed/f_1_0_3_en_1",
+    )
+
 
     def __init__(self, timeout: Optional[int] = None, session=None):
         self.session = session or requests.Session()
@@ -69,6 +74,63 @@ class FlashscoreClient:
             )
 
         return payload
+
+
+    def _feed_request(self, url: Optional[str] = None) -> str:
+        response = self.session.get(url or self.LIVE_FEED_URL, timeout=self.timeout)
+        if response.status_code >= 400:
+            raise FlashscoreAPIError(
+                f"Flashscore feed HTTP {response.status_code}: {response.text[:300]}"
+            )
+        return response.text
+
+    @staticmethod
+    def _parse_feed_records(raw: str) -> List[Dict[str, str]]:
+        records = []
+        for block in (raw or "").split("~"):
+            item = {}
+            for field in block.split("¬"):
+                if "÷" not in field:
+                    continue
+                key, value = field.split("÷", 1)
+                key = key.strip("~")
+                if key:
+                    item[key] = value
+            if item:
+                records.append(item)
+        return records
+
+    def obtener_partidos_live(self) -> List[Dict[str, Any]]:
+        """Obtiene partidos LIVE del feed diario de Flashscore."""
+        raw = self._feed_request()
+        records = self._parse_feed_records(raw)
+        result = []
+        tournament = ""
+        country = ""
+
+        for row in records:
+            if row.get("ZA"):
+                tournament = row["ZA"]
+            if row.get("ZY"):
+                country = row["ZY"]
+            if not row.get("AA") or row.get("AB") != "2":
+                continue
+
+            result.append({
+                "event_id": row.get("AA"),
+                "start_time": row.get("AD"),
+                "home_team": row.get("AE", ""),
+                "away_team": row.get("AF", ""),
+                "home_score": row.get("AG"),
+                "away_score": row.get("AH"),
+                "status": row.get("AB"),
+                "minute": row.get("BA"),
+                "period": row.get("BC"),
+                "tournament": tournament,
+                "country": country,
+                "raw": row,
+            })
+        return result
 
     def obtener_evento(self, event_id: str) -> Dict[str, Any]:
         """Obtiene el objeto Event crudo de findEventById."""
