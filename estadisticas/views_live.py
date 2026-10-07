@@ -455,8 +455,50 @@ def api_ecuabet_live_detalle(request, ecuabet_event_id):
             None,
         )
         if not event:
+            # Cuando Ecuabet retira el partido de GetLivenow al terminar,
+            # todavía podemos consultar Flashscore con el ID guardado por el
+            # experimento y liquidar las entradas con el marcador final.
+            finished_experiment = (
+                LiveExperiment.objects
+                .filter(ecuabet_event_id=ecuabet_event_id, status="RUNNING")
+                .order_by("-started_at")
+                .first()
+            )
+            if finished_experiment and finished_experiment.flashscore_event_id:
+                try:
+                    collector = LiveMatchCollector()
+                    match = collector.construir_desde_flashscore(
+                        finished_experiment.flashscore_event_id,
+                        ecuabet_event_id=ecuabet_event_id,
+                        home_team=finished_experiment.home_team,
+                        away_team=finished_experiment.away_team,
+                    )
+                    if match.is_finished:
+                        experiment_state = LiveExperimentManager.process(match)
+                        return JsonResponse({
+                            "ok": True,
+                            "event": {
+                                "id": ecuabet_event_id,
+                                "name": f"{finished_experiment.home_team} vs. {finished_experiment.away_team}",
+                                "live_time": match.minute,
+                                "live_status": match.match_status or "Finalizado",
+                                "score": [match.home_score, match.away_score],
+                                "status": "FINISHED",
+                            },
+                            "flashscore": {
+                                "matched": True,
+                                "flashscore_event_id": finished_experiment.flashscore_event_id,
+                                "confidence": 1.0,
+                                "reason": "Ecuabet retiró el evento de LIVE; estado final recuperado desde Flashscore.",
+                            },
+                            "match": match.to_dict(),
+                            "experiment": experiment_state,
+                        })
+                except Exception:
+                    pass
+
             return JsonResponse(
-                {"ok": False, "error": "El partido ya no está LIVE."},
+                {"ok": False, "error": "El partido ya no está LIVE y todavía no se pudo confirmar el estado final."},
                 status=404,
             )
 
