@@ -17,6 +17,8 @@ class LiveMatch:
     start_time: Optional[str] = None
     minute: Optional[str] = None
     period: Optional[str] = None
+    match_status: Optional[str] = None
+    is_finished: bool = False
     home_score: Optional[int] = None
     away_score: Optional[int] = None
 
@@ -40,6 +42,8 @@ class LiveMatch:
             "start_time": self.start_time,
             "minute": self.minute,
             "period": self.period,
+            "match_status": self.match_status,
+            "is_finished": self.is_finished,
             "home_score": self.home_score,
             "away_score": self.away_score,
             "odds": self.odds,
