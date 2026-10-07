@@ -13,8 +13,9 @@ def partidos_en_vivo(request):
 
 def api_partidos_en_vivo(request):
     try:
-        cache_key = "api_football_live_matches_v2"
+        cache_key = "api_football_live_matches_v3"
         payload = cache.get(cache_key)
+
         if payload is None:
             payload = APIFootballLiveClient().obtener_en_vivo()
             cache.set(cache_key, payload, getattr(settings, "LIVE_CACHE_SECONDS", 50))
@@ -26,6 +27,7 @@ def api_partidos_en_vivo(request):
             teams = item.get("teams", {})
             goals = item.get("goals", {})
             status = fixture.get("status", {})
+
             matches.append({
                 "id": fixture.get("id"),
                 "league": league.get("name", ""),
@@ -42,7 +44,11 @@ def api_partidos_en_vivo(request):
                 "status_long": status.get("long", ""),
             })
 
-        return JsonResponse({"count": len(matches), "matches": matches})
+        return JsonResponse({
+            "count": len(matches),
+            "matches": matches,
+            "source": "API-Football /fixtures?live=all",
+        })
     except Exception as exc:
         return JsonResponse({"error": str(exc), "matches": []}, status=502)
 
@@ -58,8 +64,9 @@ def detalle_partido_en_vivo(request, fixture_id):
 
 def api_detalle_partido_en_vivo(request, fixture_id):
     try:
-        # Versioned key avoids serving an old response after parser/template changes.
-        cache_key = f"api_football_live_detail_v4_{fixture_id}"
+        # Solo datos LIVE. No consultamos liga/temporada/coverage porque
+        # el plan Free puede bloquear temporadas aunque el fixture esté LIVE.
+        cache_key = f"api_football_live_detail_v5_{fixture_id}"
         payload = cache.get(cache_key)
 
         if payload is None:
@@ -83,40 +90,53 @@ def api_detalle_partido_en_vivo(request, fixture_id):
         teams = item.get("teams", {})
         goals = item.get("goals", {})
         status = fixture.get("status", {})
+
         events = item.get("events") or []
         statistics = item.get("statistics") or []
         lineups = item.get("lineups") or []
         players = item.get("players") or []
 
         client = APIFootballLiveClient()
-        coverage = client.obtener_cobertura_liga(league.get("id"), league.get("season"))
-        fixtures_coverage = coverage.get("fixtures") or {}
-        data_availability = {
-            "statistics": fixtures_coverage.get("statistics_fixtures") is not False,
-            "lineups": fixtures_coverage.get("lineups") is not False,
-            "players": fixtures_coverage.get("statistics_players") is not False,
-            "coverage_known": bool(coverage),
-        }
-
-        # Normalmente /fixtures?id=... ya trae estos bloques.
-        # Si una competición omite alguno, consultamos solo el bloque faltante
-        # y lo dejamos en caché para no multiplicar llamadas innecesariamente.
         fallback_used = []
 
-        if not statistics and data_availability["statistics"]:
-            statistics = client.obtener_estadisticas_partido(fixture_id)
-            fallback_used.append("statistics")
+        # /fixtures?id=... normalmente ya trae estos cuatro bloques.
+        # Solo hacemos llamadas adicionales para los bloques ausentes.
+        if not events:
+            try:
+                events_payload = client.obtener_eventos_partido(fixture_id)
+                events = events_payload.get("response") or []
+                if events:
+                    fallback_used.append("events")
+            except Exception:
+                pass
 
-        if not lineups and data_availability["lineups"]:
-            lineups = client.obtener_alineaciones_partido(fixture_id)
-            fallback_used.append("lineups")
+        if not statistics:
+            try:
+                stats_payload = client.obtener_estadisticas_partido(fixture_id)
+                statistics = stats_payload.get("response") or []
+                if statistics:
+                    fallback_used.append("statistics")
+            except Exception:
+                pass
 
-        if not players and data_availability["players"]:
-            players = client.obtener_jugadores_partido(fixture_id)
-            fallback_used.append("players")
+        if not lineups:
+            try:
+                lineups_payload = client.obtener_alineaciones_partido(fixture_id)
+                lineups = lineups_payload.get("response") or []
+                if lineups:
+                    fallback_used.append("lineups")
+            except Exception:
+                pass
 
-        # Normalize the data once in the backend. The browser then receives
-        # exactly the structures needed by the detail page.
+        if not players:
+            try:
+                players_payload = client.obtener_jugadores_partido(fixture_id)
+                players = players_payload.get("response") or []
+                if players:
+                    fallback_used.append("players")
+            except Exception:
+                pass
+
         stats_normalized = []
         for team_stats in statistics:
             team = team_stats.get("team") or {}
@@ -125,6 +145,7 @@ def api_detalle_partido_en_vivo(request, fixture_id):
                 stat_type = stat.get("type")
                 if stat_type:
                     values[stat_type] = stat.get("value")
+
             stats_normalized.append({
                 "team": team,
                 "values": values,
@@ -172,9 +193,7 @@ def api_detalle_partido_en_vivo(request, fixture_id):
                 "lineups": len(lineups),
                 "players": len(players),
                 "fallback_used": fallback_used,
-                "coverage": coverage,
-                "data_availability": data_availability,
-                "source": "fixtures?id=FIXTURE_ID + coverage-aware fallbacks",
+                "source": "API-Football LIVE fixture + missing-block fallbacks",
                 "main_payload": {
                     "results": payload.get("results"),
                     "errors": payload.get("errors") or {},
