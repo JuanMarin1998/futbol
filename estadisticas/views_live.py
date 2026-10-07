@@ -380,3 +380,81 @@ def api_live_match_sources(request, ecuabet_event_id, flashscore_event_id):
             {"ok": False, "error": str(exc)},
             status=502,
         )
+
+
+def ecuabet_live_detalle(request, ecuabet_event_id):
+    poll_seconds = 5
+    flashscore_event_id = request.GET.get("flashscore_event_id", "")
+    return render(
+        request,
+        "estadisticas/ecuabet_live_detalle.html",
+        {
+            "ecuabet_event_id": ecuabet_event_id,
+            "flashscore_event_id": flashscore_event_id,
+            "live_poll_ms": poll_seconds * 1000,
+        },
+    )
+
+
+def api_ecuabet_live_detalle(request, ecuabet_event_id):
+    try:
+        payload = EcuabetClient()._request(
+            "GET",
+            "GetLivenow",
+            {"eventCount": 0, "sportId": 66},
+        )
+        event = next(
+            (
+                item for item in payload.get("events", []) or []
+                if int(item.get("id", -1)) == int(ecuabet_event_id)
+            ),
+            None,
+        )
+        if not event:
+            return JsonResponse({"ok": False, "error": "El partido ya no está LIVE."}, status=404)
+
+        markets = {
+            int(m["id"]): m for m in payload.get("markets", []) or []
+            if m.get("id") is not None
+        }
+        odds = {
+            int(o["id"]): o for o in payload.get("odds", []) or []
+            if o.get("id") is not None
+        }
+        competitors = {
+            int(x["id"]): x for x in payload.get("competitors", []) or []
+            if x.get("id") is not None
+        }
+
+        event["competitors"] = [
+            competitors.get(int(cid), {"id": cid, "name": str(cid)})
+            for cid in event.get("competitorIds", []) or []
+        ]
+        event["markets"] = []
+        for market_id in event.get("marketIds", []) or []:
+            market = markets.get(int(market_id))
+            if not market:
+                continue
+            selections = []
+            for odd_id in market.get("oddIds", []) or []:
+                odd = odds.get(int(odd_id))
+                if odd:
+                    selections.append({
+                        "id": odd.get("id"),
+                        "name": odd.get("name", ""),
+                        "price": odd.get("price"),
+                        "type_id": odd.get("typeId"),
+                        "odd_status": odd.get("oddStatus"),
+                    })
+            if selections:
+                event["markets"].append({
+                    "id": market.get("id"),
+                    "name": market.get("name", ""),
+                    "type_id": market.get("typeId"),
+                    "line": market.get("sv") or market.get("sn"),
+                    "selections": selections,
+                })
+
+        return JsonResponse({"ok": True, "event": event})
+    except Exception as exc:
+        return JsonResponse({"ok": False, "error": str(exc)}, status=502)
