@@ -5,6 +5,7 @@ from django.conf import settings
 
 from .api_football_live import APIFootballLiveClient
 from .ecuabet_client import EcuabetClient
+from .live_engine.collector import LiveMatchCollector
 
 
 def partidos_en_vivo(request):
@@ -349,5 +350,33 @@ def api_ecuabet_live(request):
     except Exception as exc:
         return JsonResponse(
             {"ok": False, "error": str(exc), "events": []},
+            status=502,
+        )
+
+
+
+def api_live_match_sources(request, ecuabet_event_id, flashscore_event_id):
+    """
+    Prueba de integración: un mismo LiveMatch alimentado por Ecuabet + Flashscore.
+
+    El ID de Flashscore se recibe explícitamente hasta que terminemos el
+    MatchMapper automático.
+    """
+    try:
+        match = LiveMatchCollector().construir(
+            ecuabet_event_id=ecuabet_event_id,
+            flashscore_event_id=flashscore_event_id,
+        )
+        return JsonResponse({
+            "ok": True,
+            "match": match.to_dict(),
+            "source": {
+                "odds": "Ecuabet GetLivenow",
+                "performance": "Flashscore pq_graphql",
+            },
+        })
+    except Exception as exc:
+        return JsonResponse(
+            {"ok": False, "error": str(exc)},
             status=502,
         )
