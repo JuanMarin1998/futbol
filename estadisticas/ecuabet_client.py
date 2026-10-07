@@ -184,37 +184,43 @@ class EcuabetClient:
         return {"market_id": market.get("id"), "market_type_id": market.get("typeId"), "selections": selections}
 
     def obtener_cuotas_1x2(self, event_id):
-        market = self.obtener_1x2(event_id)
-        payload = dict(self.DEFAULT_PARAMS)
-        payload["odds"] = [
-            {
-                "oddId": s["odd_id"],
-                "price": s.get("price"),
-                "eventId": int(event_id),
-                "marketTypeId": market["market_type_id"],
-                "selectionTypeId": s.get("type_id"),
-                "sportTypeId": 1,
-            }
-            for s in market["selections"]
-        ]
-        state_payload = self._request("POST", "GetOddsStates", json=payload)
-        states = {
-            int(x["id"]): x for x in state_payload.get("oddStates", [])
-            if x.get("id") is not None
-        }
+        """
+        Obtiene las cuotas 1X2 directamente desde GetEvents.
+
+        Ecuabet relaciona:
+            evento -> marketIds -> markets -> oddIds -> odds
+
+        No usamos GetEventDetails ni dependemos de desktopOddIds porque
+        esa respuesta puede variar y provocar falsos 502 en la API local.
+        """
+        detalle = self.obtener_mercados_evento(event_id, sport_id=0, champ_id=0)
+        market = next(
+            (m for m in detalle["markets"] if int(m.get("market_type_id") or 0) == 1),
+            None,
+        )
+        if not market:
+            raise EcuabetAPIError(f"No se encontró mercado 1X2 para {event_id}")
+
         selections = []
-        for s in market["selections"]:
-            state = states.get(s["odd_id"], {})
+        for selection in market.get("selections", []):
             selections.append({
-                **s,
-                "price": state.get("price", s.get("price")),
-                "is_live": state.get("isLive"),
-                "live_time": state.get("liveTime"),
-                "period": state.get("ls"),
-                "score": state.get("score"),
-                "last_update": state.get("lst"),
+                **selection,
+                "price": selection.get("price"),
+                "is_live": False,
+                "live_time": None,
+                "period": None,
+                "score": None,
+                "last_update": None,
             })
-        return {"event_id": int(event_id), "market_id": market["market_id"], "selections": selections}
+
+        if not selections:
+            raise EcuabetAPIError(f"El mercado 1X2 {event_id} no contiene cuotas")
+
+        return {
+            "event_id": int(event_id),
+            "market_id": market["market_id"],
+            "selections": selections,
+        }
 
     def obtener_mercados_evento(self, event_id, sport_id=0, champ_id=0):
         """Obtiene el evento y relaciona markets -> oddIds -> odds."""
