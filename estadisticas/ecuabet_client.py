@@ -370,7 +370,7 @@ class EcuabetClient:
 
         event = next((e for e in payload.get("events", []) if int(e.get("id", -1)) == int(event_id)), None)
 
-undefined        if not event:
+        if not event:
             raise EcuabetAPIError(f"No se encontró el evento {event_id}")
 
         odds_by_id = {int(o["id"]): o for o in payload.get("odds", []) if o.get("id") is not None}
