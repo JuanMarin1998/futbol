@@ -222,57 +222,73 @@ class FlashscoreClient:
 
     @classmethod
     def normalizar_stats(cls, event: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Normaliza la estructura real de Flashscore: cada participante contiene
-        grupos de estadísticas y cada grupo contiene values.
-        """
-        result = {
-            "home": {},
-            "away": {},
-            "raw_types": [],
-        }
+        """Normaliza estadisticas LIVE tolerando estructuras anidadas."""
+        result = {"home": {}, "away": {}, "raw_types": []}
 
-        for participant in event.get("eventParticipants", []) or []:
-            side = ((participant.get("type") or {}).get("side") or "").upper()
-            target = "home" if side == "HOME" else "away" if side == "AWAY" else None
-            if not target:
+        def add_stat(target, stat, group_name="Estadísticas"):
+            if not isinstance(stat, dict):
+                return False
+            stat_type = stat.get("type") or stat.get("statType") or stat.get("key")
+            if not stat_type:
+                return False
+            raw_value = stat.get("value")
+            if raw_value is None:
+                raw_value = stat.get("rawValue")
+            if raw_value is None:
+                raw_value = stat.get("displayValue")
+            if isinstance(raw_value, (dict, list)):
+                return False
+            parsed = cls._parse_numeric(raw_value)
+            label = (stat.get("label") or stat.get("name") or
+                     stat.get("displayName") or stat_type)
+            result[target][stat_type] = {
+                "name": stat.get("name", label),
+                "label": label,
+                "value": parsed,
+                "raw_value": raw_value,
+                "group": stat.get("group") or group_name,
+            }
+            if stat_type not in result["raw_types"]:
+                result["raw_types"].append(stat_type)
+            return True
+
+        def walk_stats(target, node, group_name="Estadísticas", depth=0):
+            if depth > 8 or node is None:
+                return
+            if isinstance(node, list):
+                for item in node:
+                    walk_stats(target, item, group_name, depth + 1)
+                return
+            if not isinstance(node, dict):
+                return
+            if add_stat(target, node, group_name):
+                return
+            current_group = (node.get("name") or node.get("label") or
+                             node.get("displayName") or node.get("group") or group_name)
+            for key in ("values", "statistics", "stats", "items", "data"):
+                child = node.get(key)
+                if child is not None:
+                    walk_stats(target, child, current_group, depth + 1)
+
+        participants = event.get("eventParticipants") or []
+        if isinstance(participants, dict):
+            participants = list(participants.values())
+
+        for participant in participants:
+            if not isinstance(participant, dict):
                 continue
+            ptype = participant.get("type") or {}
+            side = str(ptype.get("side") or "").upper() if isinstance(ptype, dict) else ""
+            target = "home" if side == "HOME" else "away" if side == "AWAY" else None
+            if target:
+                walk_stats(target, participant.get("stats"))
 
-            for stats_group in participant.get("stats", []) or []:
-                group_name = (
-                    stats_group.get("name")
-                    or stats_group.get("label")
-                    or stats_group.get("type")
-                    or "Estadísticas"
-                )
-
-                for stat in stats_group.get("values", []) or []:
-                    stat_type = stat.get("type")
-                    if not stat_type:
-                        continue
-
-                    parsed = cls._parse_numeric(stat.get("value"))
-                    result[target][stat_type] = {
-                        "name": stat.get("name", ""),
-                        "label": stat.get("label", ""),
-                        "value": parsed,
-                        "raw_value": stat.get("value"),
-                        "group": group_name,
-                    }
-
-                    if stat_type not in result["raw_types"]:
-                        result["raw_types"].append(stat_type)
-
-        # El catálogo solo agrega métricas ausentes; nunca sustituye datos reales.
         for group, stat_type, label in cls.STAT_CATALOG:
             for target in ("home", "away"):
                 if stat_type not in result[target]:
                     result[target][stat_type] = {
-                        "name": label,
-                        "label": label,
-                        "value": None,
-                        "raw_value": None,
-                        "group": group,
+                        "name": label, "label": label, "value": None,
+                        "raw_value": None, "group": group,
                     }
             if stat_type not in result["raw_types"]:
                 result["raw_types"].append(stat_type)
