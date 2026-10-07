@@ -71,135 +71,111 @@ class EcuabetClient:
             for child in value:
                 yield from EcuabetClient._walk(child)
 
-    def _candidate_championships(self, sport_id=0, league_name=""):
-        """Descubre campeonatos Ecuabet y prioriza la liga del partido."""
-        sport_ids = []
-        if int(sport_id or 0):
-            sport_ids.append(int(sport_id))
-        # En Ecuabet el fútbol que ya comprobamos usa sportId=66.
-        if 66 not in sport_ids:
-            sport_ids.append(66)
+    def _candidate_championships(self, sport_id=66, league_name=""):
+        """Obtiene solo los campeonatos relevantes sin recorrer toda la oferta."""
+        try:
+            payload = self._request("GET", "GetEvents", {
+                "eventCount": 0,
+                "sportId": sport_id or 66,
+                "champIds": 0,
+            })
+        except EcuabetAPIError:
+            return []
 
+        available = payload.get("availableChamps", []) if isinstance(payload, dict) else []
+        if not isinstance(available, list):
+            return []
+
+        target = self._tokens(league_name)
         candidates = []
-        seen = set()
 
-        for sid in sport_ids:
-            # GetChampsZip es más fiable para descubrir TODOS los campeonatos
-            # que GetEvents con champIds=0.
+        for item in available:
+            if not isinstance(item, dict):
+                continue
+
+            champ_id = (
+                item.get("id")
+                or item.get("champId")
+                or item.get("LI")
+                or item.get("I")
+            )
+            name = str(
+                item.get("name")
+                or item.get("champName")
+                or item.get("L")
+                or item.get("LE")
+                or ""
+            )
+
+            if champ_id is None:
+                continue
             try:
-                payload = self._request("GET", "GetChampsZip", {
-                    "sport": sid,
-                })
-            except EcuabetAPIError:
-                payload = {}
+                champ_id = int(champ_id)
+            except (TypeError, ValueError):
+                continue
 
-            values = []
-            if isinstance(payload, dict):
-                values = payload.get("Value") or payload.get("value") or payload.get("availableChamps") or []
-            if isinstance(values, dict):
-                values = [values]
+            score = len(target & self._tokens(name)) if target else 0
+            candidates.append((score, champ_id, name))
 
-            for item in values if isinstance(values, list) else []:
-                if not isinstance(item, dict):
-                    continue
-                champ_id = item.get("LI") or item.get("id") or item.get("champId")
-                name = str(
-                    item.get("L")
-                    or item.get("LE")
-                    or item.get("name")
-                    or item.get("champName")
-                    or ""
-                )
-                if champ_id is None:
-                    continue
-                try:
-                    champ_id = int(champ_id)
-                except (TypeError, ValueError):
-                    continue
-                if champ_id in seen:
-                    continue
-                seen.add(champ_id)
-                score = len(self._tokens(league_name) & self._tokens(name)) if league_name else 0
-                candidates.append((score, champ_id, name))
+        # Algunos nombres de liga de API-Football son distintos a Ecuabet.
+        aliases = {
+            "bundesliga": ("bundesliga", "germany", "alemania"),
+            "premier league": ("premier", "england", "inglaterra"),
+            "la liga": ("laliga", "la liga", "spain", "espana"),
+            "serie a": ("serie a", "italy", "italia"),
+            "ligue 1": ("ligue 1", "france", "francia"),
+            "eredivisie": ("eredivisie", "netherlands", "paises bajos", "holland"),
+            "primeira liga": ("primeira", "portugal"),
+            "champions league": ("champions", "uefa"),
+            "europa league": ("europa league", "uefa"),
+        }
 
-            # Algunos despliegues ya incluyen availableChamps en GetEvents.
-            try:
-                event_payload = self._request("GET", "GetEvents", {
-                    "eventCount": 0,
-                    "sportId": sid,
-                    "champIds": 0,
-                })
-            except EcuabetAPIError:
-                event_payload = {}
+        normalized_league = self._normalize(league_name)
+        alias_tokens = set(aliases.get(normalized_league, ()))
+        if alias_tokens:
+            alias_tokens = self._tokens(" ".join(alias_tokens))
 
-            available = event_payload.get("availableChamps", []) if isinstance(event_payload, dict) else []
-            if isinstance(available, list):
-                for item in available:
-                    if not isinstance(item, dict):
-                        continue
-                    champ_id = item.get("LI") or item.get("id") or item.get("champId")
-                    name = str(item.get("L") or item.get("LE") or item.get("name") or item.get("champName") or "")
-                    if champ_id is None:
-                        continue
-                    try:
-                        champ_id = int(champ_id)
-                    except (TypeError, ValueError):
-                        continue
-                    if champ_id in seen:
-                        continue
-                    seen.add(champ_id)
-                    score = len(self._tokens(league_name) & self._tokens(name)) if league_name else 0
-                    candidates.append((score, champ_id, name))
+        if alias_tokens:
+            adjusted = []
+            for score, champ_id, name in candidates:
+                score = max(score, len(alias_tokens & self._tokens(name)))
+                adjusted.append((score, champ_id, name))
+            candidates = adjusted
 
         candidates.sort(key=lambda x: x[0], reverse=True)
-        return candidates
+        # No necesitamos consultar cientos de campeonatos: solo los mejores
+        # candidatos para la liga solicitada.
+        return candidates[:5]
 
-    def buscar_evento(self, local, visitante, sport_id=0, champ_id=0, league_name=""):
-        """Busca un partido en cualquier campeonato disponible de Ecuabet."""
+    def buscar_evento(self, local, visitante, sport_id=66, champ_id=0, league_name=""):
+        """Busca un partido sin bloquear recorriendo todos los campeonatos."""
         home_target, away_target = self._tokens(local), self._tokens(visitante)
         if not home_target or not away_target:
             raise EcuabetAPIError(f"Nombres de equipos inválidos: {local} vs {visitante}")
 
+        import time
         cache_key = (
             self._normalize(local),
             self._normalize(visitante),
             self._normalize(league_name),
         )
-        import time
         cached = self._EVENT_CACHE.get(cache_key)
         if cached and time.time() - cached["cached_at"] < self._EVENT_CACHE_TTL:
             return dict(cached["data"])
 
-        champ_ids = []
-        if int(champ_id or 0):
-            champ_ids.append(int(champ_id))
+        # 1) Primero probamos la consulta general. Es barata y muchas veces
+        # ya contiene el evento solicitado.
+        try:
+            payload = self._request("GET", "GetEvents", {
+                "eventCount": 0,
+                "sportId": sport_id or 66,
+                "champIds": 0,
+            })
+        except EcuabetAPIError:
+            payload = {}
 
-        discovered = self._candidate_championships(
-            sport_id=sport_id,
-            league_name=league_name,
-        )
-
-        # Si la liga coincide, sus campeonatos van primero. Después se prueban
-        # los demás, permitiendo trabajar con cualquier liga de la BD.
-        for _, discovered_id, _ in discovered:
-            if discovered_id not in champ_ids:
-                champ_ids.append(discovered_id)
-
-        if not champ_ids:
-            champ_ids.append(0)
-
-        for current_champ_id in champ_ids:
-            try:
-                payload = self._request("GET", "GetEvents", {
-                    "eventCount": 0,
-                    "sportId": 66 if not current_champ_id else (sport_id or 66),
-                    "champIds": current_champ_id,
-                })
-            except EcuabetAPIError:
-                continue
-
-            candidates = []
-            for item in payload.get("events", []) if isinstance(payload, dict) else []:
+        def find_in_payload(data, current_champ=0):
+            for item in data.get("events", []) if isinstance(data, dict) else []:
                 event_id = item.get("id") or item.get("eventId")
                 event_name = str(item.get("name", ""))
                 if not event_id or not event_name:
@@ -214,45 +190,69 @@ class EcuabetClient:
                 if len(parts) != 2:
                     continue
 
-                hs = len(home_target & self._tokens(parts[0]))
-                aws = len(away_target & self._tokens(parts[1]))
+                direct = (
+                    len(home_target & self._tokens(parts[0]))
+                    and len(away_target & self._tokens(parts[1]))
+                )
+                reverse = (
+                    len(home_target & self._tokens(parts[1]))
+                    and len(away_target & self._tokens(parts[0]))
+                )
+                if not direct and not reverse:
+                    continue
 
-                if hs and aws:
-                    score = hs + aws
-                else:
-                    hs = len(home_target & self._tokens(parts[1]))
-                    aws = len(away_target & self._tokens(parts[0]))
-                    if not (hs and aws):
-                        continue
-                    score = hs + aws - 0.5
-
-                event_champ = int(item.get("champId") or current_champ_id or 0)
-                if int(champ_id or 0) == event_champ and event_champ:
-                    score += 0.25
-
-                candidates.append((
-                    score,
-                    int(event_id),
-                    event_name,
-                    item.get("sportId") or sport_id or 66,
-                    event_champ,
-                ))
-
-            if candidates:
-                candidates.sort(key=lambda x: x[0], reverse=True)
-                score, event_id, name, found_sport_id, found_champ_id = candidates[0]
-                result = {
-                    "event_id": event_id,
-                    "name": name,
+                score = (
+                    len(home_target & self._tokens(parts[0]))
+                    + len(away_target & self._tokens(parts[1]))
+                    if direct
+                    else len(home_target & self._tokens(parts[1]))
+                    + len(away_target & self._tokens(parts[0]))
+                    - 0.5
+                )
+                return {
+                    "event_id": int(event_id),
+                    "name": event_name,
                     "match_score": score,
-                    "sport_id": found_sport_id,
-                    "champ_id": found_champ_id,
+                    "sport_id": item.get("sportId") or sport_id or 66,
+                    "champ_id": item.get("champId") or current_champ or 0,
                 }
+            return None
+
+        found = find_in_payload(payload)
+        if found:
+            self._EVENT_CACHE[cache_key] = {"cached_at": time.time(), "data": found}
+            return found
+
+        # 2) Solo si no apareció, descubrimos los campeonatos disponibles y
+        # consultamos los que coinciden con la liga del partido.
+        champ_ids = []
+        if int(champ_id or 0):
+            champ_ids.append(int(champ_id))
+
+        for _, discovered_id, _ in self._candidate_championships(
+            sport_id=sport_id or 66,
+            league_name=league_name,
+        ):
+            if discovered_id not in champ_ids:
+                champ_ids.append(discovered_id)
+
+        for current_champ_id in champ_ids:
+            try:
+                data = self._request("GET", "GetEvents", {
+                    "eventCount": 0,
+                    "sportId": sport_id or 66,
+                    "champIds": current_champ_id,
+                })
+            except EcuabetAPIError:
+                continue
+
+            found = find_in_payload(data, current_champ_id)
+            if found:
                 self._EVENT_CACHE[cache_key] = {
                     "cached_at": time.time(),
-                    "data": result,
+                    "data": found,
                 }
-                return result
+                return found
 
         raise EcuabetAPIError(f"No se encontró en Ecuabet: {local} vs {visitante}")
 
