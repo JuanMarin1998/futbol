@@ -30,6 +30,7 @@
 <script>
 const API_URL = "{% url 'estadisticas:api_cuotas_partido' partido.id %}";
 const POLL_MS = {{ poll_seconds }} * 1000;
+let requestInFlight = false;
 
 function formatOdd(value) {
     return value == null ? "—" : Number(value).toFixed(2);
@@ -53,6 +54,9 @@ function actualizarMovimiento(changes) {
 }
 
 async function actualizar() {
+    if (requestInFlight) return;
+    requestInFlight = true;
+
     try {
         const response = await fetch(API_URL + "?t=" + Date.now(), {
             cache: "no-store"
@@ -92,6 +96,8 @@ async function actualizar() {
     } catch (error) {
         document.getElementById("error").style.display = "block";
         document.getElementById("error").textContent = error.message;
+    } finally {
+        requestInFlight = false;
     }
 }
 
