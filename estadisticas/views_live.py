@@ -88,6 +88,23 @@ def api_detalle_partido_en_vivo(request, fixture_id):
         lineups = item.get("lineups") or []
         players = item.get("players") or []
 
+        # Normalmente /fixtures?id=... ya trae estos bloques.
+        # Si una competición omite alguno, consultamos solo el bloque faltante
+        # y lo dejamos en caché para no multiplicar llamadas innecesariamente.
+        fallback_used = []
+
+        if not statistics:
+            statistics = APIFootballLiveClient().obtener_estadisticas_partido(fixture_id)
+            fallback_used.append("statistics")
+
+        if not lineups:
+            lineups = APIFootballLiveClient().obtener_alineaciones_partido(fixture_id)
+            fallback_used.append("lineups")
+
+        if not players:
+            players = APIFootballLiveClient().obtener_jugadores_partido(fixture_id)
+            fallback_used.append("players")
+
         # Normalize the data once in the backend. The browser then receives
         # exactly the structures needed by the detail page.
         stats_normalized = []
@@ -144,6 +161,7 @@ def api_detalle_partido_en_vivo(request, fixture_id):
                 "statistics": len(statistics),
                 "lineups": len(lineups),
                 "players": len(players),
+                "fallback_used": fallback_used,
             },
         })
     except Exception as exc:
