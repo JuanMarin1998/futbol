@@ -93,10 +93,21 @@ class LiveExperimentManager:
 
     @staticmethod
     def _is_final(match) -> bool:
-        minute = str(match.minute or "").lower()
-        period = str(match.period or "").lower()
-        final_words = ("final", "finished", "ft", "finalizado", "terminado")
-        return any(word in minute or word in period for word in final_words)
+        """Determina el final usando el estado normalizado y texto legacy."""
+        if bool(getattr(match, "is_finished", False)):
+            return True
+        status = str(getattr(match, "match_status", "") or "").casefold()
+        minute = str(match.minute or "").casefold()
+        period = str(match.period or "").casefold()
+        final_words = (
+            "final", "finished", "full time", "match finished",
+            "ft", "finalizado", "terminado", "after extra time",
+            "after penalties",
+        )
+        return any(
+            word in status or word in minute or word in period
+            for word in final_words
+        )
 
     @classmethod
     def _eligible_opportunity(cls, experiment, motor, opportunity):
