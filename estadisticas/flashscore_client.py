@@ -28,7 +28,7 @@ class FlashscoreClient:
     TIMEOUT = int(os.getenv("FLASHSCORE_TIMEOUT", "8"))
     LIVE_FEED_URL = os.getenv(
         "FLASHSCORE_LIVE_FEED_URL",
-        "https://local-global.flashscore.ninja/13/x/feed/f_1_0_3_en_1",
+        "https://local-global.flashscore.ninja/13/x/feed/f_1_0_3_es_1",
     )
 
 
