@@ -31,7 +31,6 @@
 
 <script>
 const EVENT_ID={{ ecuabet_event_id }};
-const FLASH_ID={{ flashscore_event_id|default:""|safe|escapejs|json_script:"x" }};
 const POLL_MS={{ live_poll_ms }};
 
 function esc(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
