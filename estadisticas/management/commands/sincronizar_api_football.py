@@ -27,9 +27,6 @@ class Command(BaseCommand):
         parser.add_argument("--hasta")
 
     def handle(self, *args, **options):
-        if not options.get("FOOTBALL_DATA_TOKEN", None):
-            pass
-
         codigos = (
             [options["liga"]]
             if options["liga"]
@@ -86,6 +83,7 @@ class Command(BaseCommand):
                     codigo,
                     fecha_desde=options.get("desde"),
                     fecha_hasta=options.get("hasta"),
+                    temporada=options.get("temporada"),
                 )
 
                 # Si no se especifica un rango, tomamos los más recientes.
