@@ -223,10 +223,12 @@ class FlashscoreClient:
     @classmethod
     def normalizar_stats(cls, event: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Convierte eventParticipants.stats.values en un diccionario estable.
+        Normaliza las estadísticas de Flashscore tolerando cambios de estructura.
 
-        No se limita a una lista cerrada: conserva cualquier tipo nuevo que
-        Flashscore entregue para que el motor pueda descubrir más métricas.
+        Flashscore ha usado distintas formas de representar stats dentro de
+        eventParticipants. No dependemos exclusivamente de stats_group.values:
+        recorremos recursivamente los bloques de estadísticas y aceptamos
+        cualquier registro que tenga type + value/label/name.
         """
         result = {
             "home": {},
@@ -234,32 +236,89 @@ class FlashscoreClient:
             "raw_types": [],
         }
 
+        def participant_side(participant):
+            ptype = participant.get("type") or {}
+            if isinstance(ptype, dict):
+                side = ptype.get("side") or ptype.get("name") or ptype.get("label") or ""
+            else:
+                side = str(ptype)
+            return str(side).upper()
+
+        def walk_stats(node, group_name="Estadísticas"):
+            if isinstance(node, list):
+                for item in node:
+                    yield from walk_stats(item, group_name)
+                return
+
+            if not isinstance(node, dict):
+                return
+
+            current_group = (
+                node.get("name")
+                or node.get("label")
+                or node.get("group")
+                or node.get("typeName")
+                or group_name
+            )
+
+            stat_type = node.get("type")
+            if isinstance(stat_type, dict):
+                stat_type = stat_type.get("name") or stat_type.get("id") or stat_type.get("type")
+
+            if stat_type and (
+                "value" in node
+                or "rawValue" in node
+                or "raw_value" in node
+                or node.get("label")
+                or node.get("name")
+            ):
+                value = node.get("value")
+                if value is None:
+                    value = node.get("rawValue", node.get("raw_value"))
+
+                # No tratar el nombre del grupo como una métrica.
+                if value is not None or node.get("label") or node.get("name"):
+                    yield {
+                        "type": str(stat_type),
+                        "value": value,
+                        "name": node.get("name", ""),
+                        "label": node.get("label", ""),
+                        "group": current_group,
+                    }
+
+            for key, child in node.items():
+                if key in {"type", "value", "rawValue", "raw_value", "name", "label"}:
+                    continue
+                child_group = current_group
+                if key in {"stats", "statistics", "values", "statsValues"}:
+                    child_group = current_group
+                yield from walk_stats(child, child_group)
+
         for participant in event.get("eventParticipants", []) or []:
-            side = ((participant.get("type") or {}).get("side") or "").upper()
-            target = "home" if side == "HOME" else "away" if side == "AWAY" else None
+            side = participant_side(participant)
+            target = "home" if "HOME" in side else "away" if "AWAY" in side else None
             if not target:
                 continue
 
-            for stats_group in participant.get("stats", []) or []:
-                for stat in stats_group.get("values", []) or []:
-                    stat_type = stat.get("type")
-                    if not stat_type:
-                        continue
+            stats_root = participant.get("stats")
+            if stats_root is None:
+                stats_root = participant
 
-                    parsed = cls._parse_numeric(stat.get("value"))
-                    result[target][stat_type] = {
-                        "name": stat.get("name", ""),
-                        "label": stat.get("label", ""),
-                        "value": parsed,
-                        "raw_value": stat.get("value"),
-                        "group": stats_group.get("name") or stats_group.get("label") or stats_group.get("type") or "",
-                    }
-                    if stat_type not in result["raw_types"]:
-                        result["raw_types"].append(stat_type)
+            for stat in walk_stats(stats_root):
+                stat_type = stat["type"]
+                parsed = cls._parse_numeric(stat.get("value"))
+                result[target][stat_type] = {
+                    "name": stat.get("name", ""),
+                    "label": stat.get("label", ""),
+                    "value": parsed,
+                    "raw_value": stat.get("value"),
+                    "group": stat.get("group") or "Estadísticas",
+                }
+                if stat_type not in result["raw_types"]:
+                    result["raw_types"].append(stat_type)
 
-        # Completa el catálogo con campos que todavía no tengan valor.
-        # Así la interfaz conserva la estructura completa de Flashscore y
-        # muestra "—" cuando una métrica aún no está disponible en LIVE.
+        # Completa el catálogo solamente como estructura de respaldo.
+        # Si Flashscore entrega el valor real, nunca se reemplaza.
         for group, stat_type, label in cls.STAT_CATALOG:
             for target in ("home", "away"):
                 if stat_type not in result[target]:
