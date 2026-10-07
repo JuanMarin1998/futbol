@@ -100,6 +100,35 @@ class FlashscoreClient:
                 records.append(item)
         return records
 
+    def obtener_partido_por_id(self, event_id: str) -> Optional[Dict[str, Any]]:
+        """Obtiene un partido del feed diario, incluso si ya terminó.
+
+        El feed de Flashscore distingue explícitamente LIVE de FINISHED;
+        en el formato interno el estado 3 corresponde a terminado.
+        """
+        if not event_id:
+            return None
+        raw = self._feed_request()
+        records = self._parse_feed_records(raw)
+        for row in records:
+            if row.get("AA") != str(event_id):
+                continue
+            status_code = str(row.get("AB") or "")
+            return {
+                "event_id": row.get("AA"),
+                "start_time": row.get("AD"),
+                "home_team": row.get("AE", ""),
+                "away_team": row.get("AF", ""),
+                "home_score": self._parse_numeric(row.get("AG")),
+                "away_score": self._parse_numeric(row.get("AH")),
+                "status": status_code,
+                "minute": row.get("BA"),
+                "period": row.get("BC"),
+                "finished": status_code == "3",
+                "raw": row,
+            }
+        return None
+
     def obtener_partidos_live(self) -> List[Dict[str, Any]]:
         """Obtiene partidos LIVE del feed diario de Flashscore."""
         raw = self._feed_request()
