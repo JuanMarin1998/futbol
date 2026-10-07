@@ -33,7 +33,8 @@ def _equipo_dict(equipo):
 
 def _partido_dict(partido):
     return {
-        "id": partido.id_externo,
+        "id": partido.id,
+        "externalId": partido.id_externo,
         "utcDate": partido.fecha.isoformat(),
         "status": partido.estado_api,
         "homeTeam": {
