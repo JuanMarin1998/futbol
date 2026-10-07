@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views
 from . import views_live
+from . import views_odds
 
 app_name = "estadisticas"
 
@@ -10,6 +11,8 @@ urlpatterns = [
     path("live/<int:fixture_id>/", views_live.detalle_partido_en_vivo, name="detalle_partido_en_vivo"),
     path("api/live/", views_live.api_partidos_en_vivo, name="api_live"),
     path("api/live/<int:fixture_id>/", views_live.api_detalle_partido_en_vivo, name="api_live_detail"),
+    path("partido/<int:partido_id>/cuotas/", views_odds.cuotas_partido, name="cuotas_partido"),
+    path("api/partido/<int:partido_id>/cuotas/", views_odds.api_cuotas_partido, name="api_cuotas_partido"),
     path("liga/<str:codigo_liga>/partidos/", views.partidos_liga, name="partidos_liga"),
     path("liga/<str:codigo_liga>/tabla/", views.tabla_liga, name="tabla_liga"),
     path("liga/<str:codigo_liga>/goleadores/", views.goleadores_liga, name="goleadores_liga"),
