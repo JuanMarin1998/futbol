@@ -19,8 +19,9 @@ SECRET_KEY = os.getenv(
 DEBUG = True
 ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
 
-# Token de football-data.org. Nunca colocar el token real en el código.
+# Tokens de APIs. Nunca colocar los tokens reales en el código.
 FOOTBALL_DATA_TOKEN = os.getenv("FOOTBALL_DATA_TOKEN", "")
+SPORTMONKS_TOKEN = os.getenv("SPORTMONKS_TOKEN", "")
 
 INSTALLED_APPS = [
     "django.contrib.admin",
