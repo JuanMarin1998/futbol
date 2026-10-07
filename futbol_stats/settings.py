@@ -22,6 +22,9 @@ ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
 # Tokens de APIs. Nunca colocar los tokens reales en el código.
 FOOTBALL_DATA_TOKEN = os.getenv("FOOTBALL_DATA_TOKEN", "")
 SPORTMONKS_TOKEN = os.getenv("SPORTMONKS_TOKEN", "")
+API_FOOTBALL_KEY = os.getenv("API_FOOTBALL_KEY", "")
+LIVE_POLL_SECONDS = int(os.getenv("LIVE_POLL_SECONDS", "60"))
+LIVE_CACHE_SECONDS = int(os.getenv("LIVE_CACHE_SECONDS", "50"))
 
 INSTALLED_APPS = [
     "django.contrib.admin",
