@@ -76,18 +76,23 @@ function renderStats(stats){
   ).join('');
 }
 
-function renderOpportunities(items){
-  if(!items?.length)return '<div class="ld-muted">Sin señales estadísticas por ahora. El motor necesita una ventaja mínima frente a la probabilidad implícita.</div>';
-  return items.map((o,i)=>
-    '<div class="ld-market" style="border-left:3px solid #22c55e">'+
-      '<div style="display:flex;justify-content:space-between;gap:.6rem;align-items:center">'+
-        '<strong>'+esc(o.selection||'')+(o.line?' · '+esc(o.line):'')+'</strong>'+
-        '<span class="ld-price">'+Number(o.price).toFixed(2)+'</span>'+
-      '</div>'+
-      '<div class="ld-muted" style="margin-top:.4rem">Modelo '+(o.model_probability*100).toFixed(1)+'% · Implícita '+(o.implied_probability*100).toFixed(1)+'% · Ventaja <strong>+'+Number(o.edge_pct).toFixed(1)+'%</strong></div>'+
-      '<div class="ld-muted" style="margin-top:.2rem">Confianza '+(o.confidence*100).toFixed(0)+'% · '+esc(o.model)+'</div>'+
-    '</div>'
-  ).join('');
+function renderOpportunityItems(items, v2=false){
+  if(!items?.length)return '<div class="ld-muted">Sin señales estadísticas en este motor por ahora.</div>';
+  return items.map(o=>{
+    const support=(o.supporting_factors||[]).map(x=>'<li>'+esc(x)+'</li>').join('');
+    const contra=(o.contradicting_factors||[]).map(x=>'<li>'+esc(x)+'</li>').join('');
+    return '<div class="ld-market" style="border-left:3px solid '+(v2?'#60a5fa':'#22c55e')+'">'+
+      '<div style="display:flex;justify-content:space-between;gap:.6rem;align-items:center"><strong>'+esc(o.selection||'')+(o.line?' · '+esc(o.line):'')+'</strong><span class="ld-price">'+Number(o.price).toFixed(2)+'</span></div>'+
+      '<div class="ld-muted" style="margin-top:.4rem">Modelo '+(o.model_probability*100).toFixed(1)+'% · Implícita '+(o.implied_probability*100).toFixed(1)+'% · Ventaja <strong>'+((o.edge_pct>=0)?'+':'')+Number(o.edge_pct).toFixed(1)+'%</strong></div>'+
+      '<div class="ld-muted" style="margin-top:.2rem">Confianza '+(o.confidence*100).toFixed(0)+'% · Señal '+esc(o.signal_strength||'')+' · Cobertura '+((o.data_coverage||0)*100).toFixed(0)+'%</div>'+
+      (v2?'<div style="margin-top:.55rem"><strong style="font-size:.82rem">✅ Indicadores que apoyan</strong><ul class="ld-muted" style="margin:.3rem 0 .5rem 1.1rem">'+(support||'<li>No hay indicadores adicionales.</li>')+'</ul><strong style="font-size:.82rem">⚠️ Indicadores que contradicen</strong><ul class="ld-muted" style="margin:.3rem 0 0 1.1rem">'+(contra||'<li>No se detectaron contradicciones relevantes.</li>')+'</ul></div>':'')+
+      '<div class="ld-muted" style="margin-top:.5rem">'+esc(o.reason||'')+'</div>'+
+    '</div>';
+  }).join('');
+}
+function renderOpportunities(v1,v2){
+  return '<div style="margin-bottom:1rem"><div class="ld-title">🧪 V1 · motor original</div>'+renderOpportunityItems(v1,false)+'</div>'+
+         '<div><div class="ld-title">🧠 V2 · motor multifactorial</div>'+renderOpportunityItems(v2,true)+'</div>';
 }
 
 function render(e, flash){
@@ -98,7 +103,7 @@ function render(e, flash){
   return '<div class="ld-layout">'+
     '<main><div class="ld-card"><div class="ld-teams"><div class="ld-team">'+esc(home)+'</div><div><div class="ld-score">'+(score[0]??0)+' - '+(score[1]??0)+'</div><div class="ld-minute">'+esc(e.liveTime||e.live_time||e.live_status||'LIVE') + (e.ls ? '<div class="ld-muted" style="font-size:.78rem">'+esc(e.ls)+'</div>' : '')+'</div></div><div class="ld-team ld-away">'+esc(away)+'</div></div><div class="ld-muted" style="text-align:center;margin-top:.7rem">'+esc(e.champ?.name||'')+'</div></div>'+
     '<div class="ld-card ld-section"><div class="ld-title">📊 Estadísticas en línea</div>'+renderStats(stats)+'</div>'+
-    '<div class="ld-card ld-section"><div class="ld-title">🎯 Oportunidades estadísticas</div>'+renderOpportunities(flash?.opportunities||[])+'</div></main>'+
+    '<div class="ld-card ld-section"><div class="ld-title">🎯 Comparación de motores</div>'+renderOpportunities(flash?.opportunities||[],flash?.opportunities_v2||[])+'</div></main>'+
     '<aside><div class="ld-card"><div class="ld-title">💰 Cuotas Ecuabet</div>'+ (markets.length?markets.map(m=>'<div class="ld-market"><h4>'+esc(m.name)+(m.line?' · '+esc(m.line):'')+'</h4>'+m.selections.map(o=>'<div style="display:flex;justify-content:space-between;padding:.55rem .7rem;border-bottom:1px solid #334155"><span>'+esc(o.name)+'</span><span class="ld-price">'+price(o.price)+'</span></div>').join('')+'</div>').join(''):'<div class="ld-muted">Sin mercados disponibles.</div>')+'</div>'+
     '<div class="ld-card ld-section"><div class="ld-title">🔗 Fuente estadística</div>'+ (flash?'<div class="ld-muted">Flashscore conectado · ID '+esc(flash.flashscore_event_id)+'</div>':'<div class="ld-muted">El partido está seleccionado, pero aún falta vincular su ID de Flashscore.</div>')+(flash?.feed_error?'<div class="ld-muted" style="margin-top:.5rem;color:#fbbf24">⚠️ Estadísticas detalladas: '+esc(flash.feed_error)+'</div>':'')+'</div></aside></div>';
 }
