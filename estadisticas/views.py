@@ -96,6 +96,7 @@ def partidos_liga(request, codigo_liga):
 
 
 def equipo_detalle(request, id_equipo):
+    ligas_menu = _ligas_menu()
     equipo = (
         Equipo.objects.select_related("liga", "estadio_obj")
         .filter(id_externo=id_equipo)
