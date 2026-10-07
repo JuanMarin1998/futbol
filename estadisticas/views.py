@@ -1,7 +1,6 @@
 from django.shortcuts import render
 from django.db.models import Q
 
-from .api_client import LIGAS_PRINCIPALES
 from .models import (
     Liga,
     Equipo,
@@ -12,8 +11,13 @@ from .models import (
 )
 
 
+def _ligas_menu():
+    """Devuelve las ligas disponibles directamente desde PostgreSQL."""
+    return dict(Liga.objects.order_by("nombre").values_list("codigo", "nombre"))
+
+
 def inicio(request):
-    return render(request, "estadisticas/inicio.html", {"ligas": LIGAS_PRINCIPALES})
+    return render(request, "estadisticas/inicio.html", {"ligas": _ligas_menu()})
 
 
 def _equipo_dict(equipo):
@@ -53,7 +57,8 @@ def _partido_dict(partido):
 
 
 def partidos_liga(request, codigo_liga):
-    nombre_liga = LIGAS_PRINCIPALES.get(codigo_liga, codigo_liga)
+    ligas_menu = _ligas_menu()
+    nombre_liga = ligas_menu.get(codigo_liga, codigo_liga)
     liga = Liga.objects.filter(codigo=codigo_liga).first()
 
     partidos = {"finalizados": [], "programados": []}
@@ -84,7 +89,7 @@ def partidos_liga(request, codigo_liga):
             "nombre_liga": nombre_liga,
             "partidos": partidos,
             "error": error,
-            "ligas": LIGAS_PRINCIPALES,
+            "ligas": ligas_menu,
             "seccion": "partidos",
         },
     )
@@ -175,13 +180,14 @@ def equipo_detalle(request, id_equipo):
             "partidos_recientes": partidos_recientes,
             "plantilla_por_posicion": plantilla_por_posicion,
             "error": error,
-            "ligas": LIGAS_PRINCIPALES,
+            "ligas": ligas_menu,
         },
     )
 
 
 def tabla_liga(request, codigo_liga):
-    nombre_liga = LIGAS_PRINCIPALES.get(codigo_liga, codigo_liga)
+    ligas_menu = _ligas_menu()
+    nombre_liga = ligas_menu.get(codigo_liga, codigo_liga)
     liga = Liga.objects.filter(codigo=codigo_liga).first()
     temporada = request.GET.get("temporada")
 
@@ -231,14 +237,15 @@ def tabla_liga(request, codigo_liga):
             "tabla": filas,
             "temporada": temporada,
             "error": error,
-            "ligas": LIGAS_PRINCIPALES,
+            "ligas": ligas_menu,
             "seccion": "tabla",
         },
     )
 
 
 def goleadores_liga(request, codigo_liga):
-    nombre_liga = LIGAS_PRINCIPALES.get(codigo_liga, codigo_liga)
+    ligas_menu = _ligas_menu()
+    nombre_liga = ligas_menu.get(codigo_liga, codigo_liga)
     liga = Liga.objects.filter(codigo=codigo_liga).first()
     temporada = request.GET.get("temporada")
 
@@ -284,14 +291,15 @@ def goleadores_liga(request, codigo_liga):
             "goleadores": goleadores,
             "temporada": temporada,
             "error": error,
-            "ligas": LIGAS_PRINCIPALES,
+            "ligas": ligas_menu,
             "seccion": "goleadores",
         },
     )
 
 
 def enfrentamiento(request, codigo_liga):
-    nombre_liga = LIGAS_PRINCIPALES.get(codigo_liga, codigo_liga)
+    ligas_menu = _ligas_menu()
+    nombre_liga = ligas_menu.get(codigo_liga, codigo_liga)
     liga = Liga.objects.filter(codigo=codigo_liga).first()
     equipos = list(
         Equipo.objects.filter(liga=liga).order_by("nombre")
@@ -355,7 +363,7 @@ def enfrentamiento(request, codigo_liga):
             "id_equipo_a": id_equipo_a,
             "id_equipo_b": id_equipo_b,
             "error": error,
-            "ligas": LIGAS_PRINCIPALES,
+            "ligas": ligas_menu,
             "seccion": "enfrentamiento",
         },
     )
