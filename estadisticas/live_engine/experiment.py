@@ -178,7 +178,7 @@ class LiveExperimentManager:
         return entry, lives_before, lives_after
 
     @classmethod
-    def _market_result(cls, entry, home_score, away_score) -> Optional[bool]:
+    def _market_result(cls, entry, home_score, away_score, experiment) -> Optional[bool]:
         selection = entry.selection.lower().strip()
         market = entry.market.lower().strip()
         line = entry.line.lower().strip()
@@ -208,11 +208,13 @@ class LiveExperimentManager:
                 return result in ("x", "2")
 
         if "1x2" in market or "resultado" in market or "ganador" in market:
-            if selection in ("1", "local", "home") or "local" in selection:
+            home_name = str(experiment.home_team or "").lower().strip()
+            away_name = str(experiment.away_team or "").lower().strip()
+            if selection in ("1", "local", "home") or "local" in selection or (home_name and (selection == home_name or selection in home_name or home_name in selection)):
                 return home_score > away_score
             if selection in ("x", "empate", "draw"):
                 return home_score == away_score
-            if selection in ("2", "visitante", "away") or "visitante" in selection:
+            if selection in ("2", "visitante", "away") or "visitante" in selection or (away_name and (selection == away_name or selection in away_name or away_name in selection)):
                 return away_score > home_score
 
         return None
@@ -223,7 +225,7 @@ class LiveExperimentManager:
             return
 
         for entry in experiment.entries.filter(status="OPEN"):
-            won = cls._market_result(entry, int(match.home_score or 0), int(match.away_score or 0))
+            won = cls._market_result(entry, int(match.home_score or 0), int(match.away_score or 0), experiment)
             if won is None:
                 entry.status = "CANCELLED"
                 entry.pnl = Decimal("0")
