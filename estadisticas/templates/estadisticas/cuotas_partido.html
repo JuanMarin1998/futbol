@@ -4,44 +4,97 @@
 <div class="tarjeta">
     <div class="seccion-titulo">Cuotas Ecuabet — 1X2</div>
     <h2>{{ partido.equipo_local.nombre }} <span style="color:#64748b;">vs</span> {{ partido.equipo_visitante.nombre }}</h2>
+
     <div id="estado" style="color:#94a3b8;margin-bottom:1rem;">Consultando cuotas...</div>
     <div id="error" class="error" style="display:none;"></div>
+
     <table id="cuotas" style="display:none;">
-        <thead><tr><th>Local</th><th>Empate</th><th>Visitante</th></tr></thead>
-        <tbody><tr><td id="local" class="resultado">—</td><td id="empate" class="resultado">—</td><td id="visitante" class="resultado">—</td></tr></tbody>
+        <thead>
+            <tr><th>Local</th><th>Empate</th><th>Visitante</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td id="local" class="resultado">—</td>
+                <td id="empate" class="resultado">—</td>
+                <td id="visitante" class="resultado">—</td>
+            </tr>
+        </tbody>
     </table>
-    <div id="periodo" style="margin-top:1rem;color:#94a3b8;"></div>
+
+    <div id="movimiento" style="margin-top:1rem;color:#94a3b8;"></div>
+    <div id="periodo" style="margin-top:.5rem;color:#94a3b8;"></div>
     <div id="ultima" style="margin-top:.5rem;color:#64748b;"></div>
+    <div id="snapshots" style="margin-top:.5rem;color:#64748b;"></div>
 </div>
+
 <script>
 const API_URL = "{% url 'estadisticas:api_cuotas_partido' partido.id %}";
 const POLL_MS = {{ poll_seconds }} * 1000;
 
+function formatOdd(value) {
+    return value == null ? "—" : Number(value).toFixed(2);
+}
+
+function formatChange(value) {
+    if (value == null) return "sin histórico";
+    if (value === 0) return "sin cambio";
+    return (value > 0 ? "+" : "") + Number(value).toFixed(4);
+}
+
 function setOdd(id, value) {
-    document.getElementById(id).textContent = value == null ? "—" : Number(value).toFixed(2);
+    document.getElementById(id).textContent = formatOdd(value);
+}
+
+function actualizarMovimiento(changes) {
+    document.getElementById("movimiento").textContent =
+        "Cambio desde el snapshot anterior · Local: " + formatChange(changes.local) +
+        " · Empate: " + formatChange(changes.empate) +
+        " · Visitante: " + formatChange(changes.visitante);
 }
 
 async function actualizar() {
     try {
-        const r = await fetch(API_URL + "?t=" + Date.now(), {cache: "no-store"});
-        const d = await r.json();
-        if (!d.ok) throw new Error(d.error || "No se pudieron obtener las cuotas.");
-        setOdd("local", d.cuotas.local);
-        setOdd("empate", d.cuotas.empate);
-        setOdd("visitante", d.cuotas.visitante);
+        const response = await fetch(API_URL + "?t=" + Date.now(), {
+            cache: "no-store"
+        });
+        const data = await response.json();
+
+        if (!data.ok) {
+            throw new Error(data.error || "No se pudieron obtener las cuotas.");
+        }
+
+        const current = data.current;
+        setOdd("local", current.cuotas.local);
+        setOdd("empate", current.cuotas.empate);
+        setOdd("visitante", current.cuotas.visitante);
+
         document.getElementById("cuotas").style.display = "table";
         document.getElementById("error").style.display = "none";
-        const score = d.marcador[0] !== null ? d.marcador[0] + " - " + d.marcador[1] : "Por comenzar";
-        document.getElementById("estado").textContent = d.live
-            ? "🔴 EN VIVO · " + (d.minuto || "") + " · " + score
+
+        const score = current.marcador[0] !== null
+            ? current.marcador[0] + " - " + current.marcador[1]
+            : "Por comenzar";
+
+        document.getElementById("estado").textContent = current.live
+            ? "🔴 EN VIVO · " + (current.minuto || "") + " · " + score
             : "🕒 PREPARTIDO · " + score;
-        document.getElementById("periodo").textContent = d.periodo || "";
-        document.getElementById("ultima").textContent = "Actualizado: " + new Date(d.observado_en).toLocaleString("es-EC");
-    } catch (e) {
+
+        document.getElementById("periodo").textContent = current.periodo || "";
+        document.getElementById("ultima").textContent =
+            "Snapshot #" + data.snapshot_id +
+            " · Actualizado: " +
+            new Date(current.observado_en).toLocaleString("es-EC");
+
+        document.getElementById("snapshots").textContent =
+            "Snapshots almacenados para este partido: " + data.snapshot_count;
+
+        actualizarMovimiento(data.changes);
+    } catch (error) {
         document.getElementById("error").style.display = "block";
-        document.getElementById("error").textContent = e.message;
+        document.getElementById("error").textContent = error.message;
     }
 }
+
 actualizar();
 setInterval(actualizar, POLL_MS);
 </script>
