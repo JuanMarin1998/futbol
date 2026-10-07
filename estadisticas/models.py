@@ -110,6 +110,7 @@ class Partido(models.Model):
     jornada = models.IntegerField(null=True, blank=True)
     arbitro = models.CharField(max_length=150, blank=True)
     ronda = models.CharField(max_length=150, blank=True)
+    ecuabet_event_id = models.BigIntegerField(unique=True, null=True, blank=True)
 
     class Meta:
         verbose_name = "Partido"
@@ -237,4 +238,30 @@ class GoleadorTemporada(models.Model):
         ]
         indexes = [
             models.Index(fields=["liga", "temporada", "posicion"], name="idx_goleador_liga_temp_pos"),
+        ]
+
+
+class Cuota1X2Snapshot(models.Model):
+    partido = models.ForeignKey(Partido, on_delete=models.CASCADE, related_name="cuotas_1x2")
+    ecuabet_event_id = models.BigIntegerField()
+    odd_id_local = models.BigIntegerField(null=True, blank=True)
+    odd_id_empate = models.BigIntegerField(null=True, blank=True)
+    odd_id_visitante = models.BigIntegerField(null=True, blank=True)
+    cuota_local = models.DecimalField(max_digits=10, decimal_places=4, null=True, blank=True)
+    cuota_empate = models.DecimalField(max_digits=10, decimal_places=4, null=True, blank=True)
+    cuota_visitante = models.DecimalField(max_digits=10, decimal_places=4, null=True, blank=True)
+    es_live = models.BooleanField(default=False)
+    minuto = models.CharField(max_length=20, blank=True)
+    periodo = models.CharField(max_length=50, blank=True)
+    marcador_local = models.IntegerField(null=True, blank=True)
+    marcador_visitante = models.IntegerField(null=True, blank=True)
+    observado_en = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Snapshot de cuota 1X2"
+        verbose_name_plural = "Snapshots de cuotas 1X2"
+        ordering = ["-observado_en"]
+        indexes = [
+            models.Index(fields=["partido", "-observado_en"], name="idx_cuota_part_obs"),
+            models.Index(fields=["ecuabet_event_id", "-observado_en"], name="idx_cuota_event_obs"),
         ]
