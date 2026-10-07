@@ -64,8 +64,14 @@ WSGI_APPLICATION = "futbol_stats.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.getenv("POSTGRES_DB", "futbol_stats"),
+        "USER": os.getenv("POSTGRES_USER", "futbol_user"),
+        "PASSWORD": os.getenv("POSTGRES_PASSWORD", ""),
+        "HOST": os.getenv("POSTGRES_HOST", "localhost"),
+        "PORT": os.getenv("POSTGRES_PORT", "5432"),
+        "CONN_MAX_AGE": 60,
+        "CONN_HEALTH_CHECKS": True,
     }
 }
 
