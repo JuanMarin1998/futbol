@@ -59,7 +59,7 @@ def detalle_partido_en_vivo(request, fixture_id):
 def api_detalle_partido_en_vivo(request, fixture_id):
     try:
         # Versioned key avoids serving an old response after parser/template changes.
-        cache_key = f"api_football_live_detail_v3_{fixture_id}"
+        cache_key = f"api_football_live_detail_v4_{fixture_id}"
         payload = cache.get(cache_key)
 
         if payload is None:
