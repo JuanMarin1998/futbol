@@ -23,6 +23,7 @@ class LiveMatch:
     odds: list = field(default_factory=list)
     performance: Dict[str, Any] = field(default_factory=dict)
     events: list = field(default_factory=list)
+    opportunities: list = field(default_factory=list)
 
     mapping_confidence: float = 0.0
     data_quality: float = 0.0
@@ -43,6 +44,7 @@ class LiveMatch:
             "odds": self.odds,
             "performance": self.performance,
             "events": self.events,
+            "opportunities": self.opportunities,
             "mapping_confidence": self.mapping_confidence,
             "data_quality": self.data_quality,
         }
