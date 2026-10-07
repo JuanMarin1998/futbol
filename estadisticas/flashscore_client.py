@@ -295,10 +295,92 @@ class FlashscoreClient:
 
         return result
 
+    @classmethod
+    def _normalizar_stats_feed(cls, raw: str) -> Dict[str, Any]:
+        """Parsea df_st_1, la fuente de estadísticas de partido de Flashscore."""
+        result = {"home": {}, "away": {}, "raw_types": []}
+        name_map = {
+            "Expected goals (xG)": ("expected_goals", "Expected goals (xG)"),
+            "Ball possession": ("ball_possession", "Posesión"),
+            "Total shots": ("goal_attempts", "Remates totales"),
+            "Shots on target": ("shots_on_goal", "Remates a puerta"),
+            "Shots off target": ("shots_off_goal", "Remates fuera"),
+            "Blocked shots": ("blocked_shots", "Remates bloqueados"),
+            "Free kicks": ("free_kicks", "Tiros libres"),
+            "Corner kicks": ("corner_kicks", "Córneres"),
+            "Offsides": ("offsides", "Fueras de juego"),
+            "Throw-ins": ("throw_ins", "Saques de banda"),
+            "Goalkeeper saves": ("goalkeeper_saves", "Paradas del portero"),
+            "Red cards": ("red_cards", "Tarjetas rojas"),
+            "Yellow cards": ("yellow_cards", "Tarjetas amarillas"),
+            "Fouls": ("fouls", "Faltas"),
+            "Passes": ("passes", "Pases"),
+            "Accurate passes": ("accurate_passes", "Pases precisos"),
+            "Long passes": ("long_passes", "Pases largos"),
+            "Accurate long passes": ("accurate_long_passes", "Pases largos precisos"),
+            "Crosses": ("crosses", "Centros"),
+            "Accurate crosses": ("accurate_crosses", "Centros precisos"),
+            "Key passes": ("key_passes", "Pases clave"),
+            "Expected assists (xA)": ("expected_assists", "Asistencias esperadas (xA)"),
+            "Big chances": ("big_chances", "Grandes ocasiones"),
+            "Big chances missed": ("big_chances_missed", "Grandes ocasiones falladas"),
+            "Touches in opposition box": ("touches_in_opposition_box", "Toques en el área rival"),
+            "Shots inside box": ("shots_inside_box", "Remates dentro del área"),
+            "Shots outside box": ("shots_outside_box", "Remates fuera del área"),
+            "Expected goals on target": ("expected_goals_on_target", "xG a puerta (xGOT)"),
+        }
+        for block in (raw or "").split("~"):
+            fields = {}
+            for field in block.split("¬"):
+                if "÷" not in field:
+                    continue
+                key, value = field.split("÷", 1)
+                fields[key] = value
+            name = fields.get("SG") or fields.get("SN")
+            if not name:
+                continue
+            mapped = name_map.get(name.strip())
+            if not mapped:
+                continue
+            stat_type, label = mapped
+            home_raw, away_raw = fields.get("SH"), fields.get("SI")
+            if home_raw is None or away_raw is None:
+                continue
+            for target, raw_value in (("home", home_raw), ("away", away_raw)):
+                result[target][stat_type] = {
+                    "name": label, "label": label,
+                    "value": cls._parse_numeric(raw_value),
+                    "raw_value": raw_value, "group": fields.get("SF") or "Estadísticas",
+                }
+            if stat_type not in result["raw_types"]:
+                result["raw_types"].append(stat_type)
+        return result
+
+    def obtener_stats_feed(self, event_id: str) -> Dict[str, Any]:
+        url = self.LIVE_FEED_URL.rsplit("/", 2)[0] + f"/df_st_1_{event_id}"
+        raw = self._feed_request(url)
+        return self._normalizar_stats_feed(raw)
+
     def obtener_stats(self, event_id: str) -> Dict[str, Any]:
         """Obtiene y normaliza las estadísticas actuales de un partido."""
         event = self.obtener_evento(event_id)
         stats = self.normalizar_stats(event)
+
+        real_count = sum(
+            1 for side in ("home", "away")
+            for item in (stats.get(side) or {}).values()
+            if item.get("raw_value") is not None
+        )
+        if real_count == 0:
+            try:
+                feed_stats = self.obtener_stats_feed(event_id)
+                for side in ("home", "away"):
+                    for stat_type, item in (feed_stats.get(side) or {}).items():
+                        stats[side][stat_type] = item
+                        if stat_type not in stats["raw_types"]:
+                            stats["raw_types"].append(stat_type)
+            except Exception:
+                pass
 
         return {
             "event_id": event.get("id") or str(event_id),
@@ -316,6 +398,22 @@ class FlashscoreClient:
         """
         event = self.obtener_evento(event_id)
         stats = self.normalizar_stats(event)
+
+        real_count = sum(
+            1 for side in ("home", "away")
+            for item in (stats.get(side) or {}).values()
+            if item.get("raw_value") is not None
+        )
+        if real_count == 0:
+            try:
+                feed_stats = self.obtener_stats_feed(event_id)
+                for side in ("home", "away"):
+                    for stat_type, item in (feed_stats.get(side) or {}).items():
+                        stats[side][stat_type] = item
+                        if stat_type not in stats["raw_types"]:
+                            stats["raw_types"].append(stat_type)
+            except Exception:
+                pass
 
         participants = event.get("eventParticipants", []) or []
         home = next(
