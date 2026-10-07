@@ -140,6 +140,7 @@
     <header>
         <h1><a href="{% url 'estadisticas:inicio' %}">⚽ Fútbol Stats</a></h1>
         <nav>
+            <a href="{% url 'estadisticas:partidos_en_vivo' %}" class="{% if seccion == 'live' %}activo{% endif %}">🔴 LIVE</a>
             {% for codigo, nombre in ligas.items %}
                 <a href="{% url 'estadisticas:partidos_liga' codigo %}" class="{% if codigo_liga == codigo %}activo{% endif %}">{{ nombre }}</a>
             {% endfor %}
