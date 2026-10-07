@@ -100,7 +100,7 @@ class EcuabetClient:
                     continue
 
                 # Ecuabet entrega normalmente "Equipo A vs. Equipo B".
-                parts = re.split(r"\\s+vs\\.?\\s+|\\s+-\\s+", event_name, maxsplit=1, flags=re.IGNORECASE)
+                parts = re.split(r"\s+vs\.?\s+|\s+-\s+", event_name, maxsplit=1, flags=re.IGNORECASE)
                 if len(parts) != 2:
                     continue
 
