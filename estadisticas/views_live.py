@@ -7,6 +7,8 @@ from .api_football_live import APIFootballLiveClient
 from .ecuabet_client import EcuabetClient
 from .live_engine.collector import LiveMatchCollector
 from .live_engine.match_mapper import MatchMappingError
+from .live_engine.experiment import LiveExperimentManager
+from .models import LiveExperiment
 
 
 def partidos_en_vivo(request):
@@ -383,6 +385,45 @@ def api_live_match_sources(request, ecuabet_event_id, flashscore_event_id):
         )
 
 
+def api_live_experiment_start(request, ecuabet_event_id):
+    if request.method != "POST":
+        return JsonResponse({"ok": False, "error": "Método no permitido."}, status=405)
+    try:
+        collector = LiveMatchCollector()
+        match = collector.construir_automatico(ecuabet_event_id)
+        experiment = LiveExperimentManager.start(match)
+        return JsonResponse({
+            "ok": True,
+            "experiment": LiveExperimentManager.serialize(experiment),
+        })
+    except Exception as exc:
+        return JsonResponse({"ok": False, "error": str(exc)}, status=502)
+
+
+def api_live_experiment_stop(request, ecuabet_event_id):
+    if request.method != "POST":
+        return JsonResponse({"ok": False, "error": "Método no permitido."}, status=405)
+    try:
+        experiment = (
+            LiveExperiment.objects
+            .filter(ecuabet_event_id=ecuabet_event_id, status="RUNNING")
+            .order_by("-started_at")
+            .first()
+        )
+        if not experiment:
+            return JsonResponse({
+                "ok": True,
+                "experiment": None,
+                "message": "No existe un experimento RUNNING para este partido.",
+            })
+        return JsonResponse({
+            "ok": True,
+            "experiment": LiveExperimentManager.stop(experiment.id),
+        })
+    except Exception as exc:
+        return JsonResponse({"ok": False, "error": str(exc)}, status=502)
+
+
 def ecuabet_live_detalle(request, ecuabet_event_id):
     poll_seconds = 5
     return render(
@@ -467,6 +508,7 @@ def api_ecuabet_live_detalle(request, ecuabet_event_id):
             cache.set(mapper_cache_key, mapping, 30)
 
         match_dict = None
+        experiment_state = None
         if mapping.get("matched") and mapping.get("flashscore_event_id"):
             try:
                 match = collector._construir_desde_evento(
@@ -475,6 +517,18 @@ def api_ecuabet_live_detalle(request, ecuabet_event_id):
                     mapping.get("confidence", 0.0),
                 )
                 match_dict = match.to_dict()
+
+                experiment = (
+                    LiveExperiment.objects
+                    .filter(ecuabet_event_id=ecuabet_event_id)
+                    .order_by("-started_at")
+                    .first()
+                )
+                if experiment:
+                    if experiment.status == "RUNNING":
+                        experiment_state = LiveExperimentManager.process(match)
+                    else:
+                        experiment_state = LiveExperimentManager.serialize(experiment)
             except Exception as exc:
                 mapping = {
                     **mapping,
@@ -487,6 +541,7 @@ def api_ecuabet_live_detalle(request, ecuabet_event_id):
             "event": event,
             "flashscore": mapping,
             "match": match_dict,
+            "experiment": experiment_state,
         })
     except MatchMappingError as exc:
         return JsonResponse({
