@@ -76,6 +76,20 @@ function renderStats(stats){
   ).join('');
 }
 
+function renderOpportunities(items){
+  if(!items?.length)return '<div class="ld-muted">Sin señales estadísticas por ahora. El motor necesita una ventaja mínima frente a la probabilidad implícita.</div>';
+  return items.map((o,i)=>
+    '<div class="ld-market" style="border-left:3px solid #22c55e">'+
+      '<div style="display:flex;justify-content:space-between;gap:.6rem;align-items:center">'+
+        '<strong>'+esc(o.selection||'')+(o.line?' · '+esc(o.line):'')+'</strong>'+
+        '<span class="ld-price">'+Number(o.price).toFixed(2)+'</span>'+
+      '</div>'+
+      '<div class="ld-muted" style="margin-top:.4rem">Modelo '+(o.model_probability*100).toFixed(1)+'% · Implícita '+(o.implied_probability*100).toFixed(1)+'% · Ventaja <strong>+'+Number(o.edge_pct).toFixed(1)+'%</strong></div>'+
+      '<div class="ld-muted" style="margin-top:.2rem">Confianza '+(o.confidence*100).toFixed(0)+'% · '+esc(o.model)+'</div>'+
+    '</div>'
+  ).join('');
+}
+
 function render(e, flash){
   const teams=e.competitors||[], parts=(e.name||'').split(/\s+vs\.?\s+/i);
   const home=teams[0]?.name||parts[0]||'Local', away=teams[1]?.name||parts[1]||'Visitante', score=e.score||[];
@@ -83,7 +97,8 @@ function render(e, flash){
   let stats=flash?.performance;
   return '<div class="ld-layout">'+
     '<main><div class="ld-card"><div class="ld-teams"><div class="ld-team">'+esc(home)+'</div><div><div class="ld-score">'+(score[0]??0)+' - '+(score[1]??0)+'</div><div class="ld-minute">'+esc(e.liveTime||e.live_time||e.live_status||'LIVE') + (e.ls ? '<div class="ld-muted" style="font-size:.78rem">'+esc(e.ls)+'</div>' : '')+'</div></div><div class="ld-team ld-away">'+esc(away)+'</div></div><div class="ld-muted" style="text-align:center;margin-top:.7rem">'+esc(e.champ?.name||'')+'</div></div>'+
-    '<div class="ld-card ld-section"><div class="ld-title">📊 Estadísticas en línea</div>'+renderStats(stats)+'</div></main>'+
+    '<div class="ld-card ld-section"><div class="ld-title">📊 Estadísticas en línea</div>'+renderStats(stats)+'</div>'+
+    '<div class="ld-card ld-section"><div class="ld-title">🎯 Oportunidades estadísticas</div>'+renderOpportunities(flash?.opportunities||[])+'</div></main>'+
     '<aside><div class="ld-card"><div class="ld-title">💰 Cuotas Ecuabet</div>'+ (markets.length?markets.map(m=>'<div class="ld-market"><h4>'+esc(m.name)+(m.line?' · '+esc(m.line):'')+'</h4>'+m.selections.map(o=>'<div style="display:flex;justify-content:space-between;padding:.55rem .7rem;border-bottom:1px solid #334155"><span>'+esc(o.name)+'</span><span class="ld-price">'+price(o.price)+'</span></div>').join('')+'</div>').join(''):'<div class="ld-muted">Sin mercados disponibles.</div>')+'</div>'+
     '<div class="ld-card ld-section"><div class="ld-title">🔗 Fuente estadística</div>'+ (flash?'<div class="ld-muted">Flashscore conectado · ID '+esc(flash.flashscore_event_id)+'</div>':'<div class="ld-muted">El partido está seleccionado, pero aún falta vincular su ID de Flashscore.</div>')+(flash?.feed_error?'<div class="ld-muted" style="margin-top:.5rem;color:#fbbf24">⚠️ Estadísticas detalladas: '+esc(flash.feed_error)+'</div>':'')+'</div></aside></div>';
 }
