@@ -419,16 +419,19 @@ class FlashscoreClient:
             for item in (stats.get(side) or {}).values()
             if item.get("raw_value") is not None
         )
-        if real_count == 0:
-            try:
-                feed_stats = self.obtener_stats_feed(event_id)
-                for side in ("home", "away"):
-                    for stat_type, item in (feed_stats.get(side) or {}).items():
-                        stats[side][stat_type] = item
-                        if stat_type not in stats["raw_types"]:
-                            stats["raw_types"].append(stat_type)
-            except Exception:
-                pass
+        # El GraphQL puede traer solo TOP Stats. Siempre consultamos df_st_1
+        # para incorporar también Shots, Attack, Passes, Defense y Goalkeeping.
+        try:
+            feed_stats = self.obtener_stats_feed(event_id)
+            for side in ("home", "away"):
+                for stat_type, item in (feed_stats.get(side) or {}).items():
+                    stats[side][stat_type] = item
+                    if stat_type not in stats["raw_types"]:
+                        stats["raw_types"].append(stat_type)
+        except Exception:
+            # Conservamos lo que haya entregado GraphQL si el feed secundario
+            # no está disponible temporalmente.
+            pass
 
         return {
             "event_id": event.get("id") or str(event_id),
@@ -452,16 +455,19 @@ class FlashscoreClient:
             for item in (stats.get(side) or {}).values()
             if item.get("raw_value") is not None
         )
-        if real_count == 0:
-            try:
-                feed_stats = self.obtener_stats_feed(event_id)
-                for side in ("home", "away"):
-                    for stat_type, item in (feed_stats.get(side) or {}).items():
-                        stats[side][stat_type] = item
-                        if stat_type not in stats["raw_types"]:
-                            stats["raw_types"].append(stat_type)
-            except Exception:
-                pass
+        # El GraphQL puede traer solo TOP Stats. Siempre consultamos df_st_1
+        # para incorporar también Shots, Attack, Passes, Defense y Goalkeeping.
+        try:
+            feed_stats = self.obtener_stats_feed(event_id)
+            for side in ("home", "away"):
+                for stat_type, item in (feed_stats.get(side) or {}).items():
+                    stats[side][stat_type] = item
+                    if stat_type not in stats["raw_types"]:
+                        stats["raw_types"].append(stat_type)
+        except Exception:
+            # Conservamos lo que haya entregado GraphQL si el feed secundario
+            # no está disponible temporalmente.
+            pass
 
         participants = event.get("eventParticipants", []) or []
         home = next(
