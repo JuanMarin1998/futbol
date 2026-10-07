@@ -2,6 +2,8 @@ import math
 import re
 from typing import Any, Dict, List, Optional, Tuple
 
+from .opportunity_levels import enrich
+
 
 class LiveOpportunityEngineV2:
     """Motor de análisis estadístico LIVE V2, separado del motor V1."""
@@ -333,7 +335,7 @@ class LiveOpportunityEngineV2:
             for odd in selections:
                 implied = 1.0 / odd["price"]
                 edge = model_p - implied
-                results.append({
+                opportunity = enrich({
                     "market": odd.get("market_name", ""),
                     "selection": odd.get("name", ""),
                     "line": odd.get("line"),
@@ -352,6 +354,8 @@ class LiveOpportunityEngineV2:
                     "model": "multi_factor_live_v2",
                     "reason": f"V2 combina xG/xGOT, remates, ataque, pases y contexto de marcador/tiempo. Ventaja estadística: {edge*100:.1f} puntos.",
                 })
+                if opportunity["level"]:
+                    results.append(opportunity)
 
         results.sort(key=lambda x: (x["edge"], x["confidence"], x["data_coverage"]), reverse=True)
         return results[:10]
