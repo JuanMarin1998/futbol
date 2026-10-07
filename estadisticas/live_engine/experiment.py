@@ -343,15 +343,35 @@ class LiveExperimentManager:
     @classmethod
     def serialize(cls, experiment):
         entries = []
+        motors = {}
+        for motor in ("V1", "V2"):
+            motor_entries = list(experiment.entries.filter(motor=motor).order_by("-placed_at"))
+            total_pnl = sum((Decimal(str(e.pnl)) for e in motor_entries), Decimal("0"))
+            best = max(motor_entries, key=lambda e: (e.level, e.model_probability, e.edge), default=None)
+            motors[motor] = {
+                "decisions": len(motor_entries),
+                "wins": sum(1 for e in motor_entries if e.status == "WON"),
+                "losses": sum(1 for e in motor_entries if e.status == "LOST"),
+                "open": sum(1 for e in motor_entries if e.status == "OPEN"),
+                "cancelled": sum(1 for e in motor_entries if e.status == "CANCELLED"),
+                "total_staked": float(sum((Decimal(str(e.stake)) for e in motor_entries), Decimal("0"))),
+                "total_pnl": float(total_pnl),
+                "best_level": best.level if best else 0,
+                "best_probability": float(best.model_probability) if best else 0,
+                "best_selection": best.selection if best else "",
+            }
+
         for e in experiment.entries.all():
             entries.append({
                 "id": e.id,
                 "motor": e.motor,
+                "match": f"{experiment.home_team} vs {experiment.away_team}",
                 "market": e.market,
                 "selection": e.selection,
                 "line": e.line,
                 "price": float(e.price),
                 "model_probability": e.model_probability,
+                "implied_probability": e.implied_probability,
                 "edge_pct": round(e.edge * 100, 2),
                 "level": e.level,
                 "level_name": e.level_name,
@@ -360,11 +380,20 @@ class LiveExperimentManager:
                 "status": e.status,
                 "pnl": float(e.pnl),
                 "reason": e.reason,
+                "supporting_factors": e.supporting_factors,
+                "contradicting_factors": e.contradicting_factors,
                 "placed_minute": e.placed_minute,
                 "placed_home_score": e.placed_home_score,
                 "placed_away_score": e.placed_away_score,
                 "placed_at": e.placed_at.isoformat(),
+                "settled_at": e.settled_at.isoformat() if e.settled_at else None,
             })
+
+        ranked = [
+            (data["best_level"], data["best_probability"], data["total_pnl"], motor)
+            for motor, data in motors.items() if data["decisions"]
+        ]
+        safest_motor = max(ranked, default=(0, 0, 0, None))[3]
 
         return {
             "id": experiment.id,
@@ -373,6 +402,7 @@ class LiveExperimentManager:
             "flashscore_event_id": experiment.flashscore_event_id,
             "home_team": experiment.home_team,
             "away_team": experiment.away_team,
+            "match": f"{experiment.home_team} vs {experiment.away_team}",
             "initial_lives": float(experiment.initial_lives),
             "v1_lives": float(experiment.v1_lives),
             "v2_lives": float(experiment.v2_lives),
@@ -385,7 +415,15 @@ class LiveExperimentManager:
             "v2_wins": experiment.v2_wins,
             "v2_losses": experiment.v2_losses,
             "last_minute": experiment.last_minute,
+            "last_period": experiment.last_period,
             "last_home_score": experiment.last_home_score,
             "last_away_score": experiment.last_away_score,
+            "final_home_score": experiment.final_home_score,
+            "final_away_score": experiment.final_away_score,
+            "started_at": experiment.started_at.isoformat(),
+            "stopped_at": experiment.stopped_at.isoformat() if experiment.stopped_at else None,
+            "finished_at": experiment.finished_at.isoformat() if experiment.finished_at else None,
+            "motors": motors,
+            "safest_motor": safest_motor,
             "entries": entries,
         }
