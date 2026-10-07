@@ -95,12 +95,56 @@ def _data(partido):
     client = EcuabetClient()
     event = _event_info(partido, client)
     event_id = event["event_id"]
-    quotes = client.obtener_cuotas_1x2(
+    detalle = client.obtener_mercados_evento(
         event_id,
         sport_id=event.get("sport_id") or 0,
         champ_id=event.get("champ_id") or 0,
     )
+
+    mercado_1x2 = next(
+        (m for m in detalle.get("markets", []) if int(m.get("market_type_id") or 0) == 1),
+        None,
+    )
+    if not mercado_1x2 or not mercado_1x2.get("selections"):
+        raise EcuabetAPIError(f"No se encontró mercado 1X2 para {event_id}")
+
+    quotes = {
+        "event_id": event_id,
+        "market_id": mercado_1x2["market_id"],
+        "selections": [
+            {
+                **selection,
+                "is_live": False,
+                "live_time": None,
+                "period": None,
+                "score": None,
+                "last_update": None,
+            }
+            for selection in mercado_1x2["selections"]
+        ],
+    }
     snapshot = _save_snapshot(partido, quotes)
+
+    mercados = []
+    for market in detalle.get("markets", []):
+        selections = []
+        for selection in market.get("selections", []):
+            selections.append({
+                "odd_id": selection.get("odd_id"),
+                "type_id": selection.get("type_id"),
+                "name": selection.get("name") or "Selección",
+                "price": selection.get("price"),
+                "competitor_id": selection.get("competitor_id"),
+            })
+
+        if selections:
+            mercados.append({
+                "market_id": market.get("market_id"),
+                "market_type_id": market.get("market_type_id"),
+                "name": market.get("name") or "Mercado",
+                "line": market.get("line"),
+                "selections": selections,
+            })
 
     previous = (
         Cuota1X2Snapshot.objects
@@ -130,7 +174,10 @@ def _data(partido):
         "event_id": event_id,
         "snapshot_id": snapshot.pk,
         "snapshot_count": Cuota1X2Snapshot.objects.filter(partido=partido).count(),
-        "current": current_data,
+        "current": {
+            **current_data,
+            "mercados": mercados,
+        },
         "previous": previous_data,
         "changes": changes,
         "poll_seconds": int(os.getenv("ECUABET_POLL_SECONDS", "5")),
