@@ -142,6 +142,7 @@
         <nav>
             <a href="{% url 'estadisticas:partidos_en_vivo' %}" class="{% if seccion == 'live' %}activo{% endif %}">🔴 LIVE</a>
             <a href="{% url 'estadisticas:ecuabet_live' %}" class="{% if seccion == 'ecuabet_live' %}activo{% endif %}">🟢 LIVE Ecuabet</a>
+            <a href="{% url 'estadisticas:experimento_live' %}" class="{% if seccion == 'experimento_live' %}activo{% endif %}">🧪 Experimento</a>
             {% for codigo, nombre in ligas.items %}
                 <a href="{% url 'estadisticas:partidos_liga' codigo %}" class="{% if codigo_liga == codigo %}activo{% endif %}">{{ nombre }}</a>
             {% endfor %}
