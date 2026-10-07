@@ -59,7 +59,7 @@ def detalle_partido_en_vivo(request, fixture_id):
 def api_detalle_partido_en_vivo(request, fixture_id):
     try:
         # Versioned key avoids serving an old response after parser/template changes.
-        cache_key = f"api_football_live_detail_v2_{fixture_id}"
+        cache_key = f"api_football_live_detail_v3_{fixture_id}"
         payload = cache.get(cache_key)
 
         if payload is None:
@@ -162,6 +162,18 @@ def api_detalle_partido_en_vivo(request, fixture_id):
                 "lineups": len(lineups),
                 "players": len(players),
                 "fallback_used": fallback_used,
+                "source": "fixtures?ids=FIXTURE_ID + fallback endpoints",
+                "main_payload": {
+                    "results": payload.get("results"),
+                    "errors": payload.get("errors") or {},
+                    "raw_keys": sorted(item.keys()),
+                    "raw_counts": {
+                        "events": len(item.get("events") or []),
+                        "statistics": len(item.get("statistics") or []),
+                        "lineups": len(item.get("lineups") or []),
+                        "players": len(item.get("players") or []),
+                    },
+                },
             },
         })
     except Exception as exc:
