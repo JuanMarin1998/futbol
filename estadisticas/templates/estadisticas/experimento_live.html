@@ -1,0 +1,123 @@
+{% extends "estadisticas/base.html" %}
+{% block titulo %}🧪 Experimento · V1 vs V2{% endblock %}
+{% block contenido %}
+<style>
+.ex-head{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:1rem}
+.ex-toolbar{display:flex;gap:.6rem;align-items:center;flex-wrap:wrap}
+.ex-select{background:#0f172a;color:#e2e8f0;border:1px solid #475569;border-radius:8px;padding:.65rem .8rem;min-width:320px}
+.ex-btn{border:0;border-radius:8px;padding:.65rem .9rem;font-weight:800;cursor:pointer}.ex-start{background:#16a34a;color:#fff}.ex-stop{background:#dc2626;color:#fff}.ex-refresh{background:#334155;color:#fff}
+.ex-card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:1rem;margin-bottom:1rem}
+.ex-score{text-align:center;font-size:2rem;font-weight:900}.ex-teams{display:grid;grid-template-columns:1fr auto 1fr;gap:1rem;align-items:center}.ex-away{text-align:right}.ex-minute{text-align:center;color:#f87171;font-weight:800}
+.ex-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}.ex-motor{background:#0f172a;border:1px solid #334155;border-radius:12px;padding:1rem}.ex-v1{border-top:3px solid #22c55e}.ex-v2{border-top:3px solid #60a5fa}
+.ex-life{font-size:2rem;font-weight:900}.positive{color:#4ade80}.negative{color:#f87171}.muted{color:#94a3b8;font-size:.85rem}
+.ex-op{border:1px solid #334155;border-radius:9px;padding:.7rem;margin-top:.55rem}.badge{display:inline-block;border-radius:999px;padding:.2rem .5rem;font-size:.72rem;font-weight:900;background:#334155}.l1{color:#4ade80}.l2{color:#facc15}.l3{color:#fb923c}
+.ex-history{max-height:520px;overflow:auto}.ex-entry{border:1px solid #334155;border-radius:9px;padding:.65rem;margin-top:.55rem}
+@media(max-width:800px){.ex-grid{grid-template-columns:1fr}.ex-select{min-width:220px}.ex-teams{gap:.4rem}}
+</style>
+
+<div class="ex-head">
+  <div>
+    <h2 style="margin:.2rem 0">🧪 Experimento V1 vs V2</h2>
+    <div class="muted">Ventana independiente para observar cómo deciden ambos motores sobre un partido LIVE.</div>
+  </div>
+  <div class="ex-toolbar">
+    <select id="match-select" class="ex-select"><option value="">Cargando partidos LIVE...</option></select>
+    <button class="ex-btn ex-refresh" onclick="cargarPartidos()">↻ Actualizar</button>
+  </div>
+</div>
+
+<div id="empty" class="ex-card muted">Selecciona un partido LIVE para comenzar a observar los motores.</div>
+<div id="dashboard" style="display:none">
+  <div class="ex-card" id="match-info"></div>
+  <div class="ex-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap">
+      <div><strong>Control del experimento</strong><div class="muted">Cada motor inicia con 100 vidas. Las decisiones y justificativos se guardan en la base de datos.</div></div>
+      <div class="ex-toolbar">
+        <button class="ex-btn ex-start" id="start-btn" onclick="iniciar()">▶ Simular</button>
+        <button class="ex-btn ex-stop" id="stop-btn" onclick="parar()" style="display:none">■ Parar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="ex-grid">
+    <div class="ex-motor ex-v1">
+      <h3 style="margin-top:0">🧪 Motor V1 · Original</h3>
+      <div id="v1"></div>
+    </div>
+    <div class="ex-motor ex-v2">
+      <h3 style="margin-top:0">🧠 Motor V2 · Multifactorial</h3>
+      <div id="v2"></div>
+    </div>
+  </div>
+
+  <div class="ex-card">
+    <h3 style="margin-top:0">📜 Historial de decisiones</h3>
+    <div id="history" class="ex-history"><div class="muted">Todavía no hay decisiones.</div></div>
+  </div>
+</div>
+
+<script>
+let selectedEvent=null;
+const POLL_MS=5000;
+function esc(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
+function csrf(){return document.querySelector('[name=csrfmiddlewaretoken]')?.value||'';}
+function levelClass(n){return n===1?'l1':n===2?'l2':'l3';}
+function renderOpportunity(o){
+  return '<div class="ex-op"><div style="display:flex;justify-content:space-between;gap:.5rem"><strong>'+esc(o.selection)+(o.line?' · '+esc(o.line):'')+'</strong><strong>'+Number(o.price).toFixed(2)+'</strong></div>'+
+    '<div class="muted" style="margin-top:.35rem"><span class="badge '+levelClass(o.level||3)+'">'+esc(o.level_label||('Nivel '+o.level))+'</span> · Modelo '+(Number(o.model_probability||0)*100).toFixed(1)+'% · Implícita '+(Number(o.implied_probability||0)*100).toFixed(1)+'% · Ventaja '+(Number(o.edge_pct||0)>=0?'+':'')+Number(o.edge_pct||0).toFixed(1)+'%</div>'+
+    '<div class="muted" style="margin-top:.3rem">Confianza '+(Number(o.confidence||0)*100).toFixed(0)+'% · Cobertura '+(Number(o.data_coverage||0)*100).toFixed(0)+'% · Señal '+esc(o.signal_strength||'')+'</div>'+
+    '<div style="margin-top:.45rem"><strong>Justificativo:</strong> <span class="muted">'+esc(o.reason||'')+'</span></div>'+
+    ((o.supporting_factors||[]).length?'<div class="muted" style="margin-top:.35rem">✅ '+o.supporting_factors.map(esc).join(' · ')+'</div>':'')+
+    ((o.contradicting_factors||[]).length?'<div class="muted" style="margin-top:.25rem">⚠️ '+o.contradicting_factors.map(esc).join(' · ')+'</div>':'')+
+    '</div>';
+}
+function renderMotor(target,exp,motor,ops){
+  const lives=Number(exp?.[motor.toLowerCase()+'_lives']??100), diff=lives-100;
+  let html='<div class="muted">'+(exp?.status==='RUNNING'?'🟢 Ejecutando':exp?.status==='FINISHED'?'🏁 Finalizado':'⏹️ Detenido')+'</div>'+
+    '<div class="ex-life '+(diff>=0?'positive':'negative')+'">'+lives.toFixed(2)+' vidas</div>'+
+    '<div class="muted">Máx '+Number(exp?.[motor.toLowerCase()+'_max_lives']??100).toFixed(2)+' · Mín '+Number(exp?.[motor.toLowerCase()+'_min_lives']??100).toFixed(2)+' · '+(exp?.[motor.toLowerCase()+'_wins']??0)+'W / '+(exp?.[motor.toLowerCase()+'_losses']??0)+'L</div>'+
+    '<h4>Oportunidades actuales</h4>'+
+    ((ops||[]).length?ops.map(renderOpportunity).join(''):'<div class="muted">Este motor no detecta una oportunidad con nivel suficiente en esta actualización.</div>');
+  document.getElementById(target).innerHTML=html;
+}
+function renderHistory(entries){
+  if(!entries?.length){document.getElementById('history').innerHTML='<div class="muted">Todavía no hay decisiones.</div>';return;}
+  document.getElementById('history').innerHTML=entries.map(e=>{
+    const result=e.status==='WON'?'✅ Ganada':e.status==='LOST'?'❌ Perdida':e.status==='CANCELLED'?'⚪ Cancelada':'⏳ Abierta';
+    return '<div class="ex-entry"><strong>'+esc(e.motor)+' · '+esc(e.selection)+'</strong> · '+result+
+      '<div class="muted">'+esc(e.placed_minute||'')+' · cuota '+Number(e.price).toFixed(2)+' · '+Number(e.stake).toFixed(2)+' vidas · nivel '+e.level+' '+esc(e.level_name)+'</div>'+
+      '<div style="margin-top:.25rem"><strong>Justificativo:</strong> <span class="muted">'+esc(e.reason||'')+'</span></div>'+
+      (e.pnl!==0?'<div class="muted">Variación: '+(e.pnl>0?'+':'')+Number(e.pnl).toFixed(2)+' vidas</div>':'')+'</div>';
+  }).join('');
+}
+function renderData(d){
+  const e=d.event, teams=e.competitors||[], parts=(e.name||'').split(/\s+vs\.?\s+/i);
+  const home=teams[0]?.name||parts[0]||'Local',away=teams[1]?.name||parts[1]||'Visitante',score=e.score||[];
+  document.getElementById('match-info').innerHTML='<div class="ex-teams"><div><strong>'+esc(home)+'</strong></div><div><div class="ex-score">'+(score[0]??0)+' - '+(score[1]??0)+'</div><div class="ex-minute">'+esc(e.liveTime||e.live_time||e.live_status||'LIVE')+'</div></div><div class="ex-away"><strong>'+esc(away)+'</strong></div></div><div class="muted" style="text-align:center;margin-top:.5rem">🏆 '+esc(e.champ?.name||'')+' · Ecuabet ID '+esc(e.id)+'</div>';
+  const match=d.match, v1=match?.opportunities||[],v2=match?.opportunities_v2||[], exp=d.experiment||null;
+  renderMotor('v1',exp,'V1',v1);renderMotor('v2',exp,'V2',v2);renderHistory(exp?.entries||[]);
+  document.getElementById('start-btn').style.display=exp?.status==='RUNNING'?'none':'inline-block';
+  document.getElementById('stop-btn').style.display=exp?.status==='RUNNING'?'inline-block':'none';
+}
+async function cargarPartidos(){
+  const r=await fetch("{% url 'estadisticas:api_ecuabet_live' %}",{cache:'no-store'}),d=await r.json();
+  const s=document.getElementById('match-select'),prev=s.value;
+  s.innerHTML='<option value="">Selecciona un partido LIVE...</option>'+(d.events||[]).map(e=>'<option value="'+e.id+'">'+esc(e.name)+' · '+esc(e.live_time||e.live_status||'LIVE')+'</option>').join('');
+  if(prev&&d.events.some(e=>String(e.id)===String(prev))){s.value=prev;await cargarDetalle();} else {document.getElementById('dashboard').style.display='none';document.getElementById('empty').style.display='block';}
+}
+async function cargarDetalle(){
+  selectedEvent=document.getElementById('match-select').value;if(!selectedEvent)return;
+  document.getElementById('empty').style.display='none';document.getElementById('dashboard').style.display='block';
+  try{
+    const r=await fetch("/api/live/ecuabet/"+encodeURIComponent(selectedEvent)+"/",{cache:'no-store'}),d=await r.json();
+    if(!r.ok||!d.ok)throw new Error(d.error||'No disponible');
+    renderData(d);
+  }catch(err){document.getElementById('match-info').innerHTML='<div class="muted">⚠️ '+esc(err.message)+'</div>';}
+}
+async function iniciar(){if(!selectedEvent)return;try{const r=await fetch("/api/live/ecuabet/"+selectedEvent+"/experimento/start/",{method:'POST',headers:{'X-CSRFToken':csrf()}}),d=await r.json();if(!r.ok||!d.ok)throw new Error(d.error||'No se pudo iniciar');await cargarDetalle();}catch(e){alert(e.message);}}
+async function parar(){if(!selectedEvent)return;try{const r=await fetch("/api/live/ecuabet/"+selectedEvent+"/experimento/stop/",{method:'POST',headers:{'X-CSRFToken':csrf()}}),d=await r.json();if(!r.ok||!d.ok)throw new Error(d.error||'No se pudo parar');await cargarDetalle();}catch(e){alert(e.message);}}
+document.getElementById('match-select').addEventListener('change',cargarDetalle);
+cargarPartidos();setInterval(()=>{cargarPartidos();if(selectedEvent)cargarDetalle();},POLL_MS);
+</script>
+{% csrf_token %}
+{% endblock %}
