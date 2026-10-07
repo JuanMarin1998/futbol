@@ -8,19 +8,19 @@ from .models import Cuota1X2Snapshot, Partido
 
 
 def _event_info(partido, client):
-    if partido.ecuabet_event_id:
-        return {
-            "event_id": partido.ecuabet_event_id,
-            "sport_id": 0,
-            "champ_id": 0,
-        }
-
+    # No dependemos de un champId fijo ni de que el evento ya tenga
+    # ecuabet_event_id guardado. Ecuabet puede cambiar/usar IDs distintos
+    # según la competición, por lo que resolvemos el partido por equipos.
     found = client.buscar_evento(
         partido.equipo_local.nombre,
         partido.equipo_visitante.nombre,
+        league_name=getattr(partido.liga, "nombre", ""),
     )
-    partido.ecuabet_event_id = found["event_id"]
-    partido.save(update_fields=["ecuabet_event_id"])
+
+    if partido.ecuabet_event_id != found["event_id"]:
+        partido.ecuabet_event_id = found["event_id"]
+        partido.save(update_fields=["ecuabet_event_id"])
+
     return found
 
 
@@ -154,7 +154,7 @@ def cuotas_partido(request, partido_id):
 
 def api_cuotas_partido(request, partido_id):
     partido = get_object_or_404(
-        Partido.objects.select_related("equipo_local", "equipo_visitante"),
+        Partido.objects.select_related("liga", "equipo_local", "equipo_visitante"),
         pk=partido_id,
     )
     try:
