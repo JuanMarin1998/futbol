@@ -4,6 +4,7 @@ from ..ecuabet_client import EcuabetClient
 from ..flashscore_client import FlashscoreClient
 from .match_mapper import MatchMapper, MatchMappingError
 from .models import LiveMatch
+from .opportunity_engine import LiveOpportunityEngine
 
 
 class LiveMatchCollector:
@@ -73,7 +74,7 @@ class LiveMatchCollector:
             score = [None, None]
 
         stats = flashscore.get("stats", {})
-        return LiveMatch(
+        match = LiveMatch(
             ecuabet_event_id=int(ecuabet.get("id")),
             flashscore_event_id=flashscore.get("flashscore_event_id"),
             home_team=self._participant_name(home) or self._split_ecuabet_name(ecuabet)[0],
@@ -90,6 +91,8 @@ class LiveMatchCollector:
             mapping_confidence=mapping_confidence,
             data_quality=self._calculate_data_quality(stats),
         )
+        match.opportunities = LiveOpportunityEngine.evaluate(match)
+        return match
 
     def _obtener_ecuabet_evento(self, event_id: int) -> Dict[str, Any]:
         payload = self.ecuabet._request(
