@@ -210,9 +210,6 @@ class TablaPosicion(models.Model):
             )
         ]
         indexes = [
-            models.Index(fields=["liga", "temporada", "posicion"], name="idx_goleador_liga_temp_pos"),
-        ]
-        indexes = [
             models.Index(fields=["liga", "temporada", "posicion"], name="idx_tabla_liga_temp_pos"),
         ]
 
@@ -237,4 +234,7 @@ class GoleadorTemporada(models.Model):
                 fields=["liga", "temporada", "jugador", "equipo"],
                 name="uniq_goleador_liga_temporada_jugador_equipo",
             )
+        ]
+        indexes = [
+            models.Index(fields=["liga", "temporada", "posicion"], name="idx_goleador_liga_temp_pos"),
         ]
