@@ -60,14 +60,32 @@ def partidos_liga(request, codigo_liga):
     ligas_menu = _ligas_menu()
     nombre_liga = ligas_menu.get(codigo_liga, codigo_liga)
     liga = Liga.objects.filter(codigo=codigo_liga).first()
+    temporada = request.GET.get("temporada")
+
+    if temporada:
+        try:
+            temporada = int(temporada)
+        except ValueError:
+            temporada = None
+
+    if temporada is None:
+        ultima = Partido.objects.filter(liga=liga).order_by("-temporada").first() if liga else None
+        temporada = ultima.temporada if ultima else None
+
+    temporadas = list(
+        Partido.objects.filter(liga=liga)
+        .values_list("temporada", flat=True)
+        .distinct()
+        .order_by("-temporada")
+    ) if liga else []
 
     partidos = {"finalizados": [], "programados": []}
     error = None
 
-    if liga:
-        qs = Partido.objects.filter(liga=liga).select_related(
-            "equipo_local", "equipo_visitante", "liga"
-        )
+    if liga and temporada:
+        qs = Partido.objects.filter(
+            liga=liga, temporada=temporada
+        ).select_related("equipo_local", "equipo_visitante", "liga")
 
         finalizados = qs.filter(estado="FINALIZADO").order_by("-fecha")[:15]
         programados = qs.filter(
@@ -79,7 +97,7 @@ def partidos_liga(request, codigo_liga):
             "programados": [_partido_dict(p) for p in programados],
         }
     else:
-        error = "No existen datos de esta liga en la base de datos. Ejecuta la sincronización."
+        error = "No existen datos de esta liga/temporada en la base de datos. Ejecuta la sincronización."
 
     return render(
         request,
@@ -88,6 +106,8 @@ def partidos_liga(request, codigo_liga):
             "codigo_liga": codigo_liga,
             "nombre_liga": nombre_liga,
             "partidos": partidos,
+            "temporada": temporada,
+            "temporadas": temporadas,
             "error": error,
             "ligas": ligas_menu,
             "seccion": "partidos",
