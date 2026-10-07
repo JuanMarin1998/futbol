@@ -24,6 +24,7 @@ class LiveMatch:
     performance: Dict[str, Any] = field(default_factory=dict)
     events: list = field(default_factory=list)
     opportunities: list = field(default_factory=list)
+    opportunities_v2: list = field(default_factory=list)
 
     mapping_confidence: float = 0.0
     data_quality: float = 0.0
@@ -45,6 +46,7 @@ class LiveMatch:
             "performance": self.performance,
             "events": self.events,
             "opportunities": self.opportunities,
+            "opportunities_v2": self.opportunities_v2,
             "mapping_confidence": self.mapping_confidence,
             "data_quality": self.data_quality,
         }
