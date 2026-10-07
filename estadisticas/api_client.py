@@ -47,7 +47,7 @@ def obtener_equipos(codigo_liga: str) -> list[dict]:
     return resp.json().get("teams", [])
 
 
-def obtener_partidos(codigo_liga: str, estado: str | None = None, fecha_desde=None, fecha_hasta=None) -> list[dict]:
+def obtener_partidos(codigo_liga: str, estado: str | None = None, fecha_desde=None, fecha_hasta=None, temporada: int | None = None) -> list[dict]:
     """
     Trae partidos de una competición.
     estado puede ser: SCHEDULED, LIVE, IN_PLAY, PAUSED, FINISHED, POSTPONED, CANCELLED
@@ -60,6 +60,8 @@ def obtener_partidos(codigo_liga: str, estado: str | None = None, fecha_desde=No
         params["dateFrom"] = fecha_desde
     if fecha_hasta:
         params["dateTo"] = fecha_hasta
+    if temporada:
+        params["season"] = temporada
 
     resp = requests.get(url, headers=_headers(), params=params, timeout=15)
     if resp.status_code != 200:
