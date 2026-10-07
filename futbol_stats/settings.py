@@ -23,6 +23,7 @@ ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
 
 # Token de la API de football-data.org (se guarda en el archivo .env, nunca en el código)
 FOOTBALL_DATA_TOKEN = os.getenv("FOOTBALL_DATA_TOKEN", "")
+API_FOOTBALL_KEY = os.getenv("API_FOOTBALL_KEY", "")
 
 INSTALLED_APPS = [
     "django.contrib.admin",
