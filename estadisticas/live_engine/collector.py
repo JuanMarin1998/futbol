@@ -212,8 +212,12 @@ class LiveMatchCollector:
             mapping_confidence=1.0,
             data_quality=self._calculate_data_quality(stats),
         )
-        match.opportunities = LiveOpportunityEngine.evaluate(match)
-        match.opportunities_v2 = LiveOpportunityEngineV2.evaluate(match)
+        if match.is_finished:
+            match.opportunities = []
+            match.opportunities_v2 = []
+        else:
+            match.opportunities = LiveOpportunityEngine.evaluate(match)
+            match.opportunities_v2 = LiveOpportunityEngineV2.evaluate(match)
         return match
 
     def _obtener_ecuabet_evento(self, event_id: int) -> Dict[str, Any]:
