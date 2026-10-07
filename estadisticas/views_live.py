@@ -209,3 +209,144 @@ def api_detalle_partido_en_vivo(request, fixture_id):
         })
     except Exception as exc:
         return JsonResponse({"error": str(exc)}, status=502)
+
+
+def ecuabet_live(request):
+    poll_seconds = 5
+    return render(
+        request,
+        "estadisticas/ecuabet_live.html",
+        {"live_poll_ms": poll_seconds * 1000},
+    )
+
+
+def api_ecuabet_live(request):
+    """Devuelve todos los eventos LIVE de Ecuabet con todos sus mercados y cuotas."""
+    try:
+        cache_key = "ecuabet_live_all_v1"
+        payload = cache.get(cache_key)
+
+        if payload is None:
+            client = __import__("estadisticas.ecuabet_client", fromlist=["EcuabetClient"]).EcuabetClient()
+            payload = client._request("GET", "GetLivenow", {
+                "eventCount": 0,
+                "sportId": 0,
+            })
+            cache.set(cache_key, payload, 3)
+
+        events = payload.get("events", []) or []
+        markets = payload.get("markets", []) or []
+        odds = payload.get("odds", []) or []
+        competitors = payload.get("competitors", []) or []
+        sports = payload.get("sports", []) or []
+        categories = payload.get("categories", []) or []
+        champs = payload.get("champs", []) or []
+
+        markets_by_id = {
+            int(item["id"]): item
+            for item in markets
+            if isinstance(item, dict) and item.get("id") is not None
+        }
+        odds_by_id = {
+            int(item["id"]): item
+            for item in odds
+            if isinstance(item, dict) and item.get("id") is not None
+        }
+        competitors_by_id = {
+            int(item["id"]): item
+            for item in competitors
+            if isinstance(item, dict) and item.get("id") is not None
+        }
+        sports_by_id = {
+            int(item["id"]): item
+            for item in sports
+            if isinstance(item, dict) and item.get("id") is not None
+        }
+        categories_by_id = {
+            int(item["id"]): item
+            for item in categories
+            if isinstance(item, dict) and item.get("id") is not None
+        }
+        champs_by_id = {
+            int(item["id"]): item
+            for item in champs
+            if isinstance(item, dict) and item.get("id") is not None
+        }
+
+        result = []
+        for event in events:
+            if not isinstance(event, dict):
+                continue
+
+            market_list = []
+            for market_id in event.get("marketIds", []) or []:
+                market = markets_by_id.get(int(market_id))
+                if not market:
+                    continue
+
+                selections = []
+                for odd_id in market.get("oddIds", []) or []:
+                    odd = odds_by_id.get(int(odd_id))
+                    if not odd:
+                        continue
+                    selections.append({
+                        "id": int(odd["id"]),
+                        "type_id": odd.get("typeId"),
+                        "name": odd.get("name", ""),
+                        "price": odd.get("price"),
+                        "odd_status": odd.get("oddStatus"),
+                        "competitor_id": odd.get("competitorId"),
+                        "is_mb": odd.get("isMB", False),
+                        "is_dbb": odd.get("isDBB", False),
+                    })
+
+                if selections:
+                    market_list.append({
+                        "id": int(market["id"]),
+                        "type_id": market.get("typeId"),
+                        "sport_market_id": market.get("sportMarketId"),
+                        "name": market.get("name", ""),
+                        "line": market.get("sv") or market.get("sn"),
+                        "selections": selections,
+                    })
+
+            competitor_ids = event.get("competitorIds", []) or []
+            event_sport_id = event.get("sportId")
+            event_cat_id = event.get("catId")
+            event_champ_id = event.get("champId")
+
+            result.append({
+                "id": event.get("id"),
+                "name": event.get("name", ""),
+                "live_time": event.get("liveTime"),
+                "live_status": event.get("ls"),
+                "score": event.get("score", [None, None]),
+                "timer": event.get("timer", {}),
+                "status": event.get("status"),
+                "start_date": event.get("startDate"),
+                "has_stream": event.get("hasStream", False),
+                "competitors": [
+                    competitors_by_id.get(int(cid), {"id": cid, "name": str(cid)})
+                    for cid in competitor_ids
+                ],
+                "sport": sports_by_id.get(int(event_sport_id), {"id": event_sport_id, "name": ""})
+                if event_sport_id is not None else {},
+                "category": categories_by_id.get(int(event_cat_id), {"id": event_cat_id, "name": ""})
+                if event_cat_id is not None else {},
+                "champ": champs_by_id.get(int(event_champ_id), {"id": event_champ_id, "name": ""})
+                if event_champ_id is not None else {},
+                "markets": market_list,
+            })
+
+        return JsonResponse({
+            "ok": True,
+            "count": len(result),
+            "events": result,
+            "source": "Ecuabet GetLivenow",
+            "updated_at": payload.get("updatedAt") or payload.get("lastUpdate"),
+        })
+    except Exception as exc:
+        return JsonResponse(
+            {"ok": False, "error": str(exc), "events": []},
+            status=502,
+        )
