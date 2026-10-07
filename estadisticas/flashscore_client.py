@@ -405,9 +405,32 @@ class FlashscoreClient:
         return result
 
     def obtener_stats_feed(self, event_id: str) -> Dict[str, Any]:
-        url = self.LIVE_FEED_URL.rsplit("/", 2)[0] + f"/df_st_1_{event_id}"
-        raw = self._feed_request(url)
-        return self._normalizar_stats_feed(raw)
+        """Obtiene las estadísticas detalladas df_st_1 probando hosts compatibles."""
+        base_path = self.LIVE_FEED_URL.rsplit("/", 2)[0]
+        urls = [
+            f"{base_path}/df_st_1_{event_id}",
+            f"https://13.flashscore.ninja/13/x/feed/df_st_1_{event_id}",
+            f"https://local-global.flashscore.ninja/13/x/feed/df_st_1_{event_id}",
+        ]
+
+        last_error = None
+        for url in dict.fromkeys(urls):
+            try:
+                raw = self._feed_request(url)
+                parsed = self._normalizar_stats_feed(raw)
+                if len(parsed.get("raw_types") or []):
+                    return parsed
+                last_error = FlashscoreAPIError(
+                    f"El feed df_st_1 respondió sin estadísticas: {url}"
+                )
+            except Exception as exc:
+                last_error = exc
+
+        if last_error:
+            raise FlashscoreAPIError(
+                f"No se pudo obtener df_st_1 para {event_id}: {last_error}"
+            )
+        return {"home": {}, "away": {}, "raw_types": []}
 
     def obtener_stats(self, event_id: str) -> Dict[str, Any]:
         """Obtiene y normaliza las estadísticas actuales de un partido."""
@@ -421,6 +444,7 @@ class FlashscoreClient:
         )
         # El GraphQL puede traer solo TOP Stats. Siempre consultamos df_st_1
         # para incorporar también Shots, Attack, Passes, Defense y Goalkeeping.
+        feed_error = None
         try:
             feed_stats = self.obtener_stats_feed(event_id)
             for side in ("home", "away"):
@@ -428,15 +452,16 @@ class FlashscoreClient:
                     stats[side][stat_type] = item
                     if stat_type not in stats["raw_types"]:
                         stats["raw_types"].append(stat_type)
-        except Exception:
-            # Conservamos lo que haya entregado GraphQL si el feed secundario
-            # no está disponible temporalmente.
-            pass
+        except Exception as exc:
+            # Conservamos GraphQL, pero devolvemos el motivo para diagnosticar
+            # cuando Flashscore bloquee o cambie el feed detallado.
+            feed_error = str(exc)
 
         return {
             "event_id": event.get("id") or str(event_id),
             "should_update": event.get("shouldUpdate"),
             "stats": stats,
+            "feed_error": feed_error,
             "event": event,
         }
 
@@ -457,6 +482,7 @@ class FlashscoreClient:
         )
         # El GraphQL puede traer solo TOP Stats. Siempre consultamos df_st_1
         # para incorporar también Shots, Attack, Passes, Defense y Goalkeeping.
+        feed_error = None
         try:
             feed_stats = self.obtener_stats_feed(event_id)
             for side in ("home", "away"):
@@ -464,10 +490,10 @@ class FlashscoreClient:
                     stats[side][stat_type] = item
                     if stat_type not in stats["raw_types"]:
                         stats["raw_types"].append(stat_type)
-        except Exception:
-            # Conservamos lo que haya entregado GraphQL si el feed secundario
-            # no está disponible temporalmente.
-            pass
+        except Exception as exc:
+            # Conservamos GraphQL, pero devolvemos el motivo para diagnosticar
+            # cuando Flashscore bloquee o cambie el feed detallado.
+            feed_error = str(exc)
 
         participants = event.get("eventParticipants", []) or []
         home = next(
@@ -491,5 +517,6 @@ class FlashscoreClient:
             "home_participant_id": home.get("id"),
             "away_participant_id": away.get("id"),
             "stats": stats,
+            "feed_error": feed_error,
             "raw_event": event,
         }
