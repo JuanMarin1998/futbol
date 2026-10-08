@@ -1,4 +1,5 @@
 from decimal import Decimal, ROUND_DOWN
+import re
 from typing import Any, Dict, Optional
 
 from django.db import transaction
@@ -216,10 +217,19 @@ class LiveExperimentManager:
         market = entry.market.lower().strip()
         line = entry.line.lower().strip()
         text = market + " " + selection
-        if any(x in text for x in ("total", "over", "under", "más", "menos")) and ("2.5" in line or "2.5" in text):
-            total = home_score + away_score
-            if any(x in selection for x in ("over", "más", "mas", "+")): return total >= 3
-            if any(x in selection for x in ("under", "menos", "-")): return total <= 2
+        if any(x in text for x in ("total", "over", "under", "más", "menos")):
+            number_match = re.search(r"(\\d+(?:[.,]\\d+)?)", f"{line} {text}")
+            if number_match:
+                target = float(number_match.group(1).replace(",", "."))
+                total = home_score + away_score
+                if any(x in selection for x in ("over", "más", "mas", "+")): return total > target
+                if any(x in selection for x in ("under", "menos", "-")): return total < target
+
+        if any(x in text for x in ("sin empate", "draw no bet", "dnb", "empate no acción", "empate no accion")):
+            if any(x in selection for x in ("1", "local", "home")):
+                return home_score > away_score if home_score != away_score else None
+            if any(x in selection for x in ("2", "visitante", "away")):
+                return away_score > home_score if home_score != away_score else None
         if any(x in text for x in ("ambos", "btts", "both teams")):
             both = home_score > 0 and away_score > 0
             if any(x in selection for x in ("sí", "si", "yes")): return both
