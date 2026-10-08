@@ -17,8 +17,11 @@ def classify(opportunity: Dict[str, Any]) -> int:
     probability = float(opportunity.get("model_probability") or 0)
     edge = float(opportunity.get("edge") or 0)
     confidence = float(opportunity.get("confidence") or 0)
-    coverage = float(opportunity.get("data_coverage") or 0)
+    coverage_value = opportunity.get("data_coverage")
+    coverage = float(coverage_value) if coverage_value is not None else 1.0
     signal = str(opportunity.get("signal_strength") or "").lower()
+    if not signal:
+        signal = "fuerte" if confidence >= 0.72 else ("moderada" if confidence >= 0.55 else "débil")
     contradictions = len(opportunity.get("contradicting_factors") or [])
 
     # Nivel 1 exige simultáneamente alta probabilidad, ventaja, confianza
