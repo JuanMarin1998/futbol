@@ -12,6 +12,7 @@ LEVELS = {
     1: {"name": "Muy fuerte", "label": "🟢 Nivel 1 · Muy fuerte"},
     2: {"name": "Fuerte", "label": "🟡 Nivel 2 · Fuerte"},
     3: {"name": "Moderada", "label": "🟠 Nivel 3 · Moderada"},
+    0: {"name": "Descartada · Sin nivel", "label": "🔴 Descartada · Sin nivel"},
 }
 
 
@@ -101,6 +102,7 @@ def classify(opportunity: Dict[str, Any]) -> int:
 def enrich(opportunity: Dict[str, Any]) -> Dict[str, Any]:
     level = classify(opportunity)
     opportunity["level"] = level
-    opportunity["level_name"] = LEVELS.get(level, {"name": "Sin nivel"})["name"]
-    opportunity["level_label"] = LEVELS.get(level, {"label": "Sin nivel"})["label"]
+    opportunity["level_name"] = LEVELS.get(level, LEVELS[0])["name"]
+    opportunity["level_label"] = LEVELS.get(level, LEVELS[0])["label"]
+    opportunity["bettable"] = level in (1, 2, 3)
     return opportunity
