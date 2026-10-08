@@ -53,6 +53,70 @@ class LiveMatchCollector:
             float(mapping_confidence or 1.0),
         )
 
+    @staticmethod
+    def enriquecer_evento_desde_payload(event: Dict[str, Any], payload: Dict[str, Any]) -> Dict[str, Any]:
+        """Completa un evento GetLivenow usando el mismo payload ya descargado."""
+        event = dict(event or {})
+        markets = {
+            int(item["id"]): item
+            for item in payload.get("markets", []) or []
+            if item.get("id") is not None
+        }
+        odds = {
+            int(item["id"]): item
+            for item in payload.get("odds", []) or []
+            if item.get("id") is not None
+        }
+        competitors = {
+            int(item["id"]): item
+            for item in payload.get("competitors", []) or []
+            if item.get("id") is not None
+        }
+        champs = {
+            int(item["id"]): item
+            for item in payload.get("champs", []) or []
+            if item.get("id") is not None
+        }
+        categories = {
+            int(item["id"]): item
+            for item in payload.get("categories", []) or []
+            if item.get("id") is not None
+        }
+
+        enriched_markets = []
+        for market_id in event.get("marketIds", []) or []:
+            market = markets.get(int(market_id))
+            if not market:
+                continue
+            selections = []
+            for odd_id in market.get("oddIds", []) or []:
+                odd = odds.get(int(odd_id))
+                if not odd:
+                    continue
+                selections.append({
+                    "id": odd.get("id"),
+                    "type_id": odd.get("typeId"),
+                    "name": odd.get("name", ""),
+                    "price": odd.get("price"),
+                    "odd_status": odd.get("oddStatus"),
+                })
+            enriched_markets.append({
+                "id": market.get("id"),
+                "type_id": market.get("typeId"),
+                "name": market.get("name", ""),
+                "line": market.get("sv") or market.get("sn"),
+                "selections": selections,
+            })
+
+        event["markets"] = enriched_markets
+        event["competitors"] = [
+            competitors.get(int(cid), {"id": cid})
+            for cid in event.get("competitorIds", []) or []
+        ]
+        event["champ"] = champs.get(int(event.get("champId", -1)), {})
+        event["category"] = categories.get(int(event.get("catId", -1)), {})
+        return event
+
     def mapear_automaticamente(self, ecuabet_event_id: int) -> Dict[str, Any]:
         """Expone el resultado del MatchMapper para diagnóstico/UI."""
         ecuabet = self._obtener_ecuabet_evento(ecuabet_event_id)
