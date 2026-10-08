@@ -334,6 +334,7 @@ class LiveExperimentEntry(models.Model):
     MOTOR = [
         ("V1", "Motor V1"),
         ("V11", "Motor V1.1"),
+        ("V12", "Motor V1.2"),
         ("V2", "Motor V2"),
         ("V22", "Motor V2.2"),
     ]
