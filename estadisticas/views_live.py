@@ -472,6 +472,8 @@ def _experimento_estado_global():
         # Si Ecuabet ya retiró un partido, confirmar el final con Flashscore.
         # La confirmación consulta primero el feed diario (AB=3), que sigue
         # disponible aunque el partido ya no esté LIVE en GraphQL.
+        finalized_matches = []
+        pending_final_count = 0
         for experiment in running:
             if int(experiment.ecuabet_event_id) in live_ids:
                 continue
@@ -492,7 +494,17 @@ def _experimento_estado_global():
                     away_team=experiment.away_team,
                 )
                 if match.is_finished:
+                    settled_before = sum(
+                        1
+                        for entry in LiveExperimentManager.serialize(experiment).get("entries", [])
+                        if entry.get("status") == "OPEN"
+                    )
                     LiveExperimentManager.process(match)
+                    finalized_matches.append({
+                        "match": f"{experiment.home_team} vs {experiment.away_team}",
+                        "score": f"{match.home_score}-{match.away_score}",
+                        "settled_entries": settled_before,
+                    })
                     logger.info(
                         "Experimento %s finalizado: %s vs %s %s-%s.",
                         experiment.id,
@@ -502,6 +514,7 @@ def _experimento_estado_global():
                         match.away_score,
                     )
                 else:
+                    pending_final_count += 1
                     logger.info(
                         "Experimento %s aún no confirmado como final en Flashscore: "
                         "estado=%s marcador=%s-%s.",
@@ -511,6 +524,7 @@ def _experimento_estado_global():
                         match.away_score,
                     )
             except Exception:
+                pending_final_count += 1
                 logger.exception(
                     "Error confirmando final del experimento %s (%s vs %s) "
                     "con Flashscore ID %s.",
@@ -557,6 +571,9 @@ def _experimento_estado_global():
             "experiments": serialized,
             "entries": entries,
             "live_count": len(live_events),
+            "finalized_count": len(finalized_matches),
+            "finalized_matches": finalized_matches,
+            "pending_final_count": pending_final_count,
             "busy": False,
         }
     finally:
