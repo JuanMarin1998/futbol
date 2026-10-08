@@ -9,15 +9,15 @@ from .opportunity_levels import enrich
 
 
 class LiveExperimentManager:
-    """Laboratorio virtual que ejecuta V1, V1.1, V2 y V2.2 sobre el mismo snapshot."""
+    """Laboratorio virtual que ejecuta seis motores sobre el mismo snapshot LIVE."""
 
     INITIAL_LIVES = Decimal("100")
     MAX_STAKE = Decimal("10")
     MIN_STAKE = Decimal("1")
-    MOTORS = ("V1", "V11", "V2", "V22")
-    LABELS = {"V1": "V1", "V11": "V1.1", "V2": "V2", "V22": "V2.2"}
+    MOTORS = ("V1", "V11", "V12", "V2", "V22")
+    LABELS = {"V1": "V1", "V11": "V1.1", "V12": "V1.2", "V2": "V2", "V22": "V2.2"}
     OPPORTUNITY_ATTRS = {
-        "V1": "opportunities", "V11": "opportunities_v11",
+        "V1": "opportunities", "V11": "opportunities_v11", "V12": "opportunities_v12",
         "V2": "opportunities_v2", "V22": "opportunities_v22",
     }
 
@@ -63,6 +63,53 @@ class LiveExperimentManager:
         return [enrich(dict(opportunity)) for opportunity in (opportunities or [])]
 
     @classmethod
+    def _motor_limit(cls, motor: str) -> int:
+        return 2 if motor in {"V12", "V22"} else 999999
+
+    @classmethod
+    def _current_bets(cls, experiment, motor: str) -> int:
+        return experiment.entries.filter(motor=motor).count()
+
+    @classmethod
+    def _exposure(cls, experiment, motor: str) -> Decimal:
+        return sum(
+            (Decimal(str(x.stake)) for x in experiment.entries.filter(motor=motor)),
+            Decimal("0"),
+        )
+
+    @classmethod
+    def _eligibility_reason(cls, experiment, motor: str, opportunity: Dict[str, Any]) -> str:
+        key = cls._key(opportunity)
+        if not key:
+            return "Descartada: oportunidad sin mercado/selección/línea válidos."
+        if cls._current_bets(experiment, motor) >= cls._motor_limit(motor):
+            return "Descartada: este motor ya alcanzó el máximo de 2 apuestas por partido."
+        price = Decimal(str(opportunity.get("price") or 0))
+        level = cls._level(opportunity)
+        if motor == "V12":
+            if price < Decimal("1.50"):
+                return "Descartada V1.2: cuota inferior a 1.50."
+            if level not in {1, 2}:
+                return "Descartada V1.2: solo permite seguridad alta o media."
+        if motor == "V22":
+            if price < Decimal("1.40"):
+                return "Descartada V2.2: cuota inferior a 1.40."
+            if level not in {1, 2}:
+                return "Descartada V2.2: solo permite seguridad alta o media."
+            if float(opportunity.get("edge") or 0) < 0.05:
+                return "Descartada V2.2: edge inferior al 5%."
+            if float(opportunity.get("confidence") or 0) < 0.55:
+                return "Descartada V2.2: confianza inferior al 55%."
+            consensus = float(opportunity.get("consensus_score") or 0)
+            if consensus and consensus < 0.50:
+                return "Descartada V2.2: consenso insuficiente."
+        if LiveExperimentEntry.objects.filter(
+            experiment=experiment, motor=motor, opportunity_key=key
+        ).exists():
+            return "Repetida: el motor ya tomó esta misma oportunidad/mercado."
+        return ""
+
+    @classmethod
     def _level(cls, opportunity: Dict[str, Any]) -> int:
         try:
             value = int(opportunity.get("level"))
@@ -103,13 +150,7 @@ class LiveExperimentManager:
 
     @classmethod
     def _eligible(cls, experiment, motor, opportunity):
-        level = cls._level(opportunity)
-        key = cls._key(opportunity)
-        if not level or not key:
-            return False
-        return not LiveExperimentEntry.objects.filter(
-            experiment=experiment, motor=motor, opportunity_key=key
-        ).exists()
+        return not cls._eligibility_reason(experiment, motor, opportunity)
 
     @classmethod
     def _choose(cls, experiment, motor, opportunities):
@@ -117,11 +158,27 @@ class LiveExperimentManager:
         candidates = [o for o in opportunities if cls._eligible(experiment, motor, o)]
         if not candidates or lives < cls.MIN_STAKE:
             return None, Decimal("0")
-        candidates.sort(key=lambda o: (
-            cls._level(o), float(o.get("edge") or 0), float(o.get("confidence") or 0)
-        ), reverse=True)
+
+        if motor == "V22":
+            candidates.sort(key=lambda o: (
+                float(o.get("consensus_score") or 0),
+                float(o.get("edge") or 0),
+                float(o.get("confidence") or 0),
+                cls._level(o),
+            ), reverse=True)
+        else:
+            candidates.sort(key=lambda o: (
+                cls._level(o), float(o.get("edge") or 0), float(o.get("confidence") or 0)
+            ), reverse=True)
+
         selected = candidates[0]
         stake = cls._stake(selected, lives)
+
+        if motor in {"V12", "V22"}:
+            exposure_cap = Decimal("12") if motor == "V12" else Decimal("14")
+            remaining_exposure = exposure_cap - cls._exposure(experiment, motor)
+            stake = min(stake, remaining_exposure)
+
         return (selected, stake) if stake >= cls.MIN_STAKE else (None, Decimal("0"))
 
     @classmethod
