@@ -114,7 +114,47 @@ function compararDias(){
  const rows=Object.keys(LABELS).map(m=>{const x=A.motors?.[m]||{},y=B.motors?.[m]||{};return '<tr><td><strong>'+LABELS[m]+'</strong></td><td>'+Number(x.decisions||0)+'</td><td>'+Number(y.decisions||0)+'</td><td>'+Number(x.wins||0)+'</td><td>'+Number(y.wins||0)+'</td><td>'+Number(x.hit_rate||0).toFixed(1)+'%</td><td>'+Number(y.hit_rate||0).toFixed(1)+'%</td><td class="'+(Number(x.total_pnl||0)>=0?'positive':'negative')+'">'+Number(x.total_pnl||0).toFixed(2)+'</td><td class="'+(Number(y.total_pnl||0)>=0?'positive':'negative')+'">'+Number(y.total_pnl||0).toFixed(2)+'</td></tr>';}).join('');
  box.innerHTML='<h4>Comparación: '+esc(A.date)+' vs '+esc(B.date)+'</h4><table style="width:100%;border-collapse:collapse"><thead><tr><th>Motor</th><th>Dec A</th><th>Dec B</th><th>W A</th><th>W B</th><th>Hit A</th><th>Hit B</th><th>P/L A</th><th>P/L B</th></tr></thead><tbody>'+rows+'</tbody></table>';
 }
-async function simular(){const b=document.getElementById('start-btn');b.disabled=true;b.textContent='⏳ Iniciando...';try{const r=await fetch("{% url 'estadisticas:api_live_experiment_start_all' %}",{method:'POST',headers:{'X-CSRFToken':csrf()}});const d=await r.json();if(!r.ok||!d.ok)throw new Error(d.error||'No se pudo iniciar');renderState(d);}catch(e){alert(e.message)}finally{b.disabled=false;b.textContent='▶ Simular';}}
+async function simular(){
+ const b=document.getElementById('start-btn');
+ const status=document.getElementById('status-text');
+ const diagnostic=document.getElementById('refresh-diagnostic');
+ b.disabled=true;b.textContent='⏳ Iniciando...';
+ if(status)status.textContent='⏳ Detectando partidos LIVE y preparando V1, V1.1, V2 y V2.2...';
+ if(diagnostic)diagnostic.textContent='';
+ try{
+  const controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),45000);
+  const r=await fetch("{% url 'estadisticas:api_live_experiment_start_all' %}",{
+   method:'POST',cache:'no-store',signal:controller.signal,
+   headers:{'X-CSRFToken':csrf(),'Cache-Control':'no-cache'}
+  });
+  clearTimeout(timeout);
+  let d={};
+  try{d=await r.json();}catch(_){throw new Error('El servidor no devolvió JSON. Revisa la consola de Django.');}
+  if(!r.ok||!d.ok)throw new Error(d.error||('Error HTTP '+r.status));
+  renderState(d);
+  const errors=d.start_errors||[];
+  const created=Number(d.created||0);
+  const live=Number(d.live_count||0);
+  if(created>0){
+   if(status)status.textContent='🟢 Simulación iniciada: '+created+' partido(s) activo(s).';
+   if(diagnostic)diagnostic.innerHTML='✅ '+created+' experimento(s) iniciado(s) · '+live+' LIVE detectado(s).';
+  }else if(errors.length){
+   if(status)status.textContent='⚠️ No se pudo iniciar la simulación.';
+   if(diagnostic)diagnostic.innerHTML='❌ <strong>Problemas al vincular/preparar partidos:</strong> '+errors.map(x=>'<div style="margin-top:.25rem">• '+esc(x.match||x.event_id||'Partido')+': '+esc(x.error||'Error desconocido')+'</div>').join('');
+  }else{
+   if(status)status.textContent='⏸️ No hay partidos LIVE disponibles para simular.';
+   if(diagnostic)diagnostic.textContent=d.start_message||'Ecuabet no reporta partidos de fútbol LIVE en este momento.';
+  }
+ }catch(e){
+  const msg=e.name==='AbortError'?'El servidor tardó más de 45 segundos en iniciar.':e.message;
+  if(status)status.textContent='❌ No se pudo iniciar la simulación.';
+  if(diagnostic)diagnostic.innerHTML='❌ <strong>'+esc(msg)+'</strong>';
+  alert('❌ SIMULACIÓN\n\n'+msg);
+ }finally{
+  b.disabled=false;b.textContent='▶ Simular';
+ }
+}
 async function parar(){if(!confirm('¿Parar la simulación de todos los partidos?'))return;const b=document.getElementById('stop-btn');b.disabled=true;try{const r=await fetch("{% url 'estadisticas:api_live_experiment_stop_all' %}",{method:'POST',headers:{'X-CSRFToken':csrf()}});const d=await r.json();if(!r.ok||!d.ok)throw new Error(d.error||'No se pudo parar');renderState(d);}catch(e){alert(e.message)}finally{b.disabled=false;}}
 cargarHistorial();
 </script>{% csrf_token %}{% endblock %}
