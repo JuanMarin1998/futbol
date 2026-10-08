@@ -672,54 +672,97 @@ def api_live_experiment_history(request):
         return JsonResponse({"ok": False, "error": str(exc)}, status=502)
 
 
+def _crear_experimento_desde_evento(event):
+    """Mapea y crea un experimento para un partido LIVE nuevo."""
+    from django.db import close_old_connections
+
+    event_id = int(event["id"])
+    event_name = str(event.get("name") or f"Ecuabet {event_id}")
+    try:
+        close_old_connections()
+        collector = LiveMatchCollector()
+        mapping = collector.mapper.mapear(event, collector.flashscore)
+        if not mapping.get("matched"):
+            raise MatchMappingError(
+                f"No se pudo vincular Ecuabet {event_id} con Flashscore "
+                f"(confianza={float(mapping.get('confidence', 0.0)):.2f}, "
+                f"motivo={mapping.get('reason', 'sin coincidencia')})."
+            )
+        match = collector.construir_desde_evento(
+            event,
+            mapping["flashscore_event_id"],
+            mapping.get("confidence", 1.0),
+        )
+        if match.is_finished:
+            return {
+                "event_id": event_id,
+                "match": event_name,
+                "error": "El partido ya figura como finalizado.",
+                "created": False,
+                "experiment": None,
+            }
+        experiment = LiveExperimentManager.start(match)
+        return {
+            "event_id": event_id,
+            "match": event_name,
+            "error": None,
+            "created": True,
+            "experiment": experiment,
+        }
+    except Exception as exc:
+        logger.exception(
+            "No se pudo iniciar experimento para Ecuabet %s (%s).",
+            event_id,
+            event_name,
+        )
+        return {
+            "event_id": event_id,
+            "match": event_name,
+            "error": str(exc),
+            "created": False,
+            "experiment": None,
+        }
+    finally:
+        close_old_connections()
+
+
 def api_live_experiment_start_all(request):
     if request.method != "POST":
         return JsonResponse({"ok": False, "error": "Método no permitido."}, status=405)
     try:
         _, live_events = _experimento_live_payload()
-        collector = LiveMatchCollector()
         created = 0
         skipped = 0
         errors = []
 
+        new_events = []
         for event in live_events:
             if event.get("id") is None:
                 continue
             event_id = int(event["id"])
-            event_name = str(event.get("name") or f"Ecuabet {event_id}")
             if LiveExperiment.objects.filter(
                 ecuabet_event_id=event_id, status="RUNNING"
             ).exists():
                 skipped += 1
-                continue
-            try:
-                match = collector.construir_desde_evento(
-                    event,
-                    # El mapeo todavía es necesario una sola vez para conocer
-                    # el ID Flashscore de un partido nuevo.
-                    (collector.mapper.mapear(event, collector.flashscore) or {}).get("flashscore_event_id"),
-                    1.0,
-                )
-                if match.is_finished:
-                    errors.append({
-                        "event_id": event_id,
-                        "match": event_name,
-                        "error": "El partido ya figura como finalizado.",
-                    })
-                    continue
-                LiveExperimentManager.start(match)
-                created += 1
-            except Exception as exc:
-                logger.exception(
-                    "No se pudo iniciar experimento para Ecuabet %s (%s).",
-                    event_id,
-                    event_name,
-                )
-                errors.append({
-                    "event_id": event_id,
-                    "match": event_name,
-                    "error": str(exc),
-                })
+            else:
+                new_events.append(event)
+
+        # El mapeo inicial es I/O y se ejecuta en paralelo para que 37 LIVE no
+        # conviertan el arranque en una espera de varios minutos.
+        max_workers = min(6, len(new_events))
+        if max_workers:
+            with ThreadPoolExecutor(max_workers=max_workers, thread_name_prefix="live-start") as executor:
+                futures = [executor.submit(_crear_experimento_desde_evento, event) for event in new_events]
+                for future in futures:
+                    result = future.result()
+                    if result["created"]:
+                        created += 1
+                    elif result["error"]:
+                        errors.append({
+                            "event_id": result["event_id"],
+                            "match": result["match"],
+                            "error": result["error"],
+                        })
 
         today = timezone.localdate()
         running = list(
@@ -728,9 +771,7 @@ def api_live_experiment_start_all(request):
             .order_by("-started_at")
         )
 
-        # Simular no solo crea los experimentos: ejecuta inmediatamente el
-        # primer snapshot para que los motores puedan apostar sin esperar al
-        # siguiente ciclo del navegador.
+        # Simular ejecuta inmediatamente el primer snapshot.
         processing_errors = _procesar_experimentos_live(live_events, running)
 
         experiments = list(
