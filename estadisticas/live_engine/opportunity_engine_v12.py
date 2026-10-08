@@ -54,9 +54,9 @@ class LiveOpportunityEngineV12:
             if "x2" in s: return "dc_x2"
 
         if any(x in text for x in ("sin empate", "draw no bet", "dnb", "empate no acción", "empate no accion")):
-            hn = re.sub(r"\\W+", "", str(home_team or "").lower())
-            an = re.sub(r"\\W+", "", str(away_team or "").lower())
-            sn = re.sub(r"\\W+", "", s)
+            hn = re.sub(r"\W+", "", str(home_team or "").lower())
+            an = re.sub(r"\W+", "", str(away_team or "").lower())
+            sn = re.sub(r"\W+", "", s)
             if s in {"1", "local", "home"} or "local" in s or (hn and (sn == hn or sn in hn or hn in sn)):
                 return "dnb_home"
             if s in {"2", "visitante", "away"} or "visitante" in s or (an and (sn == an or sn in an or an in sn)):
