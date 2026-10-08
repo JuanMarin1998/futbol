@@ -58,9 +58,11 @@ async function guardarDia(){
   if(!r.ok||!saved.ok)throw new Error(saved.error||'No se pudo guardar');
   diagnostic.innerHTML='💾 <strong>Experimento guardado: '+esc(saved.date)+'</strong> · '+Number(saved.experiment_count||0)+' partidos · '+Number(saved.decision_count||0)+' decisiones'+(Number(saved.running_count||0)?' · ⚠️ '+Number(saved.running_count||0)+' todavía en curso. Puedes volver a guardar al finalizar.':'');
   status.textContent='✅ Día guardado correctamente. La copia queda congelada para comparación futura.';
+  alert('✅ Guardado correctamente\\n\\nFecha: '+saved.date+'\\nPartidos: '+Number(saved.experiment_count||0)+'\\nDecisiones: '+Number(saved.decision_count||0));
   await cargarHistorial();
  }catch(e){
   status.textContent='⚠️ No se pudo guardar: '+e.message;
+  alert('❌ NO se pudo guardar el experimento\\n\\n'+e.message);
  }finally{if(b){b.disabled=false;b.textContent='💾 Guardar día';}}
 }
 async function cargarHistorial(){
