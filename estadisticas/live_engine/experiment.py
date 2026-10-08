@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional
 from django.db import transaction
 from django.utils import timezone
 
-from ..models import LiveExperiment, LiveExperimentEntry, LiveExperimentSnapshot
+from ..models import LiveExperiment, LiveExperimentEntry, LiveExperimentSnapshot, LiveExperimentDailyArchive
 
 
 class LiveExperimentManager:
@@ -289,6 +289,66 @@ class LiveExperimentManager:
         cls._sync_legacy_fields(experiment)
         experiment.save()
         return experiment
+
+    @classmethod
+    @transaction.atomic
+    def save_daily_archive(cls, experiment_date=None):
+        """Congela todos los experimentos y snapshots del día indicado."""
+        target_date = experiment_date or timezone.localdate()
+        experiments = list(
+            LiveExperiment.objects.filter(started_at__date=target_date).order_by("started_at")
+        )
+        serialized_experiments = []
+        for experiment in experiments:
+            data = cls.serialize(experiment)
+            data["snapshots"] = [
+                {
+                    "id": snapshot.id,
+                    "motor": snapshot.motor,
+                    "minute": snapshot.minute,
+                    "period": snapshot.period,
+                    "home_score": snapshot.home_score,
+                    "away_score": snapshot.away_score,
+                    "lives_before": float(snapshot.lives_before),
+                    "lives_after": float(snapshot.lives_after),
+                    "selected_opportunity": snapshot.selected_opportunity,
+                    "all_opportunities": snapshot.all_opportunities,
+                    "decision_reason": snapshot.decision_reason,
+                    "created_at": snapshot.created_at.isoformat(),
+                }
+                for snapshot in experiment.snapshots.all().order_by("created_at", "id")
+            ]
+            serialized_experiments.append(data)
+
+        motors_summary = {}
+        for motor in cls.MOTORS:
+            aggregate = {
+                "label": cls.LABELS[motor],
+                "decisions": 0, "wins": 0, "losses": 0, "open": 0, "cancelled": 0,
+                "total_staked": 0.0, "total_pnl": 0.0, "current_lives": 100.0,
+            }
+            for experiment in serialized_experiments:
+                item = experiment["motors"].get(motor, {})
+                for key in ("decisions", "wins", "losses", "open", "cancelled"):
+                    aggregate[key] += int(item.get(key, 0) or 0)
+                for key in ("total_staked", "total_pnl"):
+                    aggregate[key] += float(item.get(key, 0) or 0)
+            aggregate["current_lives"] = 100.0 + aggregate["total_pnl"]
+            settled = aggregate["wins"] + aggregate["losses"]
+            aggregate["hit_rate"] = (aggregate["wins"] / settled * 100) if settled else 0.0
+            aggregate["roi"] = (aggregate["total_pnl"] / aggregate["total_staked"] * 100) if aggregate["total_staked"] else 0.0
+            motors_summary[motor] = aggregate
+
+        archive, _ = LiveExperimentDailyArchive.objects.update_or_create(
+            experiment_date=target_date,
+            defaults={
+                "experiment_count": len(serialized_experiments),
+                "decision_count": sum(len(x.get("entries", [])) for x in serialized_experiments),
+                "motors_summary": motors_summary,
+                "experiments_data": serialized_experiments,
+            },
+        )
+        return archive
 
     @classmethod
     def serialize(cls, experiment):
