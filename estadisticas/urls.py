@@ -20,6 +20,7 @@ urlpatterns = [
     path("api/live/experimento/stop/", views_live.api_live_experiment_stop_all, name="api_live_experiment_stop_all"),
     path("api/live/experimento/state/", views_live.api_live_experiment_state, name="api_live_experiment_state"),
     path("api/live/experimento/save-daily/", views_live.api_live_experiment_save_daily, name="api_live_experiment_save_daily"),
+    path("api/live/experimento/reset-today/", views_live.api_live_experiment_reset_today, name="api_live_experiment_reset_today"),
     path("api/live/experimento/history/", views_live.api_live_experiment_history, name="api_live_experiment_history"),
     path("api/live/ecuabet/<int:ecuabet_event_id>/experimento/start/", views_live.api_live_experiment_start, name="api_live_experiment_start"),
     path("api/live/ecuabet/<int:ecuabet_event_id>/experimento/stop/", views_live.api_live_experiment_stop, name="api_live_experiment_stop"),
