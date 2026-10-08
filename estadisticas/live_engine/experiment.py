@@ -230,13 +230,34 @@ class LiveExperimentManager:
 
         return None
 
+    @staticmethod
+    def _valid_final_score(match) -> bool:
+        """Solo permite liquidar con un marcador final explícito y verificable."""
+        if not getattr(match, "is_finished", False):
+            return False
+        home = getattr(match, "home_score", None)
+        away = getattr(match, "away_score", None)
+        if home is None or away is None:
+            return False
+        try:
+            home = int(home)
+            away = int(away)
+        except (TypeError, ValueError):
+            return False
+        return home >= 0 and away >= 0
+
     @classmethod
     def _settle(cls, experiment, match):
-        if not cls._is_final(match):
-            return
+        # Nunca convertir None en 0-0: un final sin marcador verificable
+        # queda pendiente para la siguiente actualización.
+        if not cls._is_final(match) or not cls._valid_final_score(match):
+            return False
+
+        final_home = int(match.home_score)
+        final_away = int(match.away_score)
 
         for entry in experiment.entries.filter(status="OPEN"):
-            won = cls._market_result(entry, int(match.home_score or 0), int(match.away_score or 0), experiment)
+            won = cls._market_result(entry, final_home, final_away, experiment)
             if won is None:
                 entry.status = "CANCELLED"
                 entry.pnl = Decimal("0")
@@ -255,10 +276,11 @@ class LiveExperimentManager:
             entry.settled_at = timezone.now()
             entry.save(update_fields=["status", "pnl", "settled_at"])
 
-        experiment.final_home_score = match.home_score
-        experiment.final_away_score = match.away_score
+        experiment.final_home_score = final_home
+        experiment.final_away_score = final_away
         experiment.status = "FINISHED"
         experiment.finished_at = timezone.now()
+        return True
 
     @classmethod
     @transaction.atomic
