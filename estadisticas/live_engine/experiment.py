@@ -15,11 +15,11 @@ class LiveExperimentManager:
     INITIAL_LIVES = Decimal("100")
     MAX_STAKE = Decimal("10")
     MIN_STAKE = Decimal("1")
-    MOTORS = ("V1", "V11", "V12", "V2", "V22")
+    MOTORS = ("V1", "V11", "V12", "V2", "V21", "V22")
     LABELS = {"V1": "V1", "V11": "V1.1", "V12": "V1.2", "V2": "V2", "V22": "V2.2"}
     OPPORTUNITY_ATTRS = {
         "V1": "opportunities", "V11": "opportunities_v11", "V12": "opportunities_v12",
-        "V2": "opportunities_v2", "V22": "opportunities_v22",
+        "V2": "opportunities_v2", "V21": "opportunities_v21", "V22": "opportunities_v22",
     }
 
     LEVEL_RANGES = {
@@ -59,7 +59,7 @@ class LiveExperimentManager:
         para stake/prioridad son una capa externa y no forman parte de sus
         algoritmos de predicción.
         """
-        if motor not in {"V1", "V2", "V12", "V22"}:
+        if motor not in {"V1", "V2", "V12", "V21", "V22"}:
             return list(opportunities or [])
         # V2.2 calcula el nivel al filtrar, pero no lo adjunta al objeto
         # devuelto. El laboratorio necesita ese nivel para validar y apostar.
@@ -104,8 +104,8 @@ class LiveExperimentManager:
             if float(opportunity.get("confidence") or 0) < 0.55:
                 return "Descartada V2.2: confianza inferior al 55%."
             consensus = float(opportunity.get("consensus_score") or 0)
-            if consensus < 0.50:
-                return "Descartada V2.2: consenso inferior al 50%."
+            if consensus < 0.40:
+                return "Descartada V2.2: consenso inferior al 40%."
         if LiveExperimentEntry.objects.filter(
             experiment=experiment, motor=motor, opportunity_key=key
         ).exists():
