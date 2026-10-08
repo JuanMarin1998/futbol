@@ -16,7 +16,7 @@ class LiveExperimentManager:
     MAX_STAKE = Decimal("10")
     MIN_STAKE = Decimal("1")
     MOTORS = ("V1", "V11", "V12", "V2", "V21", "V22")
-    LABELS = {"V1": "V1", "V11": "V1.1", "V12": "V1.2", "V2": "V2", "V22": "V2.2"}
+    LABELS = {"V1": "V1", "V11": "V1.1", "V12": "V1.2", "V2": "V2", "V21": "V2.1", "V22": "V2.2"}
     OPPORTUNITY_ATTRS = {
         "V1": "opportunities", "V11": "opportunities_v11", "V12": "opportunities_v12",
         "V2": "opportunities_v2", "V21": "opportunities_v21", "V22": "opportunities_v22",
