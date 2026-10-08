@@ -59,8 +59,10 @@ class LiveExperimentManager:
         para stake/prioridad son una capa externa y no forman parte de sus
         algoritmos de predicción.
         """
-        if motor not in {"V1", "V2", "V12"}:
+        if motor not in {"V1", "V2", "V12", "V22"}:
             return list(opportunities or [])
+        # V2.2 calcula el nivel al filtrar, pero no lo adjunta al objeto
+        # devuelto. El laboratorio necesita ese nivel para validar y apostar.
         return [enrich(dict(opportunity)) for opportunity in (opportunities or [])]
 
     @classmethod
