@@ -693,7 +693,13 @@ def api_live_experiment_start_all(request):
                 skipped += 1
                 continue
             try:
-                match = collector.construir_automatico(event_id)
+                match = collector.construir_desde_evento(
+                    event,
+                    # El mapeo todavía es necesario una sola vez para conocer
+                    # el ID Flashscore de un partido nuevo.
+                    (collector.mapper.mapear(event, collector.flashscore) or {}).get("flashscore_event_id"),
+                    1.0,
+                )
                 if match.is_finished:
                     errors.append({
                         "event_id": event_id,
@@ -716,6 +722,17 @@ def api_live_experiment_start_all(request):
                 })
 
         today = timezone.localdate()
+        running = list(
+            LiveExperiment.objects
+            .filter(status="RUNNING")
+            .order_by("-started_at")
+        )
+
+        # Simular no solo crea los experimentos: ejecuta inmediatamente el
+        # primer snapshot para que los motores puedan apostar sin esperar al
+        # siguiente ciclo del navegador.
+        processing_errors = _procesar_experimentos_live(live_events, running)
+
         experiments = list(
             LiveExperiment.objects
             .filter(
@@ -740,9 +757,11 @@ def api_live_experiment_start_all(request):
             "skipped": skipped,
             "start_errors": errors[:20],
             "start_error_count": len(errors),
+            "processing_errors": processing_errors[:20],
+            "processing_error_count": len(processing_errors),
             "start_message": (
-                "Experimentos iniciados correctamente."
-                if created
+                "Experimentos iniciados y primer análisis ejecutado."
+                if created or skipped
                 else (
                     "No se pudo iniciar ningún experimento."
                     if live_events
@@ -752,8 +771,8 @@ def api_live_experiment_start_all(request):
             "busy": False,
         })
     except Exception as exc:
+        logger.exception("Error general iniciando el laboratorio LIVE.")
         return JsonResponse({"ok": False, "error": str(exc)}, status=502)
-
 
 def api_live_experiment_stop_all(request):
     if request.method != "POST":
