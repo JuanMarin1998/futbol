@@ -2,6 +2,7 @@ from django.http import JsonResponse
 from django.shortcuts import render
 from django.core.cache import cache
 from django.conf import settings
+import logging
 
 from .api_football_live import APIFootballLiveClient
 from .ecuabet_client import EcuabetClient
@@ -9,6 +10,8 @@ from .live_engine.collector import LiveMatchCollector
 from .live_engine.match_mapper import MatchMappingError
 from .live_engine.experiment import LiveExperimentManager
 from .models import LiveExperiment
+
+logger = logging.getLogger(__name__)
 
 
 def partidos_en_vivo(request):
@@ -467,10 +470,19 @@ def _experimento_estado_global():
                 continue
 
         # Si Ecuabet ya retiró un partido, confirmar el final con Flashscore.
+        # La confirmación consulta primero el feed diario (AB=3), que sigue
+        # disponible aunque el partido ya no esté LIVE en GraphQL.
         for experiment in running:
             if int(experiment.ecuabet_event_id) in live_ids:
                 continue
             if not experiment.flashscore_event_id:
+                logger.warning(
+                    "Experimento %s (%s vs %s) salió de Ecuabet sin flashscore_event_id; "
+                    "no se puede confirmar automáticamente el resultado final.",
+                    experiment.id,
+                    experiment.home_team,
+                    experiment.away_team,
+                )
                 continue
             try:
                 match = collector.construir_desde_flashscore(
@@ -481,8 +493,32 @@ def _experimento_estado_global():
                 )
                 if match.is_finished:
                     LiveExperimentManager.process(match)
+                    logger.info(
+                        "Experimento %s finalizado: %s vs %s %s-%s.",
+                        experiment.id,
+                        experiment.home_team,
+                        experiment.away_team,
+                        match.home_score,
+                        match.away_score,
+                    )
+                else:
+                    logger.info(
+                        "Experimento %s aún no confirmado como final en Flashscore: "
+                        "estado=%s marcador=%s-%s.",
+                        experiment.id,
+                        match.match_status,
+                        match.home_score,
+                        match.away_score,
+                    )
             except Exception:
-                continue
+                logger.exception(
+                    "Error confirmando final del experimento %s (%s vs %s) "
+                    "con Flashscore ID %s.",
+                    experiment.id,
+                    experiment.home_team,
+                    experiment.away_team,
+                    experiment.flashscore_event_id,
+                )
 
         experiments = list(
             LiveExperiment.objects
