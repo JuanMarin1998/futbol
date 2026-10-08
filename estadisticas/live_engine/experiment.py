@@ -165,6 +165,100 @@ class LiveExperimentManager:
         return {1: "Muy fuerte", 2: "Fuerte", 3: "Moderada"}.get(level, "Sin nivel")
 
     @classmethod
+    def _audit_reason(cls, experiment, motor: str, opportunity: Dict[str, Any], *, selected: bool = False, stake: Decimal = Decimal("0")) -> str:
+        """Construye una justificación auditable de selección o descarte.
+
+        El texto se apoya en los mismos valores que vio el motor: probabilidad,
+        cuota, edge, confianza, nivel, contexto LIVE y filtros específicos.
+        No modifica la lógica de V1/V2; solo explica la decisión del laboratorio.
+        """
+        market = str(opportunity.get("market") or "mercado").strip()
+        selection = str(opportunity.get("selection") or "selección").strip()
+        line = str(opportunity.get("line") or "").strip()
+        price = float(opportunity.get("price") or 0)
+        model_p = float(opportunity.get("model_probability") or 0)
+        implied = float(opportunity.get("implied_probability") or 0)
+        edge = float(opportunity.get("edge") or 0)
+        confidence = float(opportunity.get("confidence") or 0)
+        level = cls._level(opportunity)
+        minute = str(getattr(opportunity, "minute", "") or "")
+        # El minuto/marcador se incorporan desde el snapshot LIVE en process().
+        live_minute = str(getattr(experiment, "last_minute", "") or "")
+        home_score = getattr(experiment, "last_home_score", None)
+        away_score = getattr(experiment, "last_away_score", None)
+        score = (
+            f"{home_score}-{away_score}"
+            if home_score is not None and away_score is not None
+            else "marcador no disponible"
+        )
+        minute_text = live_minute or minute or "minuto no disponible"
+        label = cls.LABELS.get(motor, motor)
+
+        if not selected:
+            rejection = cls._eligibility_reason(experiment, motor, opportunity)
+            if rejection:
+                return rejection
+            if level == 0:
+                return (
+                    f"Descartada {label}: la señal no alcanzó un nivel de seguridad válido "
+                    f"(probabilidad {model_p * 100:.1f}%, edge {edge * 100:.1f} puntos, "
+                    f"confianza {confidence * 100:.1f}%)."
+                )
+            if motor == "V22":
+                consensus = float(opportunity.get("consensus_score") or 0)
+                if consensus < 0.30:
+                    return (
+                        f"Descartada {label}: respaldo de indicadores insuficiente "
+                        f"({consensus * 100:.1f}%), pese a {edge * 100:.1f} puntos de edge."
+                    )
+            return (
+                f"No seleccionada {label}: alcanzó Nivel {level}, pero otra oportunidad "
+                f"tuvo mayor prioridad para proteger las vidas disponibles."
+            )
+
+        probability_text = f"{model_p * 100:.1f}%"
+        implied_text = f"{implied * 100:.1f}%"
+        edge_text = f"{edge * 100:+.1f} puntos"
+        line_text = f" {line}" if line else ""
+        level_name = cls._level_name(level)
+        base = (
+            f"{selection}{line_text} elegido por {label}: {probability_text} de probabilidad "
+            f"frente a {implied_text} implícita ({edge_text} de edge); "
+            f"{score} al {minute_text}, Nivel {level} · {level_name}"
+        )
+
+        if motor == "V11":
+            calibration = opportunity.get("calibration")
+            temporal = opportunity.get("temporal_factor")
+            if calibration:
+                base += f"; calibración hacia 50%"
+            if temporal is not None:
+                base += f" y factor temporal {float(temporal):.2f}"
+        elif motor == "V12":
+            base += "; mercado LIVE compatible con la evaluación ampliada de V1.2"
+        elif motor == "V21":
+            temporal = opportunity.get("temporal_factor")
+            if temporal is not None:
+                base += f"; control temporal {float(temporal):.2f}"
+        elif motor == "V22":
+            consensus = float(opportunity.get("consensus_score") or 0)
+            base += f"; consenso de indicadores {consensus * 100:.1f}%"
+
+        if confidence:
+            base += f"; confianza {confidence * 100:.1f}%"
+        if stake:
+            base += f"; exposición {stake:.2f} vidas"
+
+        supporting = opportunity.get("supporting_factors") or []
+        contradicting = opportunity.get("contradicting_factors") or []
+        if supporting:
+            base += f"; respaldo: {', '.join(map(str, supporting[:3]))}"
+        if contradicting:
+            base += f"; cautelas: {', '.join(map(str, contradicting[:2]))}"
+
+        return base + "."
+
+    @classmethod
     def _eligible(cls, experiment, motor, opportunity):
         return not cls._eligibility_reason(experiment, motor, opportunity)
 
@@ -355,40 +449,44 @@ class LiveExperimentManager:
 
             selected, stake = cls._choose(experiment, motor, opportunities)
             lives_after = lives_before
+
+            # El motivo auditado se guarda también en la entrada real. Así una
+            # apuesta perdida puede reconstruirse exactamente desde la razón que
+            # justificó gastar las vidas.
+            selected_for_entry = None
             if selected is not None:
-                cls._place(experiment, motor, selected, stake, match)
+                selected_for_entry = dict(selected)
+                selected_for_entry["reason"] = cls._audit_reason(
+                    experiment, motor, selected_for_entry, selected=True, stake=stake
+                )
+                selected_for_entry["_audit_status"] = "SELECCIONADA"
+                selected_for_entry["_audit_reason"] = selected_for_entry["reason"]
+                cls._place(experiment, motor, selected_for_entry, stake, match)
                 lives_after = cls._ledger_lives(experiment, motor)
 
-            selected_key = cls._key(selected) if selected else ""
+            selected_key = cls._key(selected_for_entry) if selected_for_entry else ""
             audit_opportunities = []
             for opportunity in opportunities:
                 item = dict(opportunity)
                 key = cls._key(opportunity)
                 level = cls._level(opportunity)
-                reason = cls._eligibility_reason(experiment, motor, opportunity)
                 if selected_key and key == selected_key:
                     audit_status = "SELECCIONADA"
-                    reason = (
-                        "SELECCIONADA: mejor oportunidad elegible según "
-                        + ("consenso → edge → confianza → nivel." if motor == "V22"
-                           else "seguridad → edge → confianza.")
+                    reason = cls._audit_reason(
+                        experiment, motor, item, selected=True, stake=stake
                     )
-                elif reason:
+                else:
+                    reason = cls._audit_reason(
+                        experiment, motor, item, selected=False
+                    )
                     if reason.startswith("Repetida:"):
                         audit_status = "REPETIDA"
+                    elif reason.startswith("No seleccionada"):
+                        audit_status = "NO_SELECCIONADA"
                     else:
                         audit_status = "RECHAZADA"
-                elif selected is None:
-                    audit_status = "NO_SELECCIONADA"
-                    reason = "No seleccionada: no hubo capital suficiente para colocar la apuesta."
-                else:
-                    audit_status = "NO_SELECCIONADA"
-                    reason = (
-                        "No seleccionada: otra oportunidad elegible tuvo mayor prioridad."
-                    )
-                if not level:
+                if level == 0 and audit_status == "SELECCIONADA":
                     audit_status = "RECHAZADA"
-                    reason = "Descartada: la oportunidad no alcanzó un nivel de seguridad válido."
                 item["_audit_status"] = audit_status
                 item["_audit_reason"] = reason
                 audit_opportunities.append(item)
@@ -399,7 +497,7 @@ class LiveExperimentManager:
                 home_score=match.home_score, away_score=match.away_score,
                 lives_before=lives_before, lives_after=lives_after,
                 selected_opportunity=selected, all_opportunities=audit_opportunities,
-                decision_reason=(selected or {}).get("reason", "No tomó oportunidad en esta actualización."),
+                decision_reason=(selected_for_entry or {}).get("reason", "No tomó oportunidad en esta actualización."),
             )
 
         cls._settle(experiment, match)
