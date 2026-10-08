@@ -95,17 +95,17 @@ class LiveExperimentManager:
             if level not in {1, 2}:
                 return "Descartada V1.2: solo permite seguridad alta o media."
         if motor == "V22":
-            if price < Decimal("1.40"):
-                return "Descartada V2.2: cuota inferior a 1.40."
-            if level not in {1, 2}:
-                return "Descartada V2.2: solo permite seguridad alta o media."
-            if float(opportunity.get("edge") or 0) < 0.05:
-                return "Descartada V2.2: edge inferior al 5%."
-            if float(opportunity.get("confidence") or 0) < 0.55:
-                return "Descartada V2.2: confianza inferior al 55%."
+            # V2.2 tiene reglas propias: no se le imponen los filtros de V1.2.
+            # Busca valor suficiente y una señal razonablemente respaldada.
+            if price < Decimal("1.30"):
+                return "Descartada V2.2: cuota inferior a 1.30."
+            if float(opportunity.get("edge") or 0) < 0.04:
+                return "Descartada V2.2: edge inferior al 4%."
+            if float(opportunity.get("confidence") or 0) < 0.52:
+                return "Descartada V2.2: confianza inferior al 52%."
             consensus = float(opportunity.get("consensus_score") or 0)
-            if consensus < 0.40:
-                return "Descartada V2.2: consenso inferior al 40%."
+            if consensus < 0.30:
+                return "Descartada V2.2: respaldo de indicadores inferior al 30%."
         if LiveExperimentEntry.objects.filter(
             experiment=experiment, motor=motor, opportunity_key=key
         ).exists():
