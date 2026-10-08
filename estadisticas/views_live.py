@@ -655,6 +655,49 @@ def api_live_experiment_save_daily(request):
         return JsonResponse({"ok": False, "error": str(exc)}, status=502)
 
 
+def api_live_experiment_reset_today(request):
+    """Elimina exclusivamente los datos del laboratorio creados hoy."""
+    if request.method != "POST":
+        return JsonResponse({"ok": False, "error": "Método no permitido."}, status=405)
+
+    try:
+        today = timezone.localdate()
+        with transaction.atomic():
+            experiments_qs = LiveExperiment.objects.filter(started_at__date=today)
+            experiment_count = experiments_qs.count()
+            entry_count = sum(
+                experiment.entries.count()
+                for experiment in experiments_qs
+            )
+            snapshot_count = sum(
+                experiment.snapshots.count()
+                for experiment in experiments_qs
+            )
+
+            # Las entradas y snapshots están en CASCADE; al eliminar los
+            # experimentos también desaparecen sus apuestas y predicciones.
+            experiments_qs.delete()
+
+            # Si hoy ya se había guardado un archivo diario, también se
+            # elimina para que no conserve datos del experimento incorrecto.
+            archive_deleted, _ = LiveExperimentDailyArchive.objects.filter(
+                experiment_date=today
+            ).delete()
+
+        return JsonResponse({
+            "ok": True,
+            "date": today.isoformat(),
+            "experiment_count": experiment_count,
+            "entry_count": entry_count,
+            "snapshot_count": snapshot_count,
+            "archive_deleted": archive_deleted,
+            "message": "El laboratorio de hoy fue reiniciado. Los días anteriores no fueron afectados.",
+        })
+    except Exception as exc:
+        logger.exception("Error reiniciando el laboratorio del día.")
+        return JsonResponse({"ok": False, "error": str(exc)}, status=502)
+
+
 def api_live_experiment_history(request):
     if request.method != "GET":
         return JsonResponse({"ok": False, "error": "Método no permitido."}, status=405)
