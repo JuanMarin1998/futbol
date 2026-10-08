@@ -401,10 +401,69 @@ def _experimento_live_payload():
     return payload, payload.get("events", []) or []
 
 
+def _procesar_experimentos_live(live_events, experiments):
+    """Actualiza partidos LIVE reutilizando el feed Ecuabet y en paralelo."""
+    event_by_id = {
+        int(event["id"]): event
+        for event in live_events
+        if isinstance(event, dict) and event.get("id") is not None
+    }
+    tasks = [
+        experiment
+        for experiment in experiments
+        if int(experiment.ecuabet_event_id) in event_by_id
+        and experiment.flashscore_event_id
+    ]
+    if not tasks:
+        return []
+
+    def worker(experiment):
+        from django.db import close_old_connections
+
+        try:
+            close_old_connections()
+            event = event_by_id[int(experiment.ecuabet_event_id)]
+            collector = LiveMatchCollector()
+            match = collector.construir_desde_evento(
+                event,
+                experiment.flashscore_event_id,
+                1.0,
+            )
+            LiveExperimentManager.process(match)
+            return None
+        except Exception as exc:
+            logger.exception(
+                "Error procesando experimento %s (%s vs %s).",
+                experiment.id,
+                experiment.home_team,
+                experiment.away_team,
+            )
+            return {
+                "experiment_id": experiment.id,
+                "match": f"{experiment.home_team} vs {experiment.away_team}",
+                "error": str(exc),
+            }
+        finally:
+            close_old_connections()
+
+    max_workers = min(8, len(tasks))
+    if max_workers <= 1:
+        return [error for error in (worker(tasks[0]),) if error]
+
+    errors = []
+    with ThreadPoolExecutor(max_workers=max_workers, thread_name_prefix="live-exp") as executor:
+        futures = [executor.submit(worker, experiment) for experiment in tasks]
+        for future in futures:
+            error = future.result()
+            if error:
+                errors.append(error)
+    return errors
+
+
 def _experimento_estado_global():
-    """Procesa el laboratorio global sin permitir ejecuciones concurrentes."""
+    """Procesa el laboratorio global sin bloquear el ciclo con consultas repetidas."""
     lock_key = "live_experiment_global_state_lock"
-    if not cache.add(lock_key, True, 30):
+    if not cache.add(lock_key, True, 60):
         today = timezone.localdate()
         experiments = list(
             LiveExperiment.objects
@@ -425,6 +484,7 @@ def _experimento_estado_global():
             ],
             "live_count": 0,
             "busy": True,
+            "processing_errors": [],
         }
 
     try:
@@ -435,16 +495,12 @@ def _experimento_estado_global():
         }
         collector = LiveMatchCollector()
 
-        # Los experimentos se conservan en la base de datos para el historial,
-        # pero la pantalla del laboratorio solo muestra la jornada de HOY.
-        # Los RUNNING antiguos todavía se procesan para intentar liquidarlos,
-        # pero nunca vuelven a aparecer en la vista del nuevo día.
         running = list(
             LiveExperiment.objects.filter(status="RUNNING").order_by("-started_at")
         )
 
-        # Si el laboratorio está activo, incorporar automáticamente cualquier
-        # partido LIVE nuevo que todavía no tenga un experimento RUNNING.
+        # Detecta partidos LIVE nuevos mientras el laboratorio ya está activo.
+        # El mapeo automático solo se hace para partidos que todavía no existen.
         if running:
             running_ids = {int(x.ecuabet_event_id) for x in running}
             for event in live_events:
@@ -460,28 +516,16 @@ def _experimento_estado_global():
                     experiment = LiveExperimentManager.start(match)
                     running.append(experiment)
                     running_ids.add(event_id)
-                except Exception:
-                    continue
+                except Exception as exc:
+                    logger.exception(
+                        "No se pudo incorporar el nuevo LIVE %s al laboratorio.",
+                        event_id,
+                    )
 
-        # Procesar cada partido que sigue LIVE.
-        for event in live_events:
-            if event.get("id") is None:
-                continue
-            event_id = int(event["id"])
-            experiment = next(
-                (x for x in running if int(x.ecuabet_event_id) == event_id), None
-            )
-            if experiment is None:
-                continue
-            try:
-                match = collector.construir_automatico(event_id)
-                LiveExperimentManager.process(match)
-            except Exception:
-                continue
+        # Este es el cambio importante: un solo GetLivenow por ciclo y
+        # reutilización del flashscore_event_id ya confirmado.
+        processing_errors = _procesar_experimentos_live(live_events, running)
 
-        # Si Ecuabet ya retiró un partido, confirmar el final con Flashscore.
-        # La confirmación consulta primero el feed diario (AB=3), que sigue
-        # disponible aunque el partido ya no esté LIVE en GraphQL.
         finalized_matches = []
         pending_final_count = 0
         for experiment in running:
@@ -489,12 +533,12 @@ def _experimento_estado_global():
                 continue
             if not experiment.flashscore_event_id:
                 logger.warning(
-                    "Experimento %s (%s vs %s) salió de Ecuabet sin flashscore_event_id; "
-                    "no se puede confirmar automáticamente el resultado final.",
+                    "Experimento %s (%s vs %s) salió de Ecuabet sin flashscore_event_id.",
                     experiment.id,
                     experiment.home_team,
                     experiment.away_team,
                 )
+                pending_final_count += 1
                 continue
             try:
                 match = collector.construir_desde_flashscore(
@@ -516,33 +560,15 @@ def _experimento_estado_global():
                         "settled_entries": settled_before,
                         "experiment_date": timezone.localtime(experiment.started_at).date().isoformat(),
                     })
-                    logger.info(
-                        "Experimento %s finalizado: %s vs %s %s-%s.",
-                        experiment.id,
-                        experiment.home_team,
-                        experiment.away_team,
-                        match.home_score,
-                        match.away_score,
-                    )
                 else:
                     pending_final_count += 1
-                    logger.info(
-                        "Experimento %s aún no confirmado como final en Flashscore: "
-                        "estado=%s marcador=%s-%s.",
-                        experiment.id,
-                        match.match_status,
-                        match.home_score,
-                        match.away_score,
-                    )
             except Exception:
                 pending_final_count += 1
                 logger.exception(
-                    "Error confirmando final del experimento %s (%s vs %s) "
-                    "con Flashscore ID %s.",
+                    "Error confirmando final del experimento %s (%s vs %s).",
                     experiment.id,
                     experiment.home_team,
                     experiment.away_team,
-                    experiment.flashscore_event_id,
                 )
 
         all_experiments = list(
@@ -551,18 +577,13 @@ def _experimento_estado_global():
             .order_by("-updated_at")[:200]
         )
 
-        # Reconciliación final para corregir cualquier decisión que hubiera
-        # quedado asentada con un snapshot de marcador desactualizado.
         for experiment in all_experiments:
             if experiment.status == "FINISHED":
                 try:
                     LiveExperimentManager.reconcile_finished(experiment.id)
                 except Exception:
-                    pass
+                    logger.exception("Error reconciliando experimento %s.", experiment.id)
 
-        # Después de liquidar, solo devolvemos los experimentos iniciados en
-        # la fecha local actual. Así, al pasar de 23:59 a 00:00, la pantalla
-        # queda limpia automáticamente sin borrar el historial anterior.
         experiments = [
             experiment for experiment in all_experiments
             if timezone.localtime(experiment.started_at).date() == today
@@ -575,7 +596,6 @@ def _experimento_estado_global():
                 entry["experiment_id"] = exp.get("id")
                 entry["match_status"] = exp.get("status")
                 entries.append(entry)
-
         entries.sort(key=lambda x: x.get("placed_at") or "", reverse=True)
 
         return {
@@ -592,11 +612,8 @@ def _experimento_estado_global():
                 item for item in finalized_matches
                 if item.get("experiment_date") == today.isoformat()
             ],
-            "pending_final_count": sum(
-                1 for experiment in running
-                if timezone.localtime(experiment.started_at).date() == today
-                and int(experiment.ecuabet_event_id) not in live_ids
-            ),
+            "pending_final_count": pending_final_count,
+            "processing_errors": processing_errors[:20],
             "busy": False,
         }
     finally:
