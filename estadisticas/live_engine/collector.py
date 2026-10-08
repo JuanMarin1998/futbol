@@ -41,6 +41,18 @@ class LiveMatchCollector:
             mapping["confidence"],
         )
 
+    def construir_desde_evento(self, ecuabet_event: Dict[str, Any], flashscore_event_id: str, mapping_confidence: float = 1.0) -> LiveMatch:
+        """Construye un snapshot usando un evento Ecuabet ya descargado."""
+        if not ecuabet_event:
+            raise ValueError("ecuabet_event es obligatorio.")
+        if not flashscore_event_id:
+            raise ValueError("flashscore_event_id es obligatorio.")
+        return self._construir_desde_evento(
+            ecuabet_event,
+            str(flashscore_event_id),
+            float(mapping_confidence or 1.0),
+        )
+
     def mapear_automaticamente(self, ecuabet_event_id: int) -> Dict[str, Any]:
         """Expone el resultado del MatchMapper para diagnóstico/UI."""
         ecuabet = self._obtener_ecuabet_evento(ecuabet_event_id)
