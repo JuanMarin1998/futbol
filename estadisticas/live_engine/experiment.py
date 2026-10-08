@@ -102,8 +102,8 @@ class LiveExperimentManager:
             if float(opportunity.get("confidence") or 0) < 0.55:
                 return "Descartada V2.2: confianza inferior al 55%."
             consensus = float(opportunity.get("consensus_score") or 0)
-            if consensus and consensus < 0.50:
-                return "Descartada V2.2: consenso insuficiente."
+            if consensus < 0.50:
+                return "Descartada V2.2: consenso inferior al 50%."
         if LiveExperimentEntry.objects.filter(
             experiment=experiment, motor=motor, opportunity_key=key
         ).exists():
