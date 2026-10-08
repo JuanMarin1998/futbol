@@ -6,7 +6,6 @@ from django.utils import timezone
 from django.db import transaction
 import logging
 from concurrent.futures import ThreadPoolExecutor
-from threading import Thread
 
 from .api_football_live import APIFootballLiveClient
 from .ecuabet_client import EcuabetClient
@@ -785,12 +784,10 @@ def _crear_experimento_desde_evento(event):
         close_old_connections()
 
 
-def _iniciar_experimentos_live_worker():
-    """Hace todo el arranque fuera de la petición HTTP que pulsa Simular."""
-    from django.db import close_old_connections
-
+def api_live_experiment_start_all(request):
+    if request.method != "POST":
+        return JsonResponse({"ok": False, "error": "Método no permitido."}, status=405)
     try:
-        close_old_connections()
         _, live_events = _experimento_live_payload()
         created = 0
         skipped = 0
@@ -808,8 +805,8 @@ def _iniciar_experimentos_live_worker():
             else:
                 new_events.append(event)
 
-        # Se conservan todos los partidos; el trabajo de mapeo es paralelo y
-        # ya no bloquea la petición del navegador.
+        # El mapeo inicial es I/O y se ejecuta en paralelo para que 37 LIVE no
+        # conviertan el arranque en una espera de varios minutos.
         max_workers = min(6, len(new_events))
         if max_workers:
             with ThreadPoolExecutor(max_workers=max_workers, thread_name_prefix="live-start") as executor:
@@ -825,19 +822,41 @@ def _iniciar_experimentos_live_worker():
                             "error": result["error"],
                         })
 
+        today = timezone.localdate()
         running = list(
-            LiveExperiment.objects.filter(status="RUNNING").order_by("-started_at")
+            LiveExperiment.objects
+            .filter(status="RUNNING")
+            .order_by("-started_at")
         )
+
+        # Simular ejecuta inmediatamente el primer snapshot.
         processing_errors = _procesar_experimentos_live(live_events, running)
-        result = {
+
+        experiments = list(
+            LiveExperiment.objects
+            .filter(
+                status__in=["RUNNING", "FINISHED", "STOPPED"],
+                started_at__date=today,
+            )
+            .order_by("-updated_at")[:200]
+        )
+        serialized = [LiveExperimentManager.serialize(x) for x in experiments]
+        entries = [
+            {**entry, "experiment_id": exp.get("id"), "match_status": exp.get("status")}
+            for exp in serialized
+            for entry in exp.get("entries", [])
+        ]
+        return JsonResponse({
             "ok": True,
-            "running": bool(running),
+            "running": any(x.get("status") == "RUNNING" for x in serialized),
+            "experiments": serialized,
+            "entries": entries,
             "live_count": len(live_events),
             "created": created,
             "skipped": skipped,
-            "start_errors": errors[:30],
+            "start_errors": errors[:20],
             "start_error_count": len(errors),
-            "processing_errors": processing_errors[:30],
+            "processing_errors": processing_errors[:20],
             "processing_error_count": len(processing_errors),
             "start_message": (
                 "Experimentos iniciados y primer análisis ejecutado."
@@ -848,61 +867,11 @@ def _iniciar_experimentos_live_worker():
                     else "Ecuabet no reporta partidos de fútbol LIVE en este momento."
                 )
             ),
-        }
-        cache.set("live_experiment_start_result", result, 300)
-        if errors:
-            logger.warning("Arranque LIVE: %s partidos no pudieron vincularse. Primeros errores: %s", len(errors), errors[:10])
-        logger.info(
-            "Arranque del laboratorio LIVE terminado: %s LIVE, %s nuevos, %s ya activos, %s errores de mapeo, %s errores de análisis.",
-            len(live_events), created, skipped, len(errors), len(processing_errors)
-        )
-    except Exception as exc:
-        logger.exception("Error general en el arranque en segundo plano del laboratorio LIVE.")
-        cache.set("live_experiment_start_result", {
-            "ok": False,
-            "error": str(exc),
-            "start_message": "El arranque en segundo plano falló. Revisa la consola de Django.",
-        }, 300)
-    finally:
-        cache.delete("live_experiment_global_state_lock")
-        close_old_connections()
-
-
-def api_live_experiment_start_all(request):
-    if request.method != "POST":
-        return JsonResponse({"ok": False, "error": "Método no permitido."}, status=405)
-
-    lock_key = "live_experiment_global_state_lock"
-    if not cache.add(lock_key, True, 300):
-        return JsonResponse({
-            "ok": True,
-            "starting": True,
-            "busy": True,
-            "running": True,
-            "start_message": "El laboratorio ya está iniciando o procesando un ciclo.",
+            "busy": False,
         })
-
-    # Responder inmediatamente. La petición no espera a Ecuabet, Flashscore ni
-    # al mapeo de decenas de partidos.
-    cache.delete("live_experiment_start_result")
-    try:
-        Thread(
-            target=_iniciar_experimentos_live_worker,
-            name="live-experiment-startup",
-            daemon=True,
-        ).start()
     except Exception as exc:
-        cache.delete(lock_key)
-        logger.exception("No se pudo crear el hilo de arranque del laboratorio LIVE.")
-        return JsonResponse({"ok": False, "error": str(exc)}, status=500)
-
-    return JsonResponse({
-        "ok": True,
-        "starting": True,
-        "busy": True,
-        "running": True,
-        "start_message": "Arranque aceptado. Detectando y vinculando todos los partidos LIVE en segundo plano.",
-    })
+        logger.exception("Error general iniciando el laboratorio LIVE.")
+        return JsonResponse({"ok": False, "error": str(exc)}, status=502)
 
 def api_live_experiment_stop_all(request):
     if request.method != "POST":
