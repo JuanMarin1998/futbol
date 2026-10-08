@@ -122,11 +122,23 @@ class LiveExperimentManager:
 
     @classmethod
     def _ledger_lives(cls, experiment, motor: str) -> Decimal:
-        lives = Decimal(str(experiment.initial_lives))
-        for entry in experiment.entries.filter(motor=motor).order_by("placed_at", "id"):
-            if entry.status == "OPEN":
-                lives -= Decimal(str(entry.stake))
-            elif entry.status == "LOST":
+        """
+        Capital disponible GLOBAL del motor durante el experimento del día.
+
+        Las 100 vidas son un único bankroll por motor, compartido entre todos
+        los partidos analizados. Una apuesta OPEN mantiene su stake comprometido;
+        una LOST consume el stake y una WON aporta su P/L. CANCELLED no altera
+        el capital.
+        """
+        today = timezone.localdate()
+        entries = LiveExperimentEntry.objects.filter(
+            experiment__started_at__date=today,
+            motor=motor,
+        ).order_by("placed_at", "id")
+
+        lives = Decimal(str(cls.INITIAL_LIVES))
+        for entry in entries:
+            if entry.status in {"OPEN", "LOST"}:
                 lives -= Decimal(str(entry.stake))
             elif entry.status == "WON":
                 lives += Decimal(str(entry.pnl))
@@ -500,7 +512,13 @@ class LiveExperimentManager:
             for e in sorted(motor_entries, key=lambda x: (x.placed_at, x.id)):
                 if e.status == "OPEN" or e.status == "LOST": curve.append(curve[-1] - e.stake)
                 elif e.status == "WON": curve.append(curve[-1] + e.pnl)
-            current = curve[-1]
+            current = cls._ledger_lives(experiment, motor)
+            open_staked = sum(
+                (Decimal(str(e.stake)) for e in motor_entries if e.status == "OPEN"),
+                Decimal("0"),
+            )
+            total_capital = Decimal(str(cls.INITIAL_LIVES)) + total_pnl
+            available_lives = total_capital - open_staked
             motors[motor] = {
                 "label": cls.LABELS[motor],
                 "decisions": len(motor_entries),
@@ -510,6 +528,9 @@ class LiveExperimentManager:
                 "cancelled": sum(1 for e in motor_entries if e.status == "CANCELLED"),
                 "total_staked": float(total_staked),
                 "total_pnl": float(total_pnl),
+                "open_staked": float(open_staked),
+                "total_capital": float(total_capital),
+                "available_lives": float(available_lives),
                 "current_lives": float(current),
                 "max_lives": float(max(curve)),
                 "min_lives": float(min(curve)),
