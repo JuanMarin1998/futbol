@@ -341,6 +341,89 @@ class LiveExperimentManager:
         return cls.serialize(experiment)
 
     @classmethod
+    @transaction.atomic
+    def reconcile_finished(cls, experiment_id):
+        """Recalcula una liquidación final usando el marcador definitivo guardado.
+        
+        Sirve para corregir liquidaciones históricas si el primer snapshot final
+        tenía un marcador desactualizado. Las vidas se reconstruyen desde 100
+        respetando el orden en que se tomaron las decisiones.
+        """
+        experiment = (
+            LiveExperiment.objects
+            .select_for_update()
+            .get(id=experiment_id)
+        )
+        if experiment.status != "FINISHED":
+            return experiment
+        if experiment.final_home_score is None or experiment.final_away_score is None:
+            return experiment
+
+        final_home = int(experiment.final_home_score)
+        final_away = int(experiment.final_away_score)
+
+        experiment.v1_lives = cls.INITIAL_LIVES
+        experiment.v2_lives = cls.INITIAL_LIVES
+        experiment.v1_wins = 0
+        experiment.v1_losses = 0
+        experiment.v2_wins = 0
+        experiment.v2_losses = 0
+
+        current_lives = {"V1": cls.INITIAL_LIVES, "V2": cls.INITIAL_LIVES}
+        min_lives = {"V1": cls.INITIAL_LIVES, "V2": cls.INITIAL_LIVES}
+        max_lives = {"V1": cls.INITIAL_LIVES, "V2": cls.INITIAL_LIVES}
+
+        entries = list(experiment.entries.all().order_by("placed_at", "id"))
+        for entry in entries:
+            if entry.status == "CANCELLED":
+                entry.pnl = Decimal("0")
+                entry.save(update_fields=["pnl"])
+                continue
+
+            result = cls._market_result(entry, final_home, final_away, experiment)
+            if result is None:
+                entry.status = "CANCELLED"
+                entry.pnl = Decimal("0")
+            elif result:
+                entry.status = "WON"
+                entry.pnl = entry.potential_profit
+                current_lives[entry.motor] += entry.stake + entry.potential_profit
+                if entry.motor == "V1":
+                    experiment.v1_wins += 1
+                else:
+                    experiment.v2_wins += 1
+            else:
+                entry.status = "LOST"
+                entry.pnl = -entry.stake
+                if entry.motor == "V1":
+                    experiment.v1_losses += 1
+                else:
+                    experiment.v2_losses += 1
+
+            if entry.status in {"WON", "LOST"}:
+                # La apuesta ya fue descontada al momento de tomarla.
+                # Reconstruimos desde 100 aplicando ese débito primero.
+                if entry.status == "LOST":
+                    current_lives[entry.motor] -= entry.stake
+                elif entry.status == "WON":
+                    current_lives[entry.motor] -= entry.stake
+                    # y luego se suma stake + beneficio arriba.
+                min_lives[entry.motor] = min(min_lives[entry.motor], current_lives[entry.motor])
+                max_lives[entry.motor] = max(max_lives[entry.motor], current_lives[entry.motor])
+
+            entry.settled_at = entry.settled_at or timezone.now()
+            entry.save(update_fields=["status", "pnl", "settled_at"])
+
+        experiment.v1_lives = current_lives["V1"]
+        experiment.v2_lives = current_lives["V2"]
+        experiment.v1_min_lives = min_lives["V1"]
+        experiment.v2_min_lives = min_lives["V2"]
+        experiment.v1_max_lives = max_lives["V1"]
+        experiment.v2_max_lives = max_lives["V2"]
+        experiment.save()
+        return experiment
+
+    @classmethod
     def serialize(cls, experiment):
         entries = []
         motors = {}
