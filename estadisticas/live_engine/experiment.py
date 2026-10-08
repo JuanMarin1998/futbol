@@ -58,7 +58,7 @@ class LiveExperimentManager:
         para stake/prioridad son una capa externa y no forman parte de sus
         algoritmos de predicción.
         """
-        if motor not in {"V1", "V2"}:
+        if motor not in {"V1", "V2", "V12"}:
             return list(opportunities or [])
         return [enrich(dict(opportunity)) for opportunity in (opportunities or [])]
 
@@ -305,40 +305,54 @@ class LiveExperimentManager:
             )
             lives_before = cls._ledger_lives(experiment, motor)
             candidates = [o for o in opportunities if cls._eligible(experiment, motor, o)]
-            candidates.sort(key=lambda o: (
-                cls._level(o), float(o.get("edge") or 0), float(o.get("confidence") or 0)
-            ), reverse=True)
+            if motor == "V22":
+                candidates.sort(key=lambda o: (
+                    float(o.get("consensus_score") or 0),
+                    float(o.get("edge") or 0),
+                    float(o.get("confidence") or 0),
+                    cls._level(o),
+                ), reverse=True)
+            else:
+                candidates.sort(key=lambda o: (
+                    cls._level(o), float(o.get("edge") or 0), float(o.get("confidence") or 0)
+                ), reverse=True)
+
             selected, stake = cls._choose(experiment, motor, opportunities)
             lives_after = lives_before
             if selected is not None:
-                entry = cls._place(experiment, motor, selected, stake, match)
+                cls._place(experiment, motor, selected, stake, match)
                 lives_after = cls._ledger_lives(experiment, motor)
 
             selected_key = cls._key(selected) if selected else ""
             audit_opportunities = []
-            candidate_keys = {cls._key(o) for o in candidates}
             for opportunity in opportunities:
                 item = dict(opportunity)
                 key = cls._key(opportunity)
                 level = cls._level(opportunity)
-                if not level:
-                    reason = "Descartada por nivel inválido o inexistente."
-                    audit_status = "RECHAZADA"
-                elif not key:
-                    reason = "Descartada: la oportunidad no tiene una clave válida de mercado/selección/línea."
-                    audit_status = "RECHAZADA"
-                elif key not in candidate_keys:
-                    reason = "Descartada: esa misma oportunidad ya había sido tomada anteriormente por este motor."
-                    audit_status = "REPETIDA"
-                elif selected_key and key == selected_key:
-                    reason = "SELECCIONADA: quedó primera por nivel, edge y confianza."
+                reason = cls._eligibility_reason(experiment, motor, opportunity)
+                if selected_key and key == selected_key:
                     audit_status = "SELECCIONADA"
+                    reason = (
+                        "SELECCIONADA: mejor oportunidad elegible según "
+                        + ("consenso → edge → confianza → nivel." if motor == "V22"
+                           else "seguridad → edge → confianza.")
+                    )
+                elif reason:
+                    if reason.startswith("Repetida:"):
+                        audit_status = "REPETIDA"
+                    else:
+                        audit_status = "RECHAZADA"
                 elif selected is None:
-                    reason = "No seleccionada: no hubo capital suficiente para colocar una apuesta."
                     audit_status = "NO_SELECCIONADA"
+                    reason = "No seleccionada: no hubo capital suficiente para colocar la apuesta."
                 else:
-                    reason = "No seleccionada: otra oportunidad elegible tuvo mayor prioridad (nivel → edge → confianza)."
                     audit_status = "NO_SELECCIONADA"
+                    reason = (
+                        "No seleccionada: otra oportunidad elegible tuvo mayor prioridad."
+                    )
+                if not level:
+                    audit_status = "RECHAZADA"
+                    reason = "Descartada: la oportunidad no alcanzó un nivel de seguridad válido."
                 item["_audit_status"] = audit_status
                 item["_audit_reason"] = reason
                 audit_opportunities.append(item)
@@ -469,7 +483,7 @@ class LiveExperimentManager:
             total_pnl = sum((Decimal(str(e.pnl)) for e in motor_entries), Decimal("0"))
             total_staked = sum((Decimal(str(e.stake)) for e in motor_entries), Decimal("0"))
             best = max(motor_entries, key=lambda e: (e.level, e.model_probability, e.edge), default=None)
-            # Reconstruct equity curve from 100 so all four motors are measured identically.
+            # Reconstruct equity curve from 100 so all six motors are measured identically.
             curve = [cls.INITIAL_LIVES]
             for e in sorted(motor_entries, key=lambda x: (x.placed_at, x.id)):
                 if e.status == "OPEN" or e.status == "LOST": curve.append(curve[-1] - e.stake)
