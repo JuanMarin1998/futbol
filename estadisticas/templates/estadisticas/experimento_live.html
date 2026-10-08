@@ -108,13 +108,39 @@ function renderState(d){
   renderHistory(exps);
 }
 
+let actualizando=false;
+let pollTimer=null;
+
 async function actualizar(){
+  if(actualizando)return;
+  actualizando=true;
   try{
-    const r=await fetch("{% url 'estadisticas:api_live_experiment_state' %}",{cache:'no-store'});
+    const controller=new AbortController();
+    const timeout=setTimeout(()=>controller.abort(),20000);
+    const r=await fetch("{% url 'estadisticas:api_live_experiment_state' %}",{
+      cache:'no-store',
+      signal:controller.signal,
+      headers:{'Cache-Control':'no-cache'}
+    });
+    clearTimeout(timeout);
     const d=await r.json();
     if(!r.ok||!d.ok)throw new Error(d.error||'No se pudo actualizar');
     renderState(d);
-  }catch(e){document.getElementById('status-text').textContent='⚠️ '+e.message;}
+  }catch(e){
+    const msg=e.name==='AbortError'?'Tiempo de espera agotado al actualizar.':'No se pudo actualizar: '+e.message;
+    document.getElementById('status-text').textContent='⚠️ '+msg;
+  }finally{
+    actualizando=false;
+    clearTimeout(window._experimentoFetchTimeout);
+  }
+}
+
+function programarPolling(){
+  clearTimeout(pollTimer);
+  pollTimer=setTimeout(async()=>{
+    await actualizar();
+    programarPolling();
+  },POLL_MS);
 }
 
 async function simular(){
@@ -138,8 +164,7 @@ async function parar(){
   finally{b.disabled=false;}
 }
 
-actualizar();
-setInterval(actualizar,POLL_MS);
+actualizar().finally(programarPolling);
 </script>
 {% csrf_token %}
 {% endblock %}
