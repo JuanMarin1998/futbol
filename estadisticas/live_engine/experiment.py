@@ -5,6 +5,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from ..models import LiveExperiment, LiveExperimentEntry, LiveExperimentSnapshot, LiveExperimentDailyArchive
+from .opportunity_levels import enrich
 
 
 class LiveExperimentManager:
@@ -48,6 +49,18 @@ class LiveExperimentManager:
             v2_min_lives=cls.INITIAL_LIVES,
             status="RUNNING",
         )
+
+    @classmethod
+    def _prepare_opportunities(cls, motor: str, opportunities):
+        """Añade metadatos de nivel solo en la capa del laboratorio.
+
+        V1 y V2 permanecen como motores base originales. Los niveles usados
+        para stake/prioridad son una capa externa y no forman parte de sus
+        algoritmos de predicción.
+        """
+        if motor not in {"V1", "V2"}:
+            return list(opportunities or [])
+        return [enrich(dict(opportunity)) for opportunity in (opportunities or [])]
 
     @classmethod
     def _level(cls, opportunity: Dict[str, Any]) -> int:
@@ -230,8 +243,8 @@ class LiveExperimentManager:
         match_is_final = cls._valid_final(match)
 
         for motor in cls.MOTORS:
-            opportunities = [] if match_is_final else list(
-                getattr(match, cls.OPPORTUNITY_ATTRS[motor], []) or []
+            opportunities = [] if match_is_final else cls._prepare_opportunities(
+                motor, getattr(match, cls.OPPORTUNITY_ATTRS[motor], []) or []
             )
             lives_before = cls._ledger_lives(experiment, motor)
             candidates = [o for o in opportunities if cls._eligible(experiment, motor, o)]
