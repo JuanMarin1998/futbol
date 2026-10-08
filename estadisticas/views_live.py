@@ -12,6 +12,7 @@ from .ecuabet_client import EcuabetClient
 from .live_engine.collector import LiveMatchCollector
 from .live_engine.match_mapper import MatchMappingError
 from .live_engine.experiment import LiveExperimentManager
+from .live_engine.opportunity_levels import enrich
 from .models import LiveExperiment, LiveExperimentDailyArchive
 
 logger = logging.getLogger(__name__)
@@ -1097,6 +1098,24 @@ def api_ecuabet_live_detalle(request, ecuabet_event_id):
                     mapping.get("confidence", 0.0),
                 )
                 match_dict = match.to_dict()
+
+                # Enriquecemos la respuesta de detalle con los niveles del laboratorio.
+                for opportunity_key in (
+                    "opportunities",
+                    "opportunities_v11",
+                    "opportunities_v12",
+                    "opportunities_v2",
+                    "opportunities_v21",
+                    "opportunities_v22",
+                ):
+                    match_dict[opportunity_key] = [
+                        enrich(dict(opportunity))
+                        for opportunity in (match_dict.get(opportunity_key) or [])
+                    ]
+                match_dict["flashscore_url"] = (
+                    f"https://www.flashscore.com/match/{match.flashscore_event_id}/"
+                    if match.flashscore_event_id else None
+                )
 
                 experiment = (
                     LiveExperiment.objects
