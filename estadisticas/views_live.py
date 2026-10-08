@@ -4,6 +4,7 @@ from django.core.cache import cache
 from django.conf import settings
 from django.utils import timezone
 import logging
+from concurrent.futures import ThreadPoolExecutor
 
 from .api_football_live import APIFootballLiveClient
 from .ecuabet_client import EcuabetClient
