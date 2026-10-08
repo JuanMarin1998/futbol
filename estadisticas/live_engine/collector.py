@@ -200,12 +200,52 @@ class LiveMatchCollector:
         home_team: str = "",
         away_team: str = "",
     ) -> LiveMatch:
-        """Construye un snapshot actual/final solo desde Flashscore."""
+        """Construye un snapshot actual/final priorizando el feed diario de Flashscore.
+
+        El feed diario es la fuente de verdad para determinar FINAL: AB=3.
+        No dependemos de GraphQL LIVE para liquidar un partido que Ecuabet ya
+        retiró de GetLivenow, porque en ese momento GraphQL puede dejar de
+        encontrar el evento.
+        """
+        if not flashscore_event_id:
+            raise ValueError("flashscore_event_id es obligatorio para confirmar el final.")
+
+        # PRIMERO: feed diario. Es válido aunque el partido ya haya terminado.
+        feed_match = self.flashscore.obtener_partido_por_id(flashscore_event_id)
+
+        if feed_match and feed_match.get("finished"):
+            home_score = feed_match.get("home_score")
+            away_score = feed_match.get("away_score")
+            status = "FINISHED" if home_score is not None and away_score is not None else "FINISHED_PENDING_SCORE"
+
+            # Para liquidar exigimos estado final + marcador final verificable.
+            match = LiveMatch(
+                ecuabet_event_id=ecuabet_event_id,
+                flashscore_event_id=str(flashscore_event_id),
+                home_team=feed_match.get("home_team") or home_team,
+                away_team=feed_match.get("away_team") or away_team,
+                start_time=feed_match.get("start_time"),
+                minute=feed_match.get("minute"),
+                period=feed_match.get("period"),
+                match_status=status,
+                is_finished=status == "FINISHED",
+                home_score=home_score,
+                away_score=away_score,
+                odds=[],
+                performance={"home": {}, "away": {}, "raw_types": []},
+                mapping_confidence=1.0,
+                data_quality=0.0,
+            )
+            match.opportunities = []
+            match.opportunities_v2 = []
+            match.opportunities_v11 = []
+            match.opportunities_v22 = []
+            return match
+
+        # Si AB no es 3, el partido puede seguir LIVE. Intentamos GraphQL para
+        # mantener el snapshot actual y las estadísticas del motor.
         flashscore = self.flashscore.obtener_live_match(flashscore_event_id)
         raw_event = flashscore.get("raw_event") or {}
-        feed_match = self.flashscore.obtener_partido_por_id(flashscore_event_id)
-        if feed_match:
-            raw_event = {**raw_event, "feed_status": feed_match.get("status")}
         participants = raw_event.get("eventParticipants", []) or []
         home = next(
             (p for p in participants if ((p.get("type") or {}).get("side") or "").upper() == "HOME"),
@@ -215,55 +255,36 @@ class LiveMatchCollector:
             (p for p in participants if ((p.get("type") or {}).get("side") or "").upper() == "AWAY"),
             {},
         )
-        home_name = self._participant_name(home) or home_team
-        away_name = self._participant_name(away) or away_team
-        # Para liquidar, la única confirmación válida de FINAL es AB=3
-        # en el feed diario de Flashscore. GraphQL puede conservar un snapshot
-        # anterior y no debe convertir por sí solo un partido en final.
-        status = "LIVE"
-        is_finished = False
-        if feed_match and feed_match.get("finished"):
-            status = "FINISHED"
-            is_finished = (
-                feed_match.get("home_score") is not None
-                and feed_match.get("away_score") is not None
-            )
-            if not is_finished:
-                status = "FINISHED_PENDING_SCORE"
 
-        # El marcador definitivo siempre sale del mismo registro AB=3 que
-        # confirmó el final; nunca usamos el marcador de Ecuabet/GraphQL para
-        # liquidar un experimento.
-        if is_finished:
-            home_score = feed_match.get("home_score")
-            away_score = feed_match.get("away_score")
+        home_name = self._participant_name(home) or (feed_match or {}).get("home_team") or home_team
+        away_name = self._participant_name(away) or (feed_match or {}).get("away_team") or away_team
+
+        score = raw_event.get("score")
+        if isinstance(score, dict):
+            home_score = score.get("home")
+            if home_score is None:
+                home_score = score.get("currentHome")
+            away_score = score.get("away")
+            if away_score is None:
+                away_score = score.get("currentAway")
+        elif isinstance(score, list):
+            home_score = score[0] if len(score) > 0 else None
+            away_score = score[1] if len(score) > 1 else None
         else:
-            score = raw_event.get("score")
-            if isinstance(score, dict):
-                home_score = score.get("home")
-                if home_score is None:
-                    home_score = score.get("currentHome")
-                away_score = score.get("away")
-                if away_score is None:
-                    away_score = score.get("currentAway")
-            elif isinstance(score, list):
-                home_score = score[0] if len(score) > 0 else None
-                away_score = score[1] if len(score) > 1 else None
-            else:
-                home_score = raw_event.get("homeScore")
-                away_score = raw_event.get("awayScore")
+            home_score = raw_event.get("homeScore")
+            away_score = raw_event.get("awayScore")
 
         stats = flashscore.get("stats", {})
         match = LiveMatch(
             ecuabet_event_id=ecuabet_event_id,
-            flashscore_event_id=flashscore.get("flashscore_event_id"),
+            flashscore_event_id=flashscore.get("flashscore_event_id") or str(flashscore_event_id),
             home_team=home_name,
             away_team=away_name,
-            start_time=None,
-            minute=raw_event.get("minute") or raw_event.get("time"),
-            period=raw_event.get("period"),
-            match_status=status,
-            is_finished=is_finished,
+            start_time=(feed_match or {}).get("start_time"),
+            minute=raw_event.get("minute") or raw_event.get("time") or (feed_match or {}).get("minute"),
+            period=raw_event.get("period") or (feed_match or {}).get("period"),
+            match_status="LIVE",
+            is_finished=False,
             home_score=home_score,
             away_score=away_score,
             odds=[],
@@ -271,12 +292,10 @@ class LiveMatchCollector:
             mapping_confidence=1.0,
             data_quality=self._calculate_data_quality(stats),
         )
-        if match.is_finished:
-            match.opportunities = []
-            match.opportunities_v2 = []
-        else:
-            match.opportunities = LiveOpportunityEngine.evaluate(match)
-            match.opportunities_v2 = LiveOpportunityEngineV2.evaluate(match)
+        match.opportunities = LiveOpportunityEngine.evaluate(match)
+        match.opportunities_v2 = LiveOpportunityEngineV2.evaluate(match)
+        match.opportunities_v11 = LiveOpportunityEngineV11.evaluate(match)
+        match.opportunities_v22 = LiveOpportunityEngineV22.evaluate(match)
         return match
 
     def _obtener_ecuabet_evento(self, event_id: int) -> Dict[str, Any]:
