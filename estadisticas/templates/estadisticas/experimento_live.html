@@ -125,13 +125,16 @@ async function actualizar(){
     clearTimeout(timeout);
     const d=await r.json();
     if(!r.ok||!d.ok)throw new Error(d.error||'No se pudo actualizar');
-    renderState(d);
+    if(d.busy){
+      document.getElementById('status-text').textContent='⏳ El laboratorio está terminando la actualización anterior...';
+    }else{
+      renderState(d);
+    }
   }catch(e){
     const msg=e.name==='AbortError'?'Tiempo de espera agotado al actualizar.':'No se pudo actualizar: '+e.message;
     document.getElementById('status-text').textContent='⚠️ '+msg;
   }finally{
     actualizando=false;
-    clearTimeout(window._experimentoFetchTimeout);
   }
 }
 
