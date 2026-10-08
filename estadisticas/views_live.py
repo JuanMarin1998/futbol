@@ -395,11 +395,16 @@ def api_live_match_sources(request, ecuabet_event_id, flashscore_event_id):
 
 
 def _experimento_live_payload():
-    """Obtiene todos los partidos LIVE y devuelve su payload completo."""
+    """Obtiene una sola vez el feed LIVE completo y deja los eventos listos."""
     payload = EcuabetClient()._request(
         "GET", "GetLivenow", {"eventCount": 0, "sportId": 66}
     )
-    return payload, payload.get("events", []) or []
+    events = [
+        LiveMatchCollector.enriquecer_evento_desde_payload(event, payload)
+        for event in (payload.get("events", []) or [])
+        if isinstance(event, dict)
+    ]
+    return payload, events
 
 
 def _procesar_experimentos_live(live_events, experiments):
