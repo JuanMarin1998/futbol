@@ -59,7 +59,7 @@ class LiveExperimentManager:
         para stake/prioridad son una capa externa y no forman parte de sus
         algoritmos de predicción.
         """
-        if motor not in {"V1", "V2", "V12", "V21", "V22"}:
+        if motor not in {"V1", "V11", "V2", "V12", "V21", "V22"}:
             return list(opportunities or [])
         # V2.2 calcula el nivel al filtrar, pero no lo adjunta al objeto
         # devuelto. El laboratorio necesita ese nivel para validar y apostar.
@@ -89,6 +89,20 @@ class LiveExperimentManager:
             return "Descartada: este motor ya alcanzó el máximo de 2 apuestas por partido."
         price = Decimal(str(opportunity.get("price") or 0))
         level = cls._level(opportunity)
+        if level == 0:
+            model_p = float(opportunity.get("model_probability") or 0)
+            implied = float(opportunity.get("implied_probability") or 0)
+            edge = float(opportunity.get("edge") or 0)
+            confidence = float(opportunity.get("confidence") or 0)
+            signal = str(opportunity.get("signal_strength") or opportunity.get("signal") or "no determinada")
+            coverage = opportunity.get("data_coverage")
+            coverage_text = f"{float(coverage) * 100:.0f}%" if coverage is not None else "no disponible"
+            return (
+                f"Descartada {cls.LABELS.get(motor, motor)}: no alcanzó un nivel apostable. "
+                f"Probabilidad {model_p * 100:.1f}% vs {implied * 100:.1f}% implícita, "
+                f"edge {edge * 100:+.1f} puntos, confianza {confidence * 100:.1f}%, "
+                f"señal {signal}, cobertura {coverage_text}. No justifica gastar vidas."
+            )
         if motor == "V12":
             if price < Decimal("1.50"):
                 return "Descartada V1.2: cuota inferior a 1.50."
@@ -162,7 +176,12 @@ class LiveExperimentManager:
 
     @staticmethod
     def _level_name(level: int) -> str:
-        return {1: "Muy fuerte", 2: "Fuerte", 3: "Moderada"}.get(level, "Sin nivel")
+        return {
+            1: "Muy fuerte",
+            2: "Fuerte",
+            3: "Moderada",
+            0: "Descartada · Sin nivel",
+        }.get(level, "Descartada · Sin nivel")
 
     @classmethod
     def _audit_reason(cls, experiment, motor: str, opportunity: Dict[str, Any], *, selected: bool = False, stake: Decimal = Decimal("0")) -> str:
@@ -489,6 +508,15 @@ class LiveExperimentManager:
                     audit_status = "RECHAZADA"
                 item["_audit_status"] = audit_status
                 item["_audit_reason"] = reason
+                item["audit_status"] = audit_status
+                item["audit_reason"] = reason
+                item["bettable"] = bool(level in cls.LEVEL_RANGES and audit_status == "SELECCIONADA")
+                item["level_label"] = (
+                    "🟢 Nivel 1 · Muy fuerte" if level == 1 else
+                    "🟡 Nivel 2 · Fuerte" if level == 2 else
+                    "🟠 Nivel 3 · Moderada" if level == 3 else
+                    "🔴 Descartada · Sin nivel"
+                )
                 audit_opportunities.append(item)
 
             LiveExperimentSnapshot.objects.create(
