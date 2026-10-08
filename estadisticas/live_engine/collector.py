@@ -6,6 +6,8 @@ from .match_mapper import MatchMapper, MatchMappingError
 from .models import LiveMatch
 from .opportunity_engine import LiveOpportunityEngine
 from .opportunity_engine_v2 import LiveOpportunityEngineV2
+from .opportunity_engine_v11 import LiveOpportunityEngineV11
+from .opportunity_engine_v22 import LiveOpportunityEngineV22
 
 
 class LiveMatchCollector:
@@ -131,9 +133,13 @@ class LiveMatchCollector:
         if match.is_finished:
             match.opportunities = []
             match.opportunities_v2 = []
+            match.opportunities_v11 = []
+            match.opportunities_v22 = []
         else:
             match.opportunities = LiveOpportunityEngine.evaluate(match)
             match.opportunities_v2 = LiveOpportunityEngineV2.evaluate(match)
+            match.opportunities_v11 = LiveOpportunityEngineV11.evaluate(match)
+            match.opportunities_v22 = LiveOpportunityEngineV22.evaluate(match)
         return match
 
     @classmethod
