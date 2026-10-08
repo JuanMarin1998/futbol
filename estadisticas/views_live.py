@@ -3,6 +3,7 @@ from django.shortcuts import render
 from django.core.cache import cache
 from django.conf import settings
 from django.utils import timezone
+from django.db import transaction
 import logging
 from concurrent.futures import ThreadPoolExecutor
 
