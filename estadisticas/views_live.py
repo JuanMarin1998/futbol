@@ -9,7 +9,7 @@ from .ecuabet_client import EcuabetClient
 from .live_engine.collector import LiveMatchCollector
 from .live_engine.match_mapper import MatchMappingError
 from .live_engine.experiment import LiveExperimentManager
-from .models import LiveExperiment
+from .models import LiveExperiment, LiveExperimentDailyArchive
 
 logger = logging.getLogger(__name__)
 
@@ -578,6 +578,58 @@ def _experimento_estado_global():
         }
     finally:
         cache.delete(lock_key)
+
+def api_live_experiment_save_daily(request):
+    if request.method != "POST":
+        return JsonResponse({"ok": False, "error": "Método no permitido."}, status=405)
+    try:
+        state = _experimento_estado_global()
+        if state.get("busy"):
+            return JsonResponse({
+                "ok": False,
+                "error": "El laboratorio todavía está actualizando partidos. Intenta guardar en unos segundos.",
+            }, status=409)
+
+        archive = LiveExperimentManager.save_daily_archive()
+        running_count = sum(
+            1 for experiment in state.get("experiments", [])
+            if experiment.get("status") == "RUNNING"
+        )
+        return JsonResponse({
+            "ok": True,
+            "date": archive.experiment_date.isoformat(),
+            "saved_at": archive.saved_at.isoformat(),
+            "experiment_count": archive.experiment_count,
+            "decision_count": archive.decision_count,
+            "running_count": running_count,
+            "motors": archive.motors_summary,
+        })
+    except Exception as exc:
+        logger.exception("Error guardando archivo diario del experimento.")
+        return JsonResponse({"ok": False, "error": str(exc)}, status=502)
+
+
+def api_live_experiment_history(request):
+    if request.method != "GET":
+        return JsonResponse({"ok": False, "error": "Método no permitido."}, status=405)
+    try:
+        archives = LiveExperimentDailyArchive.objects.all()
+        return JsonResponse({
+            "ok": True,
+            "days": [
+                {
+                    "date": archive.experiment_date.isoformat(),
+                    "saved_at": archive.saved_at.isoformat(),
+                    "experiment_count": archive.experiment_count,
+                    "decision_count": archive.decision_count,
+                    "motors": archive.motors_summary,
+                }
+                for archive in archives
+            ],
+        })
+    except Exception as exc:
+        return JsonResponse({"ok": False, "error": str(exc)}, status=502)
+
 
 def api_live_experiment_start_all(request):
     if request.method != "POST":
