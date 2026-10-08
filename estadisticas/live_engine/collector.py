@@ -8,6 +8,7 @@ from .opportunity_engine import LiveOpportunityEngine
 from .opportunity_engine_v2 import LiveOpportunityEngineV2
 from .opportunity_engine_v11 import LiveOpportunityEngineV11
 from .opportunity_engine_v12 import LiveOpportunityEngineV12
+from .opportunity_engine_v21 import LiveOpportunityEngineV21
 from .opportunity_engine_v22 import LiveOpportunityEngineV22
 
 
@@ -212,12 +213,14 @@ class LiveMatchCollector:
             match.opportunities_v2 = []
             match.opportunities_v11 = []
             match.opportunities_v12 = []
+            match.opportunities_v21 = []
             match.opportunities_v22 = []
         else:
             match.opportunities = LiveOpportunityEngine.evaluate(match)
             match.opportunities_v2 = LiveOpportunityEngineV2.evaluate(match)
             match.opportunities_v11 = LiveOpportunityEngineV11.evaluate(match)
             match.opportunities_v12 = LiveOpportunityEngineV12.evaluate(match)
+            match.opportunities_v21 = LiveOpportunityEngineV21.evaluate(match)
             match.opportunities_v22 = LiveOpportunityEngineV22.evaluate(match)
         return match
 
