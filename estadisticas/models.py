@@ -408,3 +408,20 @@ class LiveExperimentSnapshot(models.Model):
         indexes = [
             models.Index(fields=["experiment", "motor", "-created_at"], name="idx_live_exp_snap_motor"),
         ]
+
+
+class LiveExperimentDailyArchive(models.Model):
+    """Copia congelada de un día completo del laboratorio LIVE."""
+
+    experiment_date = models.DateField(unique=True)
+    saved_at = models.DateTimeField(auto_now=True)
+    experiment_count = models.PositiveIntegerField(default=0)
+    decision_count = models.PositiveIntegerField(default=0)
+    motors_summary = models.JSONField(default=dict, blank=True)
+    experiments_data = models.JSONField(default=list, blank=True)
+
+    class Meta:
+        verbose_name = "Archivo diario de experimento LIVE"
+        verbose_name_plural = "Archivos diarios de experimento LIVE"
+        ordering = ["-experiment_date"]
+
