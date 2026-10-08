@@ -142,7 +142,8 @@ class LiveExperimentManager:
                 lives -= Decimal(str(entry.stake))
             elif entry.status == "WON":
                 lives += Decimal(str(entry.pnl))
-        return lives
+        # Nunca permitimos que el bankroll utilizable quede por debajo de cero.
+        return max(Decimal("0"), lives)
 
     @classmethod
     def _stake(cls, opportunity: Dict[str, Any], lives: Decimal) -> Decimal:
@@ -309,10 +310,21 @@ class LiveExperimentManager:
     @classmethod
     @transaction.atomic
     def process(cls, match):
-        experiment = LiveExperiment.objects.select_for_update().filter(
-            ecuabet_event_id=match.ecuabet_event_id, status="RUNNING"
-        ).first()
-        if not experiment: return None
+        # El bankroll es diario y compartido entre todos los partidos.
+        # Bloqueamos los experimentos LIVE del día en orden estable para que
+        # dos ciclos simultáneos no puedan gastar las mismas vidas.
+        today = timezone.localdate()
+        daily_experiments = list(
+            LiveExperiment.objects.select_for_update()
+            .filter(started_at__date=today, status="RUNNING")
+            .order_by("id")
+        )
+        experiment = next(
+            (x for x in daily_experiments if x.ecuabet_event_id == match.ecuabet_event_id),
+            None,
+        )
+        if not experiment:
+            return None
         experiment.last_minute = str(match.minute or "")
         experiment.last_period = str(match.period or "")
         experiment.last_home_score = match.home_score
@@ -517,8 +529,11 @@ class LiveExperimentManager:
                 (Decimal(str(e.stake)) for e in motor_entries if e.status == "OPEN"),
                 Decimal("0"),
             )
-            total_capital = Decimal(str(cls.INITIAL_LIVES)) + total_pnl
-            available_lives = total_capital - open_staked
+            total_capital = max(
+                Decimal("0"),
+                Decimal(str(cls.INITIAL_LIVES)) + total_pnl,
+            )
+            available_lives = max(Decimal("0"), total_capital - open_staked)
             motors[motor] = {
                 "label": cls.LABELS[motor],
                 "decisions": len(motor_entries),
@@ -531,7 +546,8 @@ class LiveExperimentManager:
                 "open_staked": float(open_staked),
                 "total_capital": float(total_capital),
                 "available_lives": float(available_lives),
-                "current_lives": float(current),
+                "current_lives": float(max(Decimal("0"), current)),
+                "alive": bool(current >= cls.MIN_STAKE),
                 "max_lives": float(max(curve)),
                 "min_lives": float(min(curve)),
                 "roi": float((total_pnl / total_staked) * 100) if total_staked else 0.0,
