@@ -218,7 +218,7 @@ class LiveExperimentManager:
         line = entry.line.lower().strip()
         text = market + " " + selection
         if any(x in text for x in ("total", "over", "under", "más", "menos")):
-            number_match = re.search(r"(\\d+(?:[.,]\\d+)?)", f"{line} {text}")
+            number_match = re.search(r"(\d+(?:[.,]\d+)?)", f"{line} {text}")
             if number_match:
                 target = float(number_match.group(1).replace(",", "."))
                 total = home_score + away_score
