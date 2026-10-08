@@ -398,92 +398,133 @@ def _experimento_live_payload():
 
 
 def _experimento_estado_global():
-    """Procesa todos los experimentos activos y devuelve V1/V2 separados por partido."""
-    from django.db import transaction
+    """Procesa el laboratorio global sin permitir ejecuciones concurrentes."""
+    lock_key = "live_experiment_global_state_lock"
+    if not cache.add(lock_key, True, 30):
+        experiments = list(
+            LiveExperiment.objects
+            .filter(status__in=["RUNNING", "FINISHED", "STOPPED"])
+            .order_by("-updated_at")[:100]
+        )
+        serialized = [LiveExperimentManager.serialize(x) for x in experiments]
+        return {
+            "ok": True,
+            "running": any(x.get("status") == "RUNNING" for x in serialized),
+            "experiments": serialized,
+            "entries": [
+                {**entry, "experiment_id": exp.get("id"), "match_status": exp.get("status")}
+                for exp in serialized for entry in exp.get("entries", [])
+            ],
+            "live_count": 0,
+            "busy": True,
+        }
 
-    payload, live_events = _experimento_live_payload()
-    live_ids = {int(e.get("id")) for e in live_events if e.get("id") is not None}
-    collector = LiveMatchCollector()
+    try:
+        _, live_events = _experimento_live_payload()
+        live_ids = {
+            int(e.get("id")) for e in live_events if e.get("id") is not None
+        }
+        collector = LiveMatchCollector()
 
-    running = list(
-        LiveExperiment.objects.filter(status="RUNNING").order_by("-started_at")
-    )
+        running = list(
+            LiveExperiment.objects.filter(status="RUNNING").order_by("-started_at")
+        )
 
-    # Procesar cada partido que sigue LIVE.
-    for event in live_events:
-        if event.get("id") is None:
-            continue
-        event_id = int(event["id"])
-        try:
+        # Si el laboratorio está activo, incorporar automáticamente cualquier
+        # partido LIVE nuevo que todavía no tenga un experimento RUNNING.
+        if running:
+            running_ids = {int(x.ecuabet_event_id) for x in running}
+            for event in live_events:
+                if event.get("id") is None:
+                    continue
+                event_id = int(event["id"])
+                if event_id in running_ids:
+                    continue
+                try:
+                    match = collector.construir_automatico(event_id)
+                    if match.is_finished:
+                        continue
+                    experiment = LiveExperimentManager.start(match)
+                    running.append(experiment)
+                    running_ids.add(event_id)
+                except Exception:
+                    continue
+
+        # Procesar cada partido que sigue LIVE.
+        for event in live_events:
+            if event.get("id") is None:
+                continue
+            event_id = int(event["id"])
             experiment = next(
                 (x for x in running if int(x.ecuabet_event_id) == event_id), None
             )
             if experiment is None:
                 continue
-            match = collector.construir_automatico(event_id)
-            LiveExperimentManager.process(match)
-        except Exception:
-            # Un partido defectuoso no debe detener el laboratorio completo.
-            continue
-
-    # Si Ecuabet ya retiró un partido, intentar confirmar el final con Flashscore.
-    for experiment in running:
-        if int(experiment.ecuabet_event_id) in live_ids:
-            continue
-        if not experiment.flashscore_event_id:
-            continue
-        try:
-            match = collector.construir_desde_flashscore(
-                experiment.flashscore_event_id,
-                ecuabet_event_id=experiment.ecuabet_event_id,
-                home_team=experiment.home_team,
-                away_team=experiment.away_team,
-            )
-            if match.is_finished:
-                LiveExperimentManager.process(match)
-        except Exception:
-            continue
-
-    experiments = list(
-        LiveExperiment.objects
-        .filter(status__in=["RUNNING", "FINISHED", "STOPPED"])
-        .order_by("-updated_at")[:100]
-    )
-    # Reconciliar experimentos finalizados para que un snapshot de marcador
-    # desactualizado no deje un falso positivo histórico.
-    for experiment in experiments:
-        if experiment.status == "FINISHED":
             try:
-                LiveExperimentManager.reconcile_finished(experiment.id)
+                match = collector.construir_automatico(event_id)
+                LiveExperimentManager.process(match)
             except Exception:
-                pass
-    experiments = list(
-        LiveExperiment.objects
-        .filter(status__in=["RUNNING", "FINISHED", "STOPPED"])
-        .order_by("-updated_at")[:100]
-    )
-    serialized = [LiveExperimentManager.serialize(x) for x in experiments]
+                continue
 
-    entries = []
-    for exp in serialized:
-        for entry in exp.get("entries", []):
-            entry["experiment_id"] = exp.get("id")
-            entry["match_status"] = exp.get("status")
-            entries.append(entry)
+        # Si Ecuabet ya retiró un partido, confirmar el final con Flashscore.
+        for experiment in running:
+            if int(experiment.ecuabet_event_id) in live_ids:
+                continue
+            if not experiment.flashscore_event_id:
+                continue
+            try:
+                match = collector.construir_desde_flashscore(
+                    experiment.flashscore_event_id,
+                    ecuabet_event_id=experiment.ecuabet_event_id,
+                    home_team=experiment.home_team,
+                    away_team=experiment.away_team,
+                )
+                if match.is_finished:
+                    LiveExperimentManager.process(match)
+            except Exception:
+                continue
 
-    entries.sort(
-        key=lambda x: x.get("placed_at") or "",
-        reverse=True,
-    )
+        experiments = list(
+            LiveExperiment.objects
+            .filter(status__in=["RUNNING", "FINISHED", "STOPPED"])
+            .order_by("-updated_at")[:100]
+        )
 
-    return {
-        "ok": True,
-        "running": any(x.get("status") == "RUNNING" for x in serialized),
-        "experiments": serialized,
-        "entries": entries,
-        "live_count": len(live_events),
-    }
+        # Reconciliación final para corregir cualquier decisión que hubiera
+        # quedado asentada con un snapshot de marcador desactualizado.
+        for experiment in experiments:
+            if experiment.status == "FINISHED":
+                try:
+                    LiveExperimentManager.reconcile_finished(experiment.id)
+                except Exception:
+                    pass
 
+        experiments = list(
+            LiveExperiment.objects
+            .filter(status__in=["RUNNING", "FINISHED", "STOPPED"])
+            .order_by("-updated_at")[:100]
+        )
+        serialized = [LiveExperimentManager.serialize(x) for x in experiments]
+
+        entries = []
+        for exp in serialized:
+            for entry in exp.get("entries", []):
+                entry["experiment_id"] = exp.get("id")
+                entry["match_status"] = exp.get("status")
+                entries.append(entry)
+
+        entries.sort(key=lambda x: x.get("placed_at") or "", reverse=True)
+
+        return {
+            "ok": True,
+            "running": any(x.get("status") == "RUNNING" for x in serialized),
+            "experiments": serialized,
+            "entries": entries,
+            "live_count": len(live_events),
+            "busy": False,
+        }
+    finally:
+        cache.delete(lock_key)
 
 def api_live_experiment_start_all(request):
     if request.method != "POST":
