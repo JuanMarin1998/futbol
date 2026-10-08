@@ -697,8 +697,27 @@ def api_live_experiment_start_all(request):
                     "error": str(exc),
                 })
 
-        state = _experimento_estado_global()
-        state.update({
+        today = timezone.localdate()
+        experiments = list(
+            LiveExperiment.objects
+            .filter(
+                status__in=["RUNNING", "FINISHED", "STOPPED"],
+                started_at__date=today,
+            )
+            .order_by("-updated_at")[:200]
+        )
+        serialized = [LiveExperimentManager.serialize(x) for x in experiments]
+        entries = [
+            {**entry, "experiment_id": exp.get("id"), "match_status": exp.get("status")}
+            for exp in serialized
+            for entry in exp.get("entries", [])
+        ]
+        return JsonResponse({
+            "ok": True,
+            "running": any(x.get("status") == "RUNNING" for x in serialized),
+            "experiments": serialized,
+            "entries": entries,
+            "live_count": len(live_events),
             "created": created,
             "skipped": skipped,
             "start_errors": errors[:20],
@@ -712,8 +731,8 @@ def api_live_experiment_start_all(request):
                     else "Ecuabet no reporta partidos de fútbol LIVE en este momento."
                 )
             ),
+            "busy": False,
         })
-        return JsonResponse(state)
     except Exception as exc:
         return JsonResponse({"ok": False, "error": str(exc)}, status=502)
 
