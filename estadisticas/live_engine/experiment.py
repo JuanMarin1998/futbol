@@ -225,8 +225,14 @@ class LiveExperimentManager:
         experiment.last_away_score = match.away_score
         if match.flashscore_event_id: experiment.flashscore_event_id = match.flashscore_event_id
 
+        # Si el feed ya confirmó el final, este snapshot solo sirve para
+        # liquidar las abiertas. Nunca se debe crear una apuesta nueva en FINAL.
+        match_is_final = cls._valid_final(match)
+
         for motor in cls.MOTORS:
-            opportunities = list(getattr(match, cls.OPPORTUNITY_ATTRS[motor], []) or [])
+            opportunities = [] if match_is_final else list(
+                getattr(match, cls.OPPORTUNITY_ATTRS[motor], []) or []
+            )
             lives_before = cls._ledger_lives(experiment, motor)
             candidates = [o for o in opportunities if cls._eligible(experiment, motor, o)]
             candidates.sort(key=lambda o: (
