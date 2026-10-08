@@ -662,11 +662,13 @@ def api_live_experiment_start_all(request):
         collector = LiveMatchCollector()
         created = 0
         skipped = 0
+        errors = []
 
         for event in live_events:
             if event.get("id") is None:
                 continue
             event_id = int(event["id"])
+            event_name = str(event.get("name") or f"Ecuabet {event_id}")
             if LiveExperiment.objects.filter(
                 ecuabet_event_id=event_id, status="RUNNING"
             ).exists():
@@ -675,14 +677,42 @@ def api_live_experiment_start_all(request):
             try:
                 match = collector.construir_automatico(event_id)
                 if match.is_finished:
+                    errors.append({
+                        "event_id": event_id,
+                        "match": event_name,
+                        "error": "El partido ya figura como finalizado.",
+                    })
                     continue
                 LiveExperimentManager.start(match)
                 created += 1
-            except Exception:
-                continue
+            except Exception as exc:
+                logger.exception(
+                    "No se pudo iniciar experimento para Ecuabet %s (%s).",
+                    event_id,
+                    event_name,
+                )
+                errors.append({
+                    "event_id": event_id,
+                    "match": event_name,
+                    "error": str(exc),
+                })
 
         state = _experimento_estado_global()
-        state.update({"created": created, "skipped": skipped})
+        state.update({
+            "created": created,
+            "skipped": skipped,
+            "start_errors": errors[:20],
+            "start_error_count": len(errors),
+            "start_message": (
+                "Experimentos iniciados correctamente."
+                if created
+                else (
+                    "No se pudo iniciar ningún experimento."
+                    if live_events
+                    else "Ecuabet no reporta partidos de fútbol LIVE en este momento."
+                )
+            ),
+        })
         return JsonResponse(state)
     except Exception as exc:
         return JsonResponse({"ok": False, "error": str(exc)}, status=502)
