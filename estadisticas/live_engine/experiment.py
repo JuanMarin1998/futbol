@@ -227,18 +227,52 @@ class LiveExperimentManager:
 
         for motor in cls.MOTORS:
             opportunities = list(getattr(match, cls.OPPORTUNITY_ATTRS[motor], []) or [])
-            selected, stake = cls._choose(experiment, motor, opportunities)
             lives_before = cls._ledger_lives(experiment, motor)
+            candidates = [o for o in opportunities if cls._eligible(experiment, motor, o)]
+            candidates.sort(key=lambda o: (
+                cls._level(o), float(o.get("edge") or 0), float(o.get("confidence") or 0)
+            ), reverse=True)
+            selected, stake = cls._choose(experiment, motor, opportunities)
             lives_after = lives_before
             if selected is not None:
                 entry = cls._place(experiment, motor, selected, stake, match)
                 lives_after = cls._ledger_lives(experiment, motor)
+
+            selected_key = cls._key(selected) if selected else ""
+            audit_opportunities = []
+            candidate_keys = {cls._key(o) for o in candidates}
+            for opportunity in opportunities:
+                item = dict(opportunity)
+                key = cls._key(opportunity)
+                level = cls._level(opportunity)
+                if not level:
+                    reason = "Descartada por nivel inválido o inexistente."
+                    audit_status = "RECHAZADA"
+                elif not key:
+                    reason = "Descartada: la oportunidad no tiene una clave válida de mercado/selección/línea."
+                    audit_status = "RECHAZADA"
+                elif key not in candidate_keys:
+                    reason = "Descartada: esa misma oportunidad ya había sido tomada anteriormente por este motor."
+                    audit_status = "REPETIDA"
+                elif selected_key and key == selected_key:
+                    reason = "SELECCIONADA: quedó primera por nivel, edge y confianza."
+                    audit_status = "SELECCIONADA"
+                elif selected is None:
+                    reason = "No seleccionada: no hubo capital suficiente para colocar una apuesta."
+                    audit_status = "NO_SELECCIONADA"
+                else:
+                    reason = "No seleccionada: otra oportunidad elegible tuvo mayor prioridad (nivel → edge → confianza)."
+                    audit_status = "NO_SELECCIONADA"
+                item["_audit_status"] = audit_status
+                item["_audit_reason"] = reason
+                audit_opportunities.append(item)
+
             LiveExperimentSnapshot.objects.create(
                 experiment=experiment, motor=motor,
                 minute=str(match.minute or ""), period=str(match.period or ""),
                 home_score=match.home_score, away_score=match.away_score,
                 lives_before=lives_before, lives_after=lives_after,
-                selected_opportunity=selected, all_opportunities=opportunities,
+                selected_opportunity=selected, all_opportunities=audit_opportunities,
                 decision_reason=(selected or {}).get("reason", "No tomó oportunidad en esta actualización."),
             )
 
@@ -424,4 +458,21 @@ class LiveExperimentManager:
             "stopped_at": experiment.stopped_at.isoformat() if experiment.stopped_at else None,
             "finished_at": experiment.finished_at.isoformat() if experiment.finished_at else None,
             "motors": motors, "safest_motor": safest_motor, "entries": entries,
+            "snapshots": [
+                {
+                    "id": snapshot.id,
+                    "motor": snapshot.motor,
+                    "minute": snapshot.minute,
+                    "period": snapshot.period,
+                    "home_score": snapshot.home_score,
+                    "away_score": snapshot.away_score,
+                    "lives_before": float(snapshot.lives_before),
+                    "lives_after": float(snapshot.lives_after),
+                    "selected_opportunity": snapshot.selected_opportunity,
+                    "all_opportunities": snapshot.all_opportunities,
+                    "decision_reason": snapshot.decision_reason,
+                    "created_at": snapshot.created_at.isoformat(),
+                }
+                for snapshot in experiment.snapshots.all().order_by("created_at", "id")
+            ],
         }
