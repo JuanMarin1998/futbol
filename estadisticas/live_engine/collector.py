@@ -82,6 +82,33 @@ class LiveMatchCollector:
             ecuabet.get("ls"),
             ecuabet.get("liveTime"),
         )
+
+        # Nunca damos por terminado un partido solo por un snapshot de
+        # GraphQL/Ecuabet. Si detectamos un posible final, lo confirmamos
+        # contra el feed diario de Flashscore (AB=3) y tomamos de allí el
+        # marcador definitivo.
+        final_feed = None
+        if is_finished:
+            try:
+                final_feed = self.flashscore.obtener_partido_por_id(flashscore_event_id)
+            except Exception:
+                final_feed = None
+
+            if not (final_feed and final_feed.get("finished")):
+                match_status = "LIVE"
+                is_finished = False
+            elif final_feed.get("home_score") is not None and final_feed.get("away_score") is not None:
+                score = [
+                    final_feed.get("home_score"),
+                    final_feed.get("away_score"),
+                ]
+                match_status = "FINISHED"
+                is_finished = True
+            else:
+                # Estado final sin marcador verificable: no liquidar todavía.
+                match_status = "FINISHED_PENDING_SCORE"
+                is_finished = False
+
         match = LiveMatch(
             ecuabet_event_id=int(ecuabet.get("id")),
             flashscore_event_id=flashscore.get("flashscore_event_id"),
