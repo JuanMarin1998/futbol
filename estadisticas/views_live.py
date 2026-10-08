@@ -2,6 +2,7 @@ from django.http import JsonResponse
 from django.shortcuts import render
 from django.core.cache import cache
 from django.conf import settings
+from django.utils import timezone
 import logging
 
 from .api_football_live import APIFootballLiveClient
@@ -404,9 +405,13 @@ def _experimento_estado_global():
     """Procesa el laboratorio global sin permitir ejecuciones concurrentes."""
     lock_key = "live_experiment_global_state_lock"
     if not cache.add(lock_key, True, 30):
+        today = timezone.localdate()
         experiments = list(
             LiveExperiment.objects
-            .filter(status__in=["RUNNING", "FINISHED", "STOPPED"])
+            .filter(
+                status__in=["RUNNING", "FINISHED", "STOPPED"],
+                started_at__date=today,
+            )
             .order_by("-updated_at")[:100]
         )
         serialized = [LiveExperimentManager.serialize(x) for x in experiments]
@@ -423,12 +428,17 @@ def _experimento_estado_global():
         }
 
     try:
+        today = timezone.localdate()
         _, live_events = _experimento_live_payload()
         live_ids = {
             int(e.get("id")) for e in live_events if e.get("id") is not None
         }
         collector = LiveMatchCollector()
 
+        # Los experimentos se conservan en la base de datos para el historial,
+        # pero la pantalla del laboratorio solo muestra la jornada de HOY.
+        # Los RUNNING antiguos todavía se procesan para intentar liquidarlos,
+        # pero nunca vuelven a aparecer en la vista del nuevo día.
         running = list(
             LiveExperiment.objects.filter(status="RUNNING").order_by("-started_at")
         )
@@ -504,6 +514,7 @@ def _experimento_estado_global():
                         "match": f"{experiment.home_team} vs {experiment.away_team}",
                         "score": f"{match.home_score}-{match.away_score}",
                         "settled_entries": settled_before,
+                        "experiment_date": timezone.localtime(experiment.started_at).date().isoformat(),
                     })
                     logger.info(
                         "Experimento %s finalizado: %s vs %s %s-%s.",
@@ -534,26 +545,28 @@ def _experimento_estado_global():
                     experiment.flashscore_event_id,
                 )
 
-        experiments = list(
+        all_experiments = list(
             LiveExperiment.objects
             .filter(status__in=["RUNNING", "FINISHED", "STOPPED"])
-            .order_by("-updated_at")[:100]
+            .order_by("-updated_at")[:200]
         )
 
         # Reconciliación final para corregir cualquier decisión que hubiera
         # quedado asentada con un snapshot de marcador desactualizado.
-        for experiment in experiments:
+        for experiment in all_experiments:
             if experiment.status == "FINISHED":
                 try:
                     LiveExperimentManager.reconcile_finished(experiment.id)
                 except Exception:
                     pass
 
-        experiments = list(
-            LiveExperiment.objects
-            .filter(status__in=["RUNNING", "FINISHED", "STOPPED"])
-            .order_by("-updated_at")[:100]
-        )
+        # Después de liquidar, solo devolvemos los experimentos iniciados en
+        # la fecha local actual. Así, al pasar de 23:59 a 00:00, la pantalla
+        # queda limpia automáticamente sin borrar el historial anterior.
+        experiments = [
+            experiment for experiment in all_experiments
+            if timezone.localtime(experiment.started_at).date() == today
+        ]
         serialized = [LiveExperimentManager.serialize(x) for x in experiments]
 
         entries = []
@@ -571,9 +584,19 @@ def _experimento_estado_global():
             "experiments": serialized,
             "entries": entries,
             "live_count": len(live_events),
-            "finalized_count": len(finalized_matches),
-            "finalized_matches": finalized_matches,
-            "pending_final_count": pending_final_count,
+            "finalized_count": len([
+                item for item in finalized_matches
+                if item.get("experiment_date") == today.isoformat()
+            ]),
+            "finalized_matches": [
+                item for item in finalized_matches
+                if item.get("experiment_date") == today.isoformat()
+            ],
+            "pending_final_count": sum(
+                1 for experiment in running
+                if timezone.localtime(experiment.started_at).date() == today
+                and int(experiment.ecuabet_event_id) not in live_ids
+            ),
             "busy": False,
         }
     finally:
