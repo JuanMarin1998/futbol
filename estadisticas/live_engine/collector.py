@@ -211,16 +211,24 @@ class LiveMatchCollector:
         )
         home_name = self._participant_name(home) or home_team
         away_name = self._participant_name(away) or away_team
-        status, is_finished = self._extract_match_status(raw_event)
+        # Para liquidar, la única confirmación válida de FINAL es AB=3
+        # en el feed diario de Flashscore. GraphQL puede conservar un snapshot
+        # anterior y no debe convertir por sí solo un partido en final.
+        status = "LIVE"
+        is_finished = False
         if feed_match and feed_match.get("finished"):
             status = "FINISHED"
-            is_finished = True
+            is_finished = (
+                feed_match.get("home_score") is not None
+                and feed_match.get("away_score") is not None
+            )
+            if not is_finished:
+                status = "FINISHED_PENDING_SCORE"
 
-        # Para liquidar un experimento terminado, el marcador del feed
-        # diario de Flashscore tiene prioridad sobre GraphQL/raw_event:
-        # Ecuabet puede haber retirado el evento LIVE o conservar un snapshot
-        # anterior (por ejemplo 1-0) mientras el resultado real ya es 2-1.
-        if feed_match and feed_match.get("home_score") is not None and feed_match.get("away_score") is not None:
+        # El marcador definitivo siempre sale del mismo registro AB=3 que
+        # confirmó el final; nunca usamos el marcador de Ecuabet/GraphQL para
+        # liquidar un experimento.
+        if is_finished:
             home_score = feed_match.get("home_score")
             away_score = feed_match.get("away_score")
         else:
