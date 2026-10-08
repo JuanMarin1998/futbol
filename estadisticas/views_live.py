@@ -449,6 +449,19 @@ def _experimento_estado_global():
         .filter(status__in=["RUNNING", "FINISHED", "STOPPED"])
         .order_by("-updated_at")[:100]
     )
+    # Reconciliar experimentos finalizados para que un snapshot de marcador
+    # desactualizado no deje un falso positivo histórico.
+    for experiment in experiments:
+        if experiment.status == "FINISHED":
+            try:
+                LiveExperimentManager.reconcile_finished(experiment.id)
+            except Exception:
+                pass
+    experiments = list(
+        LiveExperiment.objects
+        .filter(status__in=["RUNNING", "FINISHED", "STOPPED"])
+        .order_by("-updated_at")[:100]
+    )
     serialized = [LiveExperimentManager.serialize(x) for x in experiments]
 
     entries = []
