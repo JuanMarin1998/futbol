@@ -336,7 +336,11 @@ class LiveExperimentManager:
                 "reason": e.reason, "supporting_factors": e.supporting_factors,
                 "contradicting_factors": e.contradicting_factors,
                 "placed_minute": e.placed_minute, "placed_home_score": e.placed_home_score,
-                "placed_away_score": e.placed_away_score, "placed_at": e.placed_at.isoformat(),
+                "placed_away_score": e.placed_away_score,
+                "current_minute": experiment.last_minute,
+                "current_home_score": experiment.last_home_score,
+                "current_away_score": experiment.last_away_score,
+                "placed_at": e.placed_at.isoformat(),
                 "settled_at": e.settled_at.isoformat() if e.settled_at else None,
             })
 
