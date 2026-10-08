@@ -189,16 +189,28 @@ class LiveMatchCollector:
             status = "FINISHED"
             is_finished = True
 
-        score = raw_event.get("score")
-        if isinstance(score, dict):
-            home_score = score.get("home") or score.get("currentHome")
-            away_score = score.get("away") or score.get("currentAway")
-        elif isinstance(score, list):
-            home_score = score[0] if len(score) > 0 else None
-            away_score = score[1] if len(score) > 1 else None
+        # Para liquidar un experimento terminado, el marcador del feed
+        # diario de Flashscore tiene prioridad sobre GraphQL/raw_event:
+        # Ecuabet puede haber retirado el evento LIVE o conservar un snapshot
+        # anterior (por ejemplo 1-0) mientras el resultado real ya es 2-1.
+        if feed_match and feed_match.get("home_score") is not None and feed_match.get("away_score") is not None:
+            home_score = feed_match.get("home_score")
+            away_score = feed_match.get("away_score")
         else:
-            home_score = raw_event.get("homeScore")
-            away_score = raw_event.get("awayScore")
+            score = raw_event.get("score")
+            if isinstance(score, dict):
+                home_score = score.get("home")
+                if home_score is None:
+                    home_score = score.get("currentHome")
+                away_score = score.get("away")
+                if away_score is None:
+                    away_score = score.get("currentAway")
+            elif isinstance(score, list):
+                home_score = score[0] if len(score) > 0 else None
+                away_score = score[1] if len(score) > 1 else None
+            else:
+                home_score = raw_event.get("homeScore")
+                away_score = raw_event.get("awayScore")
 
         stats = flashscore.get("stats", {})
         match = LiveMatch(
