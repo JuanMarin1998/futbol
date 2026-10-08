@@ -2,8 +2,6 @@ import math
 import re
 from typing import Any, Dict, List, Optional, Tuple
 
-from .opportunity_levels import enrich
-
 
 class LiveOpportunityEngine:
     """
@@ -15,7 +13,7 @@ class LiveOpportunityEngine:
     mantenerse separadas de cualquier decisión de riesgo.
     """
 
-    MIN_EDGE = 0.03
+    MIN_EDGE = 0.05
     MIN_CONFIDENCE = 0.55
 
     @staticmethod
@@ -222,7 +220,7 @@ class LiveOpportunityEngine:
                         + min(0.10, match.mapping_confidence * 0.10),
                     ),
                 )
-                opportunity = enrich({
+                opportunities.append({
                     "market": odd.get("market_name", ""),
                     "selection": odd.get("name", ""),
                     "line": odd.get("line"),
@@ -232,16 +230,9 @@ class LiveOpportunityEngine:
                     "edge": round(edge, 4),
                     "edge_pct": round(edge * 100, 2),
                     "confidence": round(confidence, 3),
-                    "data_coverage": round(match.data_quality, 3),
-                    "signal_strength": "fuerte" if confidence >= .72 else ("moderada" if confidence >= .55 else "débil"),
-                    "supporting_factors": [],
-                    "contradicting_factors": [],
                     "signal": "positive_edge" if confidence >= cls.MIN_CONFIDENCE else "weak_edge",
                     "model": "poisson_live_v1",
-                    "reason": f"V1 usa marcador, tiempo, xG y volumen de remates. Ventaja estadística: {edge*100:.1f} puntos.",
                 })
-                if opportunity["level"]:
-                    opportunities.append(opportunity)
 
         opportunities.sort(key=lambda x: (x["edge"], x["confidence"]), reverse=True)
         return opportunities[:10]
