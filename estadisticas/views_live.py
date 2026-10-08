@@ -660,6 +660,13 @@ def api_live_experiment_reset_today(request):
     if request.method != "POST":
         return JsonResponse({"ok": False, "error": "Método no permitido."}, status=405)
 
+    lock_key = "live_experiment_global_state_lock"
+    if not cache.add(lock_key, True, 60):
+        return JsonResponse({
+            "ok": False,
+            "error": "El laboratorio está procesando una actualización. Detén la simulación y vuelve a intentar en unos segundos.",
+        }, status=409)
+
     try:
         today = timezone.localdate()
         with transaction.atomic():
@@ -696,6 +703,8 @@ def api_live_experiment_reset_today(request):
     except Exception as exc:
         logger.exception("Error reiniciando el laboratorio del día.")
         return JsonResponse({"ok": False, "error": str(exc)}, status=502)
+    finally:
+        cache.delete(lock_key)
 
 
 def api_live_experiment_history(request):
