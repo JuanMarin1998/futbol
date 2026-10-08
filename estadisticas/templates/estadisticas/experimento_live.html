@@ -174,7 +174,7 @@ async function simular(){
  if(diagnostic)diagnostic.textContent='';
  try{
   const controller=new AbortController();
-  const timeout=setTimeout(()=>controller.abort(),10000);
+  const timeout=setTimeout(()=>controller.abort(),45000);
   const r=await fetch("{% url 'estadisticas:api_live_experiment_start_all' %}",{
    method:'POST',cache:'no-store',signal:controller.signal,
    headers:{'X-CSRFToken':csrf(),'Cache-Control':'no-cache'}
@@ -183,30 +183,22 @@ async function simular(){
   let d={};
   try{d=await r.json();}catch(_){throw new Error('El servidor no devolvió JSON. Revisa la consola de Django.');}
   if(!r.ok||!d.ok)throw new Error(d.error||('Error HTTP '+r.status));
-  if(d.starting||d.busy){
+  renderState(d);
+  simulacionActiva=!!d.running;
+  const errors=d.start_errors||[];
+  const created=Number(d.created||0);
+  const live=Number(d.live_count||0);
+  if(created>0 || d.running){
    simulacionActiva=true;
-   if(status)status.textContent='⏳ Arranque en segundo plano: detectando y vinculando todos los partidos LIVE...';
-   if(diagnostic)diagnostic.textContent='La página ya está disponible. El servidor preparará los partidos sin mantener esta petición abierta.';
+   if(status)status.textContent='🟢 Simulación iniciada: '+created+' partido(s) activo(s).';
+   if(diagnostic){const pe=d.processing_errors||[];diagnostic.innerHTML='✅ '+created+' experimento(s) iniciado(s) · '+live+' LIVE detectado(s). Primer análisis ejecutado.'+(pe.length?' &nbsp;·&nbsp; ⚠️ '+pe.length+' partido(s) fallaron en este ciclo; revisa el servidor.':'');}
    programarActualizacion(1000);
+  }else if(errors.length){
+   if(status)status.textContent='⚠️ No se pudo iniciar la simulación.';
+   if(diagnostic)diagnostic.innerHTML='❌ <strong>Problemas al vincular/preparar partidos:</strong> '+errors.map(x=>'<div style="margin-top:.25rem">• '+esc(x.match||x.event_id||'Partido')+': '+esc(x.error||'Error desconocido')+'</div>').join('');
   }else{
-   renderState(d);
-   simulacionActiva=!!d.running;
-   const errors=d.start_errors||[];
-   const created=Number(d.created||0);
-   const live=Number(d.live_count||0);
-   if(created>0 || d.running){
-    simulacionActiva=true;
-    if(status)status.textContent='🟢 Simulación iniciada: '+created+' partido(s) nuevo(s); '+Number(d.skipped||0)+' ya estaban activos.';
-    if(diagnostic){const pe=d.processing_errors||[];diagnostic.innerHTML='✅ '+created+' experimento(s) nuevo(s) · '+live+' LIVE detectado(s).'+(pe.length?' &nbsp;·&nbsp; ⚠️ '+pe.length+' partido(s) fallaron en este ciclo; revisa el servidor.':'');}
-    programarActualizacion(1000);
-   }else if(errors.length){
-    if(status)status.textContent='⚠️ No se pudo iniciar la simulación.';
-    if(diagnostic)diagnostic.innerHTML='❌ <strong>Problemas al vincular/preparar partidos:</strong> '+errors.map(x=>'<div style="margin-top:.25rem">• '+esc(x.match||x.event_id||'Partido')+': '+esc(x.error||'Error desconocido')+'</div>').join('');
-   }else{
-    simulacionActiva=false;
-    if(status)status.textContent='⏸️ No hay partidos LIVE disponibles para simular.';
-    if(diagnostic)diagnostic.textContent=d.start_message||'Ecuabet no reporta partidos de fútbol LIVE en este momento.';
-   }
+   if(status)status.textContent='⏸️ No hay partidos LIVE disponibles para simular.';
+   if(diagnostic)diagnostic.textContent=d.start_message||'Ecuabet no reporta partidos de fútbol LIVE en este momento.';
   }
  }catch(e){
   const msg=e.name==='AbortError'?'El servidor tardó más de 45 segundos en iniciar.':e.message;
