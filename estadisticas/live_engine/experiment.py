@@ -90,7 +90,7 @@ class LiveExperimentManager:
                 opportunity["edge_basis"] = "probabilidad_justa_de_mercado"
                 opportunity["edge_pct"] = round(float(opportunity.get("edge") or 0) * 100, 2)
 
-            if motor in {"V1", "V11", "V2", "V12", "V21", "V22"}:
+            if motor in {"V1", "V11", "V2", "V12", "V21", "V22", "V2U", "V11U"}:
                 opportunity = enrich(opportunity)
             prepared.append(opportunity)
         return prepared
