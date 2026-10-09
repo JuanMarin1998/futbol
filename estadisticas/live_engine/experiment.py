@@ -18,6 +18,8 @@ class LiveExperimentManager:
     MAX_STAKE = Decimal("10")
     MIN_STAKE = Decimal("1")
     MOTORS = ("V1", "V11", "V12", "V2", "V21", "V22", "V3", "V2U", "V11U")
+    # Pausa temporal de apuestas nuevas; los motores siguen visibles y auditables.
+    PAUSED_MOTORS = frozenset({"V1", "V2", "V3"})
     LABELS = {"V1": "V1", "V11": "V1.1", "V12": "V1.2", "V2": "V2", "V21": "V2.1", "V22": "V2.2", "V3": "V3", "V2U": "V2.Ultra", "V11U": "V1.1 Ultra"}
     OPPORTUNITY_ATTRS = {
         "V1": "opportunities", "V11": "opportunities_v11", "V12": "opportunities_v12",
@@ -123,6 +125,8 @@ class LiveExperimentManager:
 
     @classmethod
     def _eligibility_reason(cls, experiment, motor: str, opportunity: Dict[str, Any]) -> str:
+        if motor in cls.PAUSED_MOTORS:
+            return f"Motor {cls.LABELS.get(motor, motor)} en pausa: no puede colocar apuestas nuevas; el código y el historial se conservan."
         key = cls._key(opportunity)
         if not key or key.strip("|") == "":
             return "Descartada: oportunidad sin mercado/selección/línea válidos."
@@ -430,6 +434,9 @@ class LiveExperimentManager:
 
     @classmethod
     def _choose(cls, experiment, motor, opportunities):
+        # Defensa adicional: un motor pausado jamás devuelve una apuesta seleccionada.
+        if motor in cls.PAUSED_MOTORS:
+            return None, Decimal("0")
         lives = cls._ledger_lives(experiment, motor)
         candidates = [o for o in opportunities if cls._eligible(experiment, motor, o)]
         if not candidates or lives < cls.MIN_STAKE:
