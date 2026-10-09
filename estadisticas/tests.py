@@ -186,6 +186,7 @@ class UltraMotorTests(SimpleTestCase):
                 {"market_name": "Home Team Total Goals", "name": "Over 0.5", "line": "0.5", "price": 1.55, "odd_status": "active"},
                 {"market_name": "Asian Handicap", "name": "Home", "line": "-0.5", "price": 1.80, "odd_status": "active"},
                 {"market_name": "Player to Score", "name": "Anytime", "price": 2.00, "odd_status": "active"},
+                {"market_name": "First Half Result", "name": "Home", "price": 1.90, "odd_status": "active"},
                 {"market_name": "1X2", "name": "Away", "price": 3.90, "odd_status": "suspended"},
             ],
         )
@@ -199,6 +200,8 @@ class UltraMotorTests(SimpleTestCase):
         self.assertIn(("Asian Handicap", "Home"), markets)
         unsupported = next(x for x in result if x["market"] == "Player to Score")
         self.assertTrue(unsupported["unsupported_market"])
+        half_time = next(x for x in result if x["market"] == "First Half Result")
+        self.assertTrue(half_time["unsupported_market"])
         self.assertNotIn(("1X2", "Away"), markets)
 
     def test_v11_ultra_uses_calibration_and_temporal_metadata(self):
