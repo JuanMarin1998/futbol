@@ -394,7 +394,20 @@ class LiveExperimentManager:
     def _stake(cls, opportunity: Dict[str, Any], lives: Decimal, motor: str = "") -> Decimal:
         level = cls._level(opportunity)
         if motor == "ESP":
-            return Decimal("1.00") if level in {1, 2} and lives >= Decimal("1.00") else Decimal("0")
+            if level not in {1, 2} or lives < Decimal("1.00"):
+                return Decimal("0")
+            # Stake dinámico entre 1 vida y todo el capital disponible (máximo inicial: 50).
+            votes = Decimal(str(opportunity.get("consensus_votes") or 0))
+            ratio = Decimal(str(opportunity.get("consensus_support_ratio") or 0))
+            confidence = Decimal(str(opportunity.get("confidence") or 0))
+            edge = Decimal(str(opportunity.get("edge") or 0))
+            votes_score = min(Decimal("1"), max(Decimal("0"), votes / Decimal("7")))
+            ratio_score = min(Decimal("1"), max(Decimal("0"), ratio))
+            confidence_score = min(Decimal("1"), max(Decimal("0"), confidence))
+            edge_score = min(Decimal("1"), max(Decimal("0"), edge / Decimal("0.20")))
+            strength = votes_score * Decimal("0.30") + ratio_score * Decimal("0.30") + confidence_score * Decimal("0.20") + edge_score * Decimal("0.20")
+            stake = Decimal("1") + (lives - Decimal("1")) * strength
+            return min(lives, max(Decimal("1"), stake)).quantize(Decimal("0.01"), rounding=ROUND_DOWN)
         if level == 0 or lives < cls.MIN_STAKE:
             return Decimal("0")
         if motor == "V4":
