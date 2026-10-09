@@ -91,7 +91,7 @@ class LiveExperimentManager:
             return "goles_btts"
         if any(token in text for token in ("1x2", "resultado", "ganador", "match winner", "doble", "double chance", "sin empate", "draw no bet", "dnb")):
             return "resultado"
-        return re.sub(r"\\s+", " ", str(opportunity.get("market") or "").casefold().strip())
+        return re.sub(r"\s+", " ", str(opportunity.get("market") or "").casefold().strip())
 
     @classmethod
     def _eligibility_reason(cls, experiment, motor: str, opportunity: Dict[str, Any]) -> str:
