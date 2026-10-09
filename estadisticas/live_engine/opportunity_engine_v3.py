@@ -58,6 +58,8 @@ class LiveOpportunityEngineV3:
     def _market_fair_probabilities(cls, odds: List[Dict[str, Any]]) -> Dict[str, float]:
         groups: Dict[str, list] = {}
         for odd in odds:
+            if not cls._active_odd(odd):
+                continue
             price = cls._number(odd.get("price"))
             if price is None or price <= 1:
                 continue
@@ -76,6 +78,11 @@ class LiveOpportunityEngineV3:
                     "line": odd.get("line"),
                 })] = raw / total if len(items) >= 2 else raw
         return fair
+
+    @staticmethod
+    def _active_odd(odd: Dict[str, Any]) -> bool:
+        status = str(odd.get("odd_status") or odd.get("status") or "").casefold()
+        return not any(token in status for token in ("suspend", "inactive", "closed", "blocked", "settled", "void"))
 
     @staticmethod
     def _elapsed(match) -> float:
@@ -110,6 +117,8 @@ class LiveOpportunityEngineV3:
     def evaluate(cls, match) -> List[Dict[str, Any]]:
         if getattr(match, "is_finished", False):
             return []
+        if getattr(match, "home_score", None) is None or getattr(match, "away_score", None) is None:
+            return []
 
         raw_by_key: Dict[str, list] = {}
         for label, attr in cls.SOURCE_ATTRS:
@@ -117,6 +126,8 @@ class LiveOpportunityEngineV3:
             # esas salidas para no duplicar trabajo en el ciclo LIVE.
             for source in getattr(match, attr, []) or []:
                 item = dict(source)
+                if not cls._active_odd(item):
+                    continue
                 price = cls._number(item.get("price"))
                 probability = cls._number(item.get("model_probability"))
                 if price is None or probability is None or not cls.MIN_PRICE <= price <= cls.MAX_PRICE:
@@ -197,6 +208,8 @@ class LiveOpportunityEngineV3:
                 0.48 + consensus * 0.16 + quality * 0.10 + mapping * 0.08
                 + max(-0.08, min(0.08, edge)) - dispersion * 0.35
             ))
+            if confidence > 0.50:
+                confidence = 0.50 + (confidence - 0.50) * temporal_factor
             extreme = edge >= cls.MAX_EXTREME_EDGE
             exceptional = (
                 conservative_edge >= 0.10
