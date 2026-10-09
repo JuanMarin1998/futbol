@@ -1,1069 +1,1411 @@
-V2
-⏳ ABIERTA
-CFR Cluj vs U. Cluj
-Más de 2.5 · 2.5 · cuota 1.52 · 7.00 vidas
-Modelo 75.1% · Implícita 65.6% · Edge +9.6%
-⏱ Tiempo actual: 19' · marcador 1-0
-Motivo: V2 combina xG/xGOT, remates, ataque, pases y contexto de marcador/tiempo. Ventaja estadística: 9.6 puntos.
-V2
-⏳ ABIERTA
-CFR Cluj vs U. Cluj
-CFR Cluj · cuota 1.73 · 10.00 vidas
-Modelo 97.2% · Implícita 57.7% · Edge +39.5%
-⏱ Tiempo actual: 19' · marcador 1-0
-Motivo: V2 combina xG/xGOT, remates, ataque, pases y contexto de marcador/tiempo. Ventaja estadística: 39.5 puntos.
 V2.2
 ⏳ ABIERTA
-CFR Cluj vs U. Cluj
-CFR Cluj · cuota 1.56 · 6.65 vidas
-Modelo 70.8% · Implícita 64.3% · Edge +6.5%
-⏱ Tiempo actual: 19' · marcador 1-0
-Motivo: V2.2 calibra V2, exige consenso de indicadores y controla el minuto (13'). Edge calibrado: 6.5 puntos.
+Atlético Nacional vs Deportes Tolima
+Empate · cuota 1.52 · 3.70 vidas
+Modelo 72.2% · Implícita 65.8% · Edge +6.4%
+⏱ Tiempo actual: 82' · marcador 0-0
+Motivo: Empate elegido por V2.2: 72.2% de probabilidad frente a 65.8% implícita (+6.4 puntos de edge); 0-0 al 82', Nivel 3 · Moderada; consenso de indicadores 37.0%; confianza 65.2%; exposición 3.70 vidas; respaldo: Marcador empatado: 0-0, Remates al arco: 6 vs 8; cautelas: xG: 0.92 vs 0.62.
+V2.1
+⏳ ABIERTA
+Atlético Nacional vs Deportes Tolima
+Empate · cuota 1.52 · 3.48 vidas
+Modelo 69.5% · Implícita 65.8% · Edge +3.7%
+⏱ Tiempo actual: 82' · marcador 0-0
+Motivo: Empate elegido por V2.1: 69.5% de probabilidad frente a 65.8% implícita (+3.7 puntos de edge); 0-0 al 82', Nivel 3 · Moderada; control temporal 1.00; confianza 68.1%; exposición 3.48 vidas; respaldo: Marcador empatado: 0-0, Remates al arco: 6 vs 8; cautelas: xG: 0.92 vs 0.62.
 V2
 ⏳ ABIERTA
-CFR Cluj vs U. Cluj
-No · cuota 2.90 · 3.81 vidas
-Modelo 65.5% · Implícita 34.5% · Edge +31.0%
-⏱ Tiempo actual: 19' · marcador 1-0
-Motivo: V2 combina xG/xGOT, remates, ataque, pases y contexto de marcador/tiempo. Ventaja estadística: 31.0 puntos.
-V2.2
+Palmeiras vs Bahia
+Palmeiras · cuota 1.21 · 4.00 vidas
+Modelo 98.6% · Implícita 82.6% · Edge +16.0%
+⏱ Tiempo actual: 15' · marcador 1-0
+Motivo: Palmeiras elegido por V2: 98.6% de probabilidad frente a 82.6% implícita (+16.0 puntos de edge); 1-0 al 13', Nivel 3 · Moderada; confianza 86.2%; exposición 4.00 vidas; respaldo: xG: 0.22 vs 0, Remates al arco: 2 vs 0, Grandes ocasiones: 1 vs 0; cautelas: Posesión: 34 vs 66.
+V2.1
 ⏳ ABIERTA
-AL Wakrah vs Al-Gharafa SC
-AL Wakrah · cuota 1.74 · 3.18 vidas
-Modelo 63.0% · Implícita 57.4% · Edge +5.6%
-⏱ Tiempo actual: 52' · marcador 1-0
-Motivo: V2.2 calibra V2, exige consenso de indicadores y controla el minuto (38'). Edge calibrado: 5.6 puntos.
-V2
-⏳ ABIERTA
-AL Wakrah vs Al-Gharafa SC
-AL Wakrah · cuota 1.74 · 3.94 vidas
-Modelo 69.0% · Implícita 57.4% · Edge +11.6%
-⏱ Tiempo actual: 52' · marcador 1-0
-Motivo: V2 combina xG/xGOT, remates, ataque, pases y contexto de marcador/tiempo. Ventaja estadística: 11.6 puntos.
-V2.2
-⏳ ABIERTA
-MS Tira vs Ironi Nesher
-Menos de 2.5 · 2.5 · cuota 2.20 · 3.31 vidas
-Modelo 74.0% · Implícita 45.5% · Edge +28.6%
-⏱ Tiempo actual: Descanso · marcador 0-1
-Motivo: V2.2 calibra V2, exige consenso de indicadores y controla el minuto (33'). Edge calibrado: 28.6 puntos.
-V2.2
-⏳ ABIERTA
-Al-Okhdood Club vs AL Ula
-Menos de 2.5 · 2.5 · cuota 1.50 · 6.66 vidas
-Modelo 77.3% · Implícita 66.7% · Edge +10.6%
-⏱ Tiempo actual: Descanso · marcador 0-0
-Motivo: V2.2 calibra V2, exige consenso de indicadores y controla el minuto (27'). Edge calibrado: 10.6 puntos.
-V2
-⏳ ABIERTA
-Al-Okhdood Club vs AL Ula
-Menos de 2.5 · 2.5 · cuota 1.50 · 10.00 vidas
-Modelo 94.1% · Implícita 66.7% · Edge +27.4%
-⏱ Tiempo actual: Descanso · marcador 0-0
-Motivo: V2 combina xG/xGOT, remates, ataque, pases y contexto de marcador/tiempo. Ventaja estadística: 27.4 puntos.
-V2.2
-⏳ ABIERTA
-Al-Okhdood Club vs AL Ula
-No · cuota 1.60 · 3.29 vidas
-Modelo 75.7% · Implícita 62.5% · Edge +13.2%
-⏱ Tiempo actual: Descanso · marcador 0-0
-Motivo: V2.2 calibra V2, exige consenso de indicadores y controla el minuto (27'). Edge calibrado: 13.2 puntos.
-V2
-⏳ ABIERTA
-Al-Okhdood Club vs AL Ula
-No · cuota 1.60 · 10.00 vidas
-Modelo 91.4% · Implícita 62.5% · Edge +28.9%
-⏱ Tiempo actual: Descanso · marcador 0-0
-Motivo: V2 combina xG/xGOT, remates, ataque, pases y contexto de marcador/tiempo. Ventaja estadística: 28.9 puntos.
-V2.2
-❌ PERDIDA
-Al-Khaleej Khor Fakkan vs Al-Wasl
-Empate · cuota 2.25 · 3.66 vidas
-Modelo 65.9% · Implícita 44.4% · Edge +21.5%
-⏱ Tiempo de apuesta: 78' · marcador 1-1
-Motivo: V2.2 calibra V2, exige consenso de indicadores y controla el minuto (78'). Edge calibrado: 21.5 puntos.
-Resultado: -3.66 vidas
-V2
-❌ PERDIDA
-Al-Khaleej Khor Fakkan vs Al-Wasl
-Empate · cuota 2.25 · 7.00 vidas
-Modelo 72.1% · Implícita 44.4% · Edge +27.6%
-⏱ Tiempo de apuesta: 78' · marcador 1-1
-Motivo: V2 combina xG/xGOT, remates, ataque, pases y contexto de marcador/tiempo. Ventaja estadística: 27.6 puntos.
-Resultado: -7.00 vidas
-V2
-⏳ ABIERTA
-Holon Yermiyahu FC vs AS Nordia Jerusalem
-Menos de 2.5 · 2.5 · cuota 2.40 · 3.52 vidas
-Modelo 75.5% · Implícita 41.7% · Edge +33.9%
-⏱ Tiempo actual: 54' · marcador 2-0
-Motivo: V2 combina xG/xGOT, remates, ataque, pases y contexto de marcador/tiempo. Ventaja estadística: 33.9 puntos.
-V2
-⏳ ABIERTA
-Holon Yermiyahu FC vs AS Nordia Jerusalem
-Más de 2.5 · 2.5 · cuota 1.50 · 3.87 vidas
-Modelo 72.9% · Implícita 66.7% · Edge +6.2%
-⏱ Tiempo actual: 54' · marcador 2-0
-Motivo: V2 combina xG/xGOT, remates, ataque, pases y contexto de marcador/tiempo. Ventaja estadística: 6.2 puntos.
-V2.2
-⏳ ABIERTA
-AL Wakrah vs Al-Gharafa SC
-No · cuota 2.20 · 3.13 vidas
-Modelo 60.1% · Implícita 45.5% · Edge +14.7%
-⏱ Tiempo actual: 52' · marcador 1-0
-Motivo: V2.2 calibra V2, exige consenso de indicadores y controla el minuto (15'). Edge calibrado: 14.7 puntos.
-V2
-⏳ ABIERTA
-AL Wakrah vs Al-Gharafa SC
-Menos de 2.5 · 2.5 · cuota 2.08 · 7.00 vidas
-Modelo 81.1% · Implícita 48.2% · Edge +32.9%
-⏱ Tiempo actual: 52' · marcador 1-0
-Motivo: V2 combina xG/xGOT, remates, ataque, pases y contexto de marcador/tiempo. Ventaja estadística: 32.9 puntos.
-V2.2
-⏳ ABIERTA
-AL Wakrah vs Al-Gharafa SC
-Menos de 2.5 · 2.5 · cuota 2.08 · 3.38 vidas
-Modelo 61.0% · Implícita 48.2% · Edge +12.8%
-⏱ Tiempo actual: 52' · marcador 1-0
-Motivo: V2.2 calibra V2, exige consenso de indicadores y controla el minuto (14'). Edge calibrado: 12.8 puntos.
-V2
-⏳ ABIERTA
-AL Wakrah vs Al-Gharafa SC
-No · cuota 2.20 · 4.00 vidas
-Modelo 67.6% · Implícita 45.5% · Edge +22.1%
-⏱ Tiempo actual: 52' · marcador 1-0
-Motivo: V2 combina xG/xGOT, remates, ataque, pases y contexto de marcador/tiempo. Ventaja estadística: 22.1 puntos.
-V2
-⏳ ABIERTA
-MS Tira vs Ironi Nesher
-Menos de 2.5 · 2.5 · cuota 1.67 · 3.79 vidas
-Modelo 98.9% · Implícita 60.0% · Edge +38.9%
-⏱ Tiempo actual: Descanso · marcador 0-1
-Motivo: V2 combina xG/xGOT, remates, ataque, pases y contexto de marcador/tiempo. Ventaja estadística: 38.9 puntos.
-V2
-⏳ ABIERTA
-Orduspor 1967 vs Karadeniz Eregli Belediye SK
-Menos de 2.5 · 2.5 · cuota 1.52 · 3.67 vidas
-Modelo 98.8% · Implícita 65.6% · Edge +33.3%
-⏱ Tiempo actual: Descanso · marcador 0-0
-Motivo: V2 combina xG/xGOT, remates, ataque, pases y contexto de marcador/tiempo. Ventaja estadística: 33.3 puntos.
-V2.2
-⏳ ABIERTA
-Hapoel Migdal Haemeq vs FC Zeirey Tamra
-Menos de 2.5 · 2.5 · cuota 2.40 · 3.34 vidas
-Modelo 64.8% · Implícita 41.7% · Edge +23.1%
-⏱ Tiempo actual: 65' · marcador 1-0
-Motivo: V2.2 calibra V2, exige consenso de indicadores y controla el minuto (38'). Edge calibrado: 23.1 puntos.
-V2
-⏳ ABIERTA
-Hapoel Migdal Haemeq vs FC Zeirey Tamra
-Menos de 2.5 · 2.5 · cuota 2.40 · 3.87 vidas
-Modelo 71.6% · Implícita 41.7% · Edge +29.9%
-⏱ Tiempo actual: 65' · marcador 1-0
-Motivo: V2 combina xG/xGOT, remates, ataque, pases y contexto de marcador/tiempo. Ventaja estadística: 29.9 puntos.
-V2
-❌ PERDIDA
-Al-Khaleej Khor Fakkan vs Al-Wasl
-Al-Khaleej Khor Fakkan · cuota 3.00 · 3.73 vidas
-Modelo 61.3% · Implícita 33.3% · Edge +28.0%
-⏱ Tiempo de apuesta: 64' · marcador 1-0
-Motivo: V2 combina xG/xGOT, remates, ataque, pases y contexto de marcador/tiempo. Ventaja estadística: 28.0 puntos.
-Resultado: -3.73 vidas
-V2.2
-✅ GANADA
-KuPS vs AC Oulu
-AC Oulu · cuota 2.22 · 3.19 vidas
-Modelo 60.3% · Implícita 45.0% · Edge +15.3%
-⏱ Tiempo de apuesta: 52' · marcador 0-1
-Motivo: V2.2 calibra V2, exige consenso de indicadores y controla el minuto (52'). Edge calibrado: 15.3 puntos.
-Resultado: +3.90 vidas
-V2
-❌ PERDIDA
-KuPS vs AC Oulu
-Más de 2.5 · 2.5 · cuota 1.63 · 4.00 vidas
-Modelo 66.8% · Implícita 61.2% · Edge +5.6%
-⏱ Tiempo de apuesta: 28' · marcador 0-1
-Motivo: V2 combina xG/xGOT, remates, ataque, pases y contexto de marcador/tiempo. Ventaja estadística: 5.6 puntos.
-Resultado: -4.00 vidas
-V2
-✅ GANADA
-KuPS vs AC Oulu
-AC Oulu · cuota 2.57 · 4.00 vidas
-Modelo 62.3% · Implícita 38.9% · Edge +23.4%
-⏱ Tiempo de apuesta: 28' · marcador 0-1
-Motivo: V2 combina xG/xGOT, remates, ataque, pases y contexto de marcador/tiempo. Ventaja estadística: 23.4 puntos.
-Resultado: +6.29 vidas
-V2.2
-⏳ ABIERTA
-Hapoel Marmorek FC vs Maccabi Ironi Ashdod FC
-Menos de 2.5 · 2.5 · cuota 2.25 · 3.16 vidas
-Modelo 65.3% · Implícita 44.4% · Edge +20.9%
+Athlético Paranaense vs Atlético Mineiro
+Empate · cuota 1.80 · 3.45 vidas
+Modelo 59.6% · Implícita 55.6% · Edge +4.0%
 ⏱ Tiempo actual: 81' · marcador 1-1
-Motivo: V2.2 calibra V2, exige consenso de indicadores y controla el minuto (25'). Edge calibrado: 20.9 puntos.
-V2.2
-❌ PERDIDA
-Al-Khaleej Khor Fakkan vs Al-Wasl
-Menos de 2.5 · 2.5 · cuota 1.60 · 4.00 vidas
-Modelo 69.0% · Implícita 62.5% · Edge +6.5%
-⏱ Tiempo de apuesta: 39' · marcador 0-0
-Motivo: V2.2 calibra V2, exige consenso de indicadores y controla el minuto (39'). Edge calibrado: 6.5 puntos.
-Resultado: -4.00 vidas
-V2.2
-✅ GANADA
-AL Nafit Maysan vs Arbil SC
-Menos de 2.5 · 2.5 · cuota 1.91 · 3.19 vidas
-Modelo 77.8% · Implícita 52.4% · Edge +25.4%
-⏱ Tiempo de apuesta: 34' · marcador 0-1
-Motivo: V2.2 calibra V2, exige consenso de indicadores y controla el minuto (34'). Edge calibrado: 25.4 puntos.
-Resultado: +2.90 vidas
-V1.1
-❌ PERDIDA
-Hapoel Urbani Karmiel vs Hapoel Tirat HaCarmel
-Empate · cuota 6.50 · 4.00 vidas
-Modelo 63.2% · Implícita 15.4% · Edge +47.8%
-⏱ Tiempo de apuesta: 60' · marcador 1-0
-Motivo: V1.1 calibra V1 hacia 50%, pondera el minuto (60') y penaliza extremos. Edge calibrado: 47.8 puntos.
-Resultado: -4.00 vidas
-V1
-✅ GANADA
-Poli Timisoara vs Csa Steaua Bucuresti
-Empate · cuota 2.17 · 4.00 vidas
-Modelo 60.7% · Implícita 46.2% · Edge +14.5%
-⏱ Tiempo de apuesta: 60' · marcador 0-0
-Motivo: V1 usa marcador, tiempo, xG y volumen de remates. Ventaja estadística: 14.5 puntos.
-Resultado: +4.67 vidas
-V2
+Motivo: Empate elegido por V2.1: 59.6% de probabilidad frente a 55.6% implícita (+4.0 puntos de edge); 1-1 al 80', Nivel 3 · Moderada; control temporal 1.00; confianza 65.8%; exposición 3.45 vidas; respaldo: Marcador empatado: 1-1; cautelas: xG: 1.72 vs 1.32, Remates al arco: 9 vs 7.
+V1.2
 ⏳ ABIERTA
-Hapoel Marmorek FC vs Maccabi Ironi Ashdod FC
-Menos de 2.5 · 2.5 · cuota 1.50 · 3.87 vidas
-Modelo 82.8% · Implícita 66.7% · Edge +16.1%
+Athlético Paranaense vs Atlético Mineiro
+Empate · cuota 1.80 · 2.00 vidas
+Modelo 68.7% · Implícita 55.6% · Edge +13.1%
 ⏱ Tiempo actual: 81' · marcador 1-1
-Motivo: V2 combina xG/xGOT, remates, ataque, pases y contexto de marcador/tiempo. Ventaja estadística: 16.1 puntos.
-V2.2
-✅ GANADA
-KuPS vs AC Oulu
-No · cuota 1.67 · 6.60 vidas
-Modelo 70.5% · Implícita 60.0% · Edge +10.5%
-⏱ Tiempo de apuesta: 16' · marcador 0-0
-Motivo: V2.2 calibra V2, exige consenso de indicadores y controla el minuto (16'). Edge calibrado: 10.5 puntos.
-Resultado: +4.40 vidas
-V2.2
-❌ PERDIDA
-Al-Nasr Dubai SC vs Hatta SC
-Hatta SC · cuota 3.30 · 6.64 vidas
-Modelo 70.9% · Implícita 30.3% · Edge +40.6%
-⏱ Tiempo de apuesta: 31' · marcador 0-1
-Motivo: V2.2 calibra V2, exige consenso de indicadores y controla el minuto (31'). Edge calibrado: 40.6 puntos.
-Resultado: -6.64 vidas
-V2
-✅ GANADA
-KuPS vs AC Oulu
-No · cuota 1.67 · 10.00 vidas
-Modelo 88.4% · Implícita 60.0% · Edge +28.4%
-⏱ Tiempo de apuesta: 16' · marcador 0-0
-Motivo: V2 combina xG/xGOT, remates, ataque, pases y contexto de marcador/tiempo. Ventaja estadística: 28.5 puntos.
-Resultado: +6.67 vidas
-V2
-❌ PERDIDA
-Al-Nasr Dubai SC vs Hatta SC
-Hatta SC · cuota 3.30 · 7.00 vidas
-Modelo 83.8% · Implícita 30.3% · Edge +53.5%
-⏱ Tiempo de apuesta: 31' · marcador 0-1
-Motivo: V2 combina xG/xGOT, remates, ataque, pases y contexto de marcador/tiempo. Ventaja estadística: 53.5 puntos.
-Resultado: -7.00 vidas
-V2.2
-✅ GANADA
-KuPS vs AC Oulu
-Menos de 2.5 · 2.5 · cuota 1.63 · 6.70 vidas
-Modelo 71.5% · Implícita 61.2% · Edge +10.2%
-⏱ Tiempo de apuesta: 16' · marcador 0-0
-Motivo: V2.2 calibra V2, exige consenso de indicadores y controla el minuto (16'). Edge calibrado: 10.2 puntos.
-Resultado: +4.24 vidas
-V2
-✅ GANADA
-KuPS vs AC Oulu
-Menos de 2.5 · 2.5 · cuota 1.63 · 10.00 vidas
-Modelo 90.3% · Implícita 61.2% · Edge +29.0%
-⏱ Tiempo de apuesta: 16' · marcador 0-0
-Motivo: V2 combina xG/xGOT, remates, ataque, pases y contexto de marcador/tiempo. Ventaja estadística: 29.0 puntos.
-Resultado: +6.33 vidas
-V2
-❌ PERDIDA
-Mornar vs FK Jezero Plav
-Menos de 2.5 · 2.5 · cuota 1.63 · 3.72 vidas
-Modelo 87.1% · Implícita 61.2% · Edge +25.9%
-⏱ Tiempo de apuesta: 16' · marcador 0-0
-Motivo: V2 combina xG/xGOT, remates, ataque, pases y contexto de marcador/tiempo. Ventaja estadística: 25.9 puntos.
-Resultado: -3.72 vidas
-V2.2
-✅ GANADA
-Al-Khaleej Khor Fakkan vs Al-Wasl
-Al-Wasl · cuota 1.51 · 6.94 vidas
-Modelo 72.3% · Implícita 66.1% · Edge +6.2%
-⏱ Tiempo de apuesta: 29' · marcador 0-0
-Motivo: V2.2 calibra V2, exige consenso de indicadores y controla el minuto (29'). Edge calibrado: 6.2 puntos.
-Resultado: +3.56 vidas
-V1.1
-❌ PERDIDA
-Al-Shamal vs Al Duhail
-Empate · cuota 13.00 · 4.00 vidas
-Modelo 61.3% · Implícita 7.7% · Edge +53.6%
-⏱ Tiempo de apuesta: 72' · marcador 0-2
-Motivo: V1.1 calibra V1 hacia 50%, pondera el minuto (72') y penaliza extremos. Edge calibrado: 53.6 puntos.
-Resultado: -4.00 vidas
+Motivo: Empate elegido por V1.2: 68.7% de probabilidad frente a 55.6% implícita (+13.1 puntos de edge); 1-1 al 80', Nivel 2 · Fuerte; mercado LIVE compatible con la evaluación ampliada de V1.2; confianza 88.1%; exposición 2.00 vidas.
 V1.1
 ⏳ ABIERTA
-Hapoel Marmorek FC vs Maccabi Ironi Ashdod FC
-Más de 2.5 · 2.5 · cuota 2.33 · 6.79 vidas
-Modelo 73.5% · Implícita 42.9% · Edge +30.6%
-⏱ Tiempo actual: 81' · marcador 1-1
-Motivo: V1.1 calibra V1 hacia 50%, pondera el minuto (1') y penaliza extremos. Edge calibrado: 30.7 puntos.
+Fluminense vs Coritiba
+Sí · cuota 2.02 · 3.68 vidas
+Modelo 70.6% · Implícita 49.4% · Edge +21.2%
+⏱ Tiempo actual: 1' · marcador 0-0
+Motivo: Sí elegido por V1.1: 70.6% de probabilidad frente a 49.4% implícita (+21.2 puntos de edge); 0-0 al 1', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 0.64; confianza 64.5%; exposición 3.68 vidas.
 V1
 ⏳ ABIERTA
-Hapoel Marmorek FC vs Maccabi Ironi Ashdod FC
-Más de 2.5 · 2.5 · cuota 2.33 · 10.00 vidas
-Modelo 97.1% · Implícita 42.9% · Edge +54.3%
-⏱ Tiempo actual: 81' · marcador 1-1
-Motivo: V1 usa marcador, tiempo, xG y volumen de remates. Ventaja estadística: 54.2 puntos.
+Fluminense vs Coritiba
+Sí · cuota 2.02 · 6.98 vidas
+Modelo 91.2% · Implícita 49.4% · Edge +41.9%
+⏱ Tiempo actual: 1' · marcador 0-0
+Motivo: Sí elegido por V1: 91.2% de probabilidad frente a 49.4% implícita (+41.9 puntos de edge); 0-0 al 1', Nivel 1 · Muy fuerte; confianza 95.0%; exposición 6.98 vidas.
+V1.2
+⏳ ABIERTA
+Palmeiras vs Bahia
+Menos de 3.5 · 3.5 · cuota 2.08 · 2.00 vidas
+Modelo 73.5% · Implícita 48.2% · Edge +25.3%
+⏱ Tiempo actual: 15' · marcador 1-0
+Motivo: Menos de 3.5 3.5 elegido por V1.2: 73.5% de probabilidad frente a 48.2% implícita (+25.3 puntos de edge); 1-0 al 7', Nivel 2 · Fuerte; mercado LIVE compatible con la evaluación ampliada de V1.2; confianza 95.0%; exposición 2.00 vidas.
 V1
+⏳ ABIERTA
+Fluminense vs Coritiba
+No · cuota 1.80 · 7.00 vidas
+Modelo 70.1% · Implícita 55.6% · Edge +14.5%
+⏱ Tiempo actual: 1' · marcador 0-0
+Motivo: No elegido por V1: 70.1% de probabilidad frente a 55.6% implícita (+14.5 puntos de edge); 0-0 al 1', Nivel 2 · Fuerte; confianza 89.5%; exposición 7.00 vidas.
+V2
+⏳ ABIERTA
+Atlético Nacional vs Deportes Tolima
+Empate · cuota 1.71 · 3.68 vidas
+Modelo 61.9% · Implícita 58.3% · Edge +3.6%
+⏱ Tiempo actual: 82' · marcador 0-0
+Motivo: Empate elegido por V2: 61.9% de probabilidad frente a 58.3% implícita (+3.6 puntos de edge); 0-0 al 74', Nivel 3 · Moderada; confianza 75.1%; exposición 3.68 vidas; respaldo: Marcador empatado: 0-0, Remates al arco: 5 vs 8; cautelas: xG: 0.67 vs 0.62.
+V1.2
+⏳ ABIERTA
+Atlético Nacional vs Deportes Tolima
+Menos de 0.5 · 0.5 · cuota 1.85 · 5.00 vidas
+Modelo 65.9% · Implícita 54.0% · Edge +11.9%
+⏱ Tiempo actual: 82' · marcador 0-0
+Motivo: Menos de 0.5 0.5 elegido por V1.2: 65.9% de probabilidad frente a 54.0% implícita (+11.9 puntos de edge); 0-0 al 74', Nivel 2 · Fuerte; mercado LIVE compatible con la evaluación ampliada de V1.2; confianza 86.9%; exposición 5.00 vidas.
+V1
+⏳ ABIERTA
+Palmeiras vs Bahia
+No · cuota 1.93 · 10.00 vidas
+Modelo 91.9% · Implícita 51.7% · Edge +40.1%
+⏱ Tiempo actual: 15' · marcador 1-0
+Motivo: No elegido por V1: 91.9% de probabilidad frente a 51.7% implícita (+40.1 puntos de edge); 0-0 al 6', Nivel 1 · Muy fuerte; confianza 95.0%; exposición 10.00 vidas.
+V1
+⏳ ABIERTA
+Fluminense vs Coritiba
+Más de 2.5 · 2.5 · cuota 1.82 · 4.00 vidas
+Modelo 97.1% · Implícita 54.8% · Edge +42.3%
+⏱ Tiempo actual: 1' · marcador 0-0
+Motivo: Más de 2.5 2.5 elegido por V1: 97.1% de probabilidad frente a 54.8% implícita (+42.3 puntos de edge); 0-0 al 1', Nivel 3 · Moderada; confianza 95.0%; exposición 4.00 vidas.
+V2
+⏳ ABIERTA
+Athlético Paranaense vs Atlético Mineiro
+Empate · cuota 1.91 · 3.62 vidas
+Modelo 55.8% · Implícita 52.4% · Edge +3.5%
+⏱ Tiempo actual: 81' · marcador 1-1
+Motivo: Empate elegido por V2: 55.8% de probabilidad frente a 52.4% implícita (+3.5 puntos de edge); 1-1 al 76', Nivel 3 · Moderada; confianza 73.5%; exposición 3.62 vidas; respaldo: Marcador empatado: 1-1; cautelas: xG: 1.54 vs 1.32.
+V1
+⏳ ABIERTA
+Palmeiras vs Bahia
+Empate · cuota 4.00 · 4.00 vidas
+Modelo 55.5% · Implícita 25.0% · Edge +30.5%
+⏱ Tiempo actual: 15' · marcador 1-0
+Motivo: Empate elegido por V1: 55.5% de probabilidad frente a 25.0% implícita (+30.5 puntos de edge); 0-0 al 1', Nivel 3 · Moderada; confianza 95.0%; exposición 4.00 vidas.
+V1.1
+⏳ ABIERTA
+Athlético Paranaense vs Atlético Mineiro
+Empate · cuota 1.90 · 3.64 vidas
+Modelo 56.3% · Implícita 52.6% · Edge +3.6%
+⏱ Tiempo actual: 81' · marcador 1-1
+Motivo: Empate elegido por V1.1: 56.3% de probabilidad frente a 52.6% implícita (+3.6 puntos de edge); 1-1 al 74', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 1.00; confianza 73.7%; exposición 3.64 vidas.
+V1.1
+⏳ ABIERTA
+Fluminense vs Coritiba
+Más de 2.5 · 2.5 · cuota 1.82 · 6.95 vidas
+Modelo 68.8% · Implícita 54.8% · Edge +14.1%
+⏱ Tiempo actual: 1' · marcador 0-0
+Motivo: Más de 2.5 2.5 elegido por V1.1: 68.8% de probabilidad frente a 54.8% implícita (+14.1 puntos de edge); 0-0 al 1', Nivel 2 · Fuerte; calibración hacia 50% y factor temporal 0.64; confianza 72.5%; exposición 6.95 vidas.
+V1.1
+⏳ ABIERTA
+Palmeiras vs Bahia
+No · cuota 2.07 · 3.68 vidas
+Modelo 70.5% · Implícita 48.3% · Edge +22.2%
+⏱ Tiempo actual: 15' · marcador 1-0
+Motivo: No elegido por V1.1: 70.5% de probabilidad frente a 48.3% implícita (+22.2 puntos de edge); 0-0 al 1', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 0.64; confianza 64.5%; exposición 3.68 vidas.
+V1.2
+⏳ ABIERTA
+Fluminense vs Coritiba
+Más de 2.5 · 2.5 · cuota 1.82 · 2.00 vidas
+Modelo 87.8% · Implícita 54.8% · Edge +33.0%
+⏱ Tiempo actual: 1' · marcador 0-0
+Motivo: Más de 2.5 2.5 elegido por V1.2: 87.8% de probabilidad frente a 54.8% implícita (+33.0 puntos de edge); 0-0 al 1', Nivel 1 · Muy fuerte; mercado LIVE compatible con la evaluación ampliada de V1.2; confianza 95.0%; exposición 2.00 vidas.
+V1.1
+⏳ ABIERTA
+Fluminense vs Coritiba
+No · cuota 1.83 · 3.78 vidas
+Modelo 60.2% · Implícita 54.5% · Edge +5.6%
+⏱ Tiempo actual: 1' · marcador 0-0
+Motivo: No elegido por V1.1: 60.2% de probabilidad frente a 54.5% implícita (+5.6 puntos de edge); 0-0 al 1', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 0.64; confianza 70.4%; exposición 3.78 vidas.
+V1.2
+⏳ ABIERTA
+Palmeiras vs Bahia
+No · cuota 2.02 · 10.00 vidas
+Modelo 91.0% · Implícita 49.4% · Edge +41.6%
+⏱ Tiempo actual: 15' · marcador 1-0
+Motivo: No elegido por V1.2: 91.0% de probabilidad frente a 49.4% implícita (+41.6 puntos de edge); 0-0 al 1', Nivel 1 · Muy fuerte; mercado LIVE compatible con la evaluación ampliada de V1.2; confianza 95.0%; exposición 10.00 vidas.
+V1.1
+⏳ ABIERTA
+Palmeiras vs Bahia
+Menos de 2.5 · 2.5 · cuota 2.15 · 3.68 vidas
+Modelo 73.2% · Implícita 46.5% · Edge +26.7%
+⏱ Tiempo actual: 15' · marcador 1-0
+Motivo: Menos de 2.5 2.5 elegido por V1.1: 73.2% de probabilidad frente a 46.5% implícita (+26.7 puntos de edge); 0-0 al 1', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 0.64; confianza 64.5%; exposición 3.68 vidas.
+V1
+⏳ ABIERTA
+Palmeiras vs Bahia
+Menos de 2.5 · 2.5 · cuota 2.15 · 4.00 vidas
+Modelo 96.4% · Implícita 46.5% · Edge +49.9%
+⏱ Tiempo actual: 15' · marcador 1-0
+Motivo: Menos de 2.5 2.5 elegido por V1: 96.4% de probabilidad frente a 46.5% implícita (+49.9 puntos de edge); 0-0 al 1', Nivel 3 · Moderada; confianza 95.0%; exposición 4.00 vidas.
+V1.2
+⏳ ABIERTA
+Fluminense vs Coritiba
+No · cuota 1.82 · 10.00 vidas
+Modelo 91.0% · Implícita 55.0% · Edge +36.0%
+⏱ Tiempo actual: 1' · marcador 0-0
+Motivo: No elegido por V1.2: 91.0% de probabilidad frente a 55.0% implícita (+36.0 puntos de edge); 0-0 al 1', Nivel 1 · Muy fuerte; mercado LIVE compatible con la evaluación ampliada de V1.2; confianza 95.0%; exposición 10.00 vidas.
+V1.1
+⏳ ABIERTA
+Fluminense vs Coritiba
+Menos de 2.5 · 2.5 · cuota 2.00 · 3.68 vidas
+Modelo 73.2% · Implícita 50.0% · Edge +23.2%
+⏱ Tiempo actual: 1' · marcador 0-0
+Motivo: Menos de 2.5 2.5 elegido por V1.1: 73.2% de probabilidad frente a 50.0% implícita (+23.2 puntos de edge); 0-0 al 1', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 0.64; confianza 64.5%; exposición 3.68 vidas.
+V1
+⏳ ABIERTA
+Fluminense vs Coritiba
+Menos de 2.5 · 2.5 · cuota 2.00 · 4.00 vidas
+Modelo 96.4% · Implícita 50.0% · Edge +46.4%
+⏱ Tiempo actual: 1' · marcador 0-0
+Motivo: Menos de 2.5 2.5 elegido por V1: 96.4% de probabilidad frente a 50.0% implícita (+46.4 puntos de edge); 0-0 al 1', Nivel 3 · Moderada; confianza 95.0%; exposición 4.00 vidas.
+V1
+⏳ ABIERTA
+Athlético Paranaense vs Atlético Mineiro
+Más de 2.5 · 2.5 · cuota 1.76 · 4.00 vidas
+Modelo 61.9% · Implícita 56.8% · Edge +5.1%
+⏱ Tiempo actual: 81' · marcador 1-1
+Motivo: Más de 2.5 2.5 elegido por V1: 61.9% de probabilidad frente a 56.8% implícita (+5.1 puntos de edge); 1-1 al 68', Nivel 3 · Moderada; confianza 80.1%; exposición 4.00 vidas.
+V1
+⏳ ABIERTA
+Botafogo Sub-20 vs Bahia Sub-20
+Empate · cuota 4.85 · 7.00 vidas
+Modelo 67.7% · Implícita 20.6% · Edge +47.0%
+⏱ Tiempo actual: 86' · marcador 1-0
+Motivo: Empate elegido por V1: 67.7% de probabilidad frente a 20.6% implícita (+47.0 puntos de edge); 1-0 al 71', Nivel 2 · Fuerte; confianza 95.0%; exposición 7.00 vidas.
+V1
+⏳ ABIERTA
+Atlético Nacional vs Deportes Tolima
+Empate · cuota 1.89 · 4.00 vidas
+Modelo 60.1% · Implícita 52.9% · Edge +7.2%
+⏱ Tiempo actual: 82' · marcador 0-0
+Motivo: Empate elegido por V1: 60.1% de probabilidad frente a 52.9% implícita (+7.1 puntos de edge); 0-0 al 67', Nivel 3 · Moderada; confianza 82.2%; exposición 4.00 vidas.
+V1.1
+⏳ ABIERTA
+Atlético Nacional vs Deportes Tolima
+Empate · cuota 2.08 · 4.00 vidas
+Modelo 55.5% · Implícita 48.0% · Edge +7.5%
+⏱ Tiempo actual: 82' · marcador 0-0
+Motivo: Empate elegido por V1.1: 55.5% de probabilidad frente a 48.0% implícita (+7.5 puntos de edge); 0-0 al 62', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 1.00; confianza 76.6%; exposición 4.00 vidas.
+V1.1
+⏳ ABIERTA
+Botafogo Sub-20 vs Bahia Sub-20
+Empate · cuota 4.50 · 4.00 vidas
+Modelo 55.3% · Implícita 22.2% · Edge +33.0%
+⏱ Tiempo actual: 86' · marcador 1-0
+Motivo: Empate elegido por V1.1: 55.3% de probabilidad frente a 22.2% implícita (+33.1 puntos de edge); 1-0 al 63', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 1.00; confianza 85.1%; exposición 4.00 vidas.
+V2.2
+⏳ ABIERTA
+Athlético Paranaense vs Atlético Mineiro
+Más de 2.5 · 2.5 · cuota 1.45 · 10.00 vidas
+Modelo 83.8% · Implícita 68.8% · Edge +15.0%
+⏱ Tiempo actual: 81' · marcador 1-1
+Motivo: Más de 2.5 2.5 elegido por V2.2: 83.8% de probabilidad frente a 68.8% implícita (+15.0 puntos de edge); 1-1 al 52', Nivel 1 · Muy fuerte; consenso de indicadores 87.7%; confianza 89.3%; exposición 10.00 vidas; respaldo: xG: 1.51 vs 1.15, Remates totales: 17 vs 10, Remates al arco: 6 vs 5; cautelas: Grandes ocasiones: 1 vs 2.
+V2.1
+⏳ ABIERTA
+Athlético Paranaense vs Atlético Mineiro
+Más de 2.5 · 2.5 · cuota 1.45 · 7.00 vidas
+Modelo 78.2% · Implícita 68.8% · Edge +9.4%
+⏱ Tiempo actual: 81' · marcador 1-1
+Motivo: Más de 2.5 2.5 elegido por V2.1: 78.2% de probabilidad frente a 68.8% implícita (+9.4 puntos de edge); 1-1 al 52', Nivel 2 · Fuerte; control temporal 0.95; confianza 76.0%; exposición 7.00 vidas; respaldo: xG: 1.51 vs 1.15, Remates totales: 17 vs 10, Remates al arco: 6 vs 5; cautelas: Grandes ocasiones: 1 vs 2.
+V2
+⏳ ABIERTA
+Athlético Paranaense vs Atlético Mineiro
+Más de 2.5 · 2.5 · cuota 1.45 · 10.00 vidas
+Modelo 91.2% · Implícita 68.8% · Edge +22.4%
+⏱ Tiempo actual: 81' · marcador 1-1
+Motivo: Más de 2.5 2.5 elegido por V2: 91.2% de probabilidad frente a 68.8% implícita (+22.4 puntos de edge); 1-1 al 52', Nivel 1 · Muy fuerte; confianza 88.0%; exposición 10.00 vidas; respaldo: xG: 1.51 vs 1.15, Remates totales: 17 vs 10, Remates al arco: 6 vs 5; cautelas: Grandes ocasiones: 1 vs 2.
+V1.1
+⏳ ABIERTA
+Athlético Paranaense vs Atlético Mineiro
+Más de 2.5 · 2.5 · cuota 1.45 · 7.00 vidas
+Modelo 75.9% · Implícita 68.8% · Edge +7.1%
+⏱ Tiempo actual: 81' · marcador 1-1
+Motivo: Más de 2.5 2.5 elegido por V1.1: 75.9% de probabilidad frente a 68.8% implícita (+7.1 puntos de edge); 1-1 al 52', Nivel 2 · Fuerte; calibración hacia 50% y factor temporal 0.94; confianza 80.4%; exposición 7.00 vidas.
+V2.1
+✅ GANADA
+Santos vs Flamengo
+Empate · cuota 1.38 · 6.86 vidas
+Modelo 80.3% · Implícita 72.7% · Edge +7.6%
+⏱ Tiempo de apuesta: 88' · marcador 2-2
+Motivo: Empate elegido por V2.1: 80.3% de probabilidad frente a 72.7% implícita (+7.6 puntos de edge); 2-2 al 88', Nivel 2 · Fuerte; control temporal 1.00; confianza 68.1%; exposición 6.86 vidas; respaldo: Marcador empatado: 2-2, Remates al arco: 4 vs 6; cautelas: xG: 1.35 vs 1.15.
+Resultado: +2.57 vidas
+V2
+✅ GANADA
+Santos vs Flamengo
+Empate · cuota 1.38 · 7.00 vidas
+Modelo 92.1% · Implícita 72.7% · Edge +19.4%
+⏱ Tiempo de apuesta: 88' · marcador 2-2
+Motivo: Empate elegido por V2: 92.1% de probabilidad frente a 72.7% implícita (+19.4 puntos de edge); 2-2 al 88', Nivel 2 · Fuerte; confianza 75.1%; exposición 7.00 vidas; respaldo: Marcador empatado: 2-2, Remates al arco: 4 vs 6; cautelas: xG: 1.35 vs 1.15.
+Resultado: +2.63 vidas
+V2.1
 ❌ PERDIDA
-Al-Shamal vs Al Duhail
+Santos vs Flamengo
+Flamengo · cuota 1.24 · 3.88 vidas
+Modelo 85.6% · Implícita 80.7% · Edge +5.0%
+⏱ Tiempo de apuesta: 79' · marcador 0-2
+Motivo: Flamengo elegido por V2.1: 85.6% de probabilidad frente a 80.7% implícita (+5.0 puntos de edge); 0-2 al 79', Nivel 3 · Moderada; control temporal 1.00; confianza 76.1%; exposición 3.88 vidas; respaldo: xG: 0.56 vs 1.15, Remates al arco: 2 vs 6, Grandes ocasiones: 0 vs 5.
+Resultado: -3.88 vidas
+V2.1
+✅ GANADA
+Nautico vs Grêmio Novorizontino
+Menos de 2.5 · 2.5 · cuota 2.20 · 4.00 vidas
+Modelo 59.3% · Implícita 45.5% · Edge +13.8%
+⏱ Tiempo de apuesta: 68' · marcador 0-2
+Motivo: Menos de 2.5 2.5 elegido por V2.1: 59.3% de probabilidad frente a 45.5% implícita (+13.8 puntos de edge); 0-2 al 68', Nivel 3 · Moderada; control temporal 1.00; confianza 78.8%; exposición 4.00 vidas; respaldo: xG: 0.16 vs 1.04, Remates totales: 6 vs 8, Remates al arco: 1 vs 3.
+Resultado: +4.80 vidas
+V2.2
+✅ GANADA
+Nautico vs Grêmio Novorizontino
+Menos de 2.5 · 2.5 · cuota 2.50 · 4.00 vidas
+Modelo 55.6% · Implícita 40.0% · Edge +15.6%
+⏱ Tiempo de apuesta: 64' · marcador 0-2
+Motivo: Menos de 2.5 2.5 elegido por V2.2: 55.6% de probabilidad frente a 40.0% implícita (+15.6 puntos de edge); 0-2 al 64', Nivel 3 · Moderada; consenso de indicadores 95.7%; confianza 92.1%; exposición 4.00 vidas; respaldo: xG: 0.13 vs 1.04, Remates totales: 4 vs 8, Remates al arco: 1 vs 3.
+Resultado: +6.00 vidas
+V2
+✅ GANADA
+Nautico vs Grêmio Novorizontino
+Menos de 2.5 · 2.5 · cuota 2.50 · 4.00 vidas
+Modelo 56.9% · Implícita 40.0% · Edge +16.9%
+⏱ Tiempo de apuesta: 64' · marcador 0-2
+Motivo: Menos de 2.5 2.5 elegido por V2: 56.9% de probabilidad frente a 40.0% implícita (+16.9 puntos de edge); 0-2 al 64', Nivel 3 · Moderada; confianza 90.0%; exposición 4.00 vidas; respaldo: xG: 0.13 vs 1.04, Remates totales: 4 vs 8, Remates al arco: 1 vs 3.
+Resultado: +6.00 vidas
+V1.1
+❌ PERDIDA
+Nautico vs Grêmio Novorizontino
 Empate · cuota 12.00 · 4.00 vidas
-Modelo 60.8% · Implícita 8.3% · Edge +52.4%
-⏱ Tiempo de apuesta: 69' · marcador 0-2
-Motivo: V1 usa marcador, tiempo, xG y volumen de remates. Ventaja estadística: 52.4 puntos.
+Modelo 56.7% · Implícita 8.3% · Edge +48.4%
+⏱ Tiempo de apuesta: 59' · marcador 0-2
+Motivo: Empate elegido por V1.1: 56.7% de probabilidad frente a 8.3% implícita (+48.4 puntos de edge); 0-2 al 59', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 1.00; confianza 85.1%; exposición 4.00 vidas.
 Resultado: -4.00 vidas
 V1
 ❌ PERDIDA
-Hapoel Urbani Karmiel vs Hapoel Tirat HaCarmel
-Empate · cuota 6.33 · 4.00 vidas
-Modelo 62.0% · Implícita 15.8% · Edge +46.2%
-⏱ Tiempo de apuesta: 54' · marcador 1-0
-Motivo: V1 usa marcador, tiempo, xG y volumen de remates. Ventaja estadística: 46.2 puntos.
+Nautico vs Grêmio Novorizontino
+Empate · cuota 12.00 · 1.09 vidas
+Modelo 58.6% · Implícita 8.3% · Edge +50.3%
+⏱ Tiempo de apuesta: 59' · marcador 0-2
+Motivo: Empate elegido por V1: 58.6% de probabilidad frente a 8.3% implícita (+50.3 puntos de edge); 0-2 al 59', Nivel 3 · Moderada; confianza 95.0%; exposición 1.09 vidas.
+Resultado: -1.09 vidas
+V1.2
+⏳ ABIERTA
+Atlético Nacional vs Deportes Tolima
+Menos de 1.5 · 1.5 · cuota 1.67 · 7.00 vidas
+Modelo 70.0% · Implícita 60.0% · Edge +10.0%
+⏱ Tiempo actual: 82' · marcador 0-0
+Motivo: Menos de 1.5 1.5 elegido por V1.2: 70.0% de probabilidad frente a 60.0% implícita (+10.0 puntos de edge); 0-0 al Descanso, Nivel 2 · Fuerte; mercado LIVE compatible con la evaluación ampliada de V1.2; confianza 85.0%; exposición 7.00 vidas.
+V1.1
+✅ GANADA
+Santos vs Flamengo
+Empate · cuota 13.00 · 4.00 vidas
+Modelo 55.6% · Implícita 7.7% · Edge +48.0%
+⏱ Tiempo de apuesta: 63' · marcador 0-2
+Motivo: Empate elegido por V1.1: 55.6% de probabilidad frente a 7.7% implícita (+47.9 puntos de edge); 0-2 al 63', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 1.00; confianza 85.1%; exposición 4.00 vidas.
+Resultado: +48.00 vidas
+V2
+❌ PERDIDA
+Santos vs Flamengo
+Flamengo · cuota 1.04 · 3.94 vidas
+Modelo 99.2% · Implícita 96.2% · Edge +3.0%
+⏱ Tiempo de apuesta: 62' · marcador 0-2
+Motivo: Flamengo elegido por V2: 99.2% de probabilidad frente a 96.2% implícita (+3.0 puntos de edge); 0-2 al 62', Nivel 3 · Moderada; confianza 86.2%; exposición 3.94 vidas; respaldo: xG: 0.38 vs 1.02, Remates al arco: 1 vs 5, Grandes ocasiones: 0 vs 4.
+Resultado: -3.94 vidas
+V2
+⏳ ABIERTA
+Botafogo Sub-20 vs Bahia Sub-20
+Botafogo Sub-20 · cuota 1.17 · 3.59 vidas
+Modelo 91.6% · Implícita 85.7% · Edge +5.9%
+⏱ Tiempo actual: 86' · marcador 1-0
+Motivo: Botafogo Sub-20 elegido por V2: 91.6% de probabilidad frente a 85.7% implícita (+5.9 puntos de edge); 1-0 al Descanso, Nivel 3 · Moderada; confianza 62.9%; exposición 3.59 vidas; respaldo: Remates al arco: 4 vs 1, Marcador favorable: 1-0; cautelas: Posesión: 37 vs 63.
+V1.2
+⏳ ABIERTA
+Botafogo Sub-20 vs Bahia Sub-20
+No · cuota 1.72 · 5.00 vidas
+Modelo 85.8% · Implícita 58.1% · Edge +27.7%
+⏱ Tiempo actual: 86' · marcador 1-0
+Motivo: No elegido por V1.2: 85.8% de probabilidad frente a 58.1% implícita (+27.7 puntos de edge); 1-0 al Descanso, Nivel 1 · Muy fuerte; mercado LIVE compatible con la evaluación ampliada de V1.2; confianza 95.0%; exposición 5.00 vidas.
+V1.1
+⏳ ABIERTA
+Botafogo Sub-20 vs Bahia Sub-20
+No · cuota 1.72 · 10.00 vidas
+Modelo 76.3% · Implícita 58.1% · Edge +18.1%
+⏱ Tiempo actual: 86' · marcador 1-0
+Motivo: No elegido por V1.1: 76.3% de probabilidad frente a 58.1% implícita (+18.1 puntos de edge); 1-0 al Descanso, Nivel 1 · Muy fuerte; calibración hacia 50% y factor temporal 0.94; confianza 83.0%; exposición 10.00 vidas.
+V1
+⏳ ABIERTA
+Botafogo Sub-20 vs Bahia Sub-20
+No · cuota 1.72 · 10.00 vidas
+Modelo 85.8% · Implícita 58.1% · Edge +27.7%
+⏱ Tiempo actual: 86' · marcador 1-0
+Motivo: No elegido por V1: 85.8% de probabilidad frente a 58.1% implícita (+27.7 puntos de edge); 1-0 al Descanso, Nivel 1 · Muy fuerte; confianza 95.0%; exposición 10.00 vidas.
+V2.1
+❌ PERDIDA
+Ceará vs Criciúma
+Empate · cuota 2.00 · 3.88 vidas
+Modelo 60.1% · Implícita 50.0% · Edge +10.1%
+⏱ Tiempo de apuesta: 59' · marcador 0-0
+Motivo: Empate elegido por V2.1: 60.1% de probabilidad frente a 50.0% implícita (+10.1 puntos de edge); 0-0 al 59', Nivel 3 · Moderada; control temporal 1.00; confianza 71.2%; exposición 3.88 vidas; respaldo: Marcador empatado: 0-0, xG: 0.31 vs 0.41.
+Resultado: -3.88 vidas
+V1.1
+❌ PERDIDA
+Ceará vs Criciúma
+Empate · cuota 2.00 · 4.00 vidas
+Modelo 59.6% · Implícita 50.0% · Edge +9.6%
+⏱ Tiempo de apuesta: 59' · marcador 0-0
+Motivo: Empate elegido por V1.1: 59.6% de probabilidad frente a 50.0% implícita (+9.6 puntos de edge); 0-0 al 59', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 1.00; confianza 79.1%; exposición 4.00 vidas.
 Resultado: -4.00 vidas
+V2.1
+⏳ ABIERTA
+Botafogo Sub-20 vs Bahia Sub-20
+Menos de 2.5 · 2.5 · cuota 1.98 · 3.46 vidas
+Modelo 76.4% · Implícita 50.6% · Edge +25.8%
+⏱ Tiempo actual: 86' · marcador 1-0
+Motivo: Menos de 2.5 2.5 elegido por V2.1: 76.4% de probabilidad frente a 50.6% implícita (+25.8 puntos de edge); 1-0 al Descanso, Nivel 3 · Moderada; control temporal 0.95; confianza 57.0%; exposición 3.46 vidas; cautelas: Remates totales: 6 vs 4, Remates al arco: 4 vs 1.
+V2
+⏳ ABIERTA
+Botafogo Sub-20 vs Bahia Sub-20
+Menos de 2.5 · 2.5 · cuota 1.98 · 3.55 vidas
+Modelo 88.6% · Implícita 50.6% · Edge +38.0%
+⏱ Tiempo actual: 86' · marcador 1-0
+Motivo: Menos de 2.5 2.5 elegido por V2: 88.6% de probabilidad frente a 50.6% implícita (+38.0 puntos de edge); 1-0 al Descanso, Nivel 3 · Moderada; confianza 60.2%; exposición 3.55 vidas; cautelas: Remates totales: 6 vs 4, Remates al arco: 4 vs 1.
+V1.2
+⏳ ABIERTA
+Botafogo Sub-20 vs Bahia Sub-20
+Menos de 2.5 · 2.5 · cuota 1.98 · 7.00 vidas
+Modelo 71.7% · Implícita 50.6% · Edge +21.1%
+⏱ Tiempo actual: 86' · marcador 1-0
+Motivo: Menos de 2.5 2.5 elegido por V1.2: 71.7% de probabilidad frente a 50.6% implícita (+21.1 puntos de edge); 1-0 al Descanso, Nivel 2 · Fuerte; mercado LIVE compatible con la evaluación ampliada de V1.2; confianza 95.0%; exposición 7.00 vidas.
+V1.1
+⏳ ABIERTA
+Botafogo Sub-20 vs Bahia Sub-20
+Menos de 2.5 · 2.5 · cuota 1.98 · 7.00 vidas
+Modelo 65.9% · Implícita 50.6% · Edge +15.3%
+⏱ Tiempo actual: 86' · marcador 1-0
+Motivo: Menos de 2.5 2.5 elegido por V1.1: 65.9% de probabilidad frente a 50.6% implícita (+15.3 puntos de edge); 1-0 al Descanso, Nivel 2 · Fuerte; calibración hacia 50% y factor temporal 0.94; confianza 83.0%; exposición 7.00 vidas.
+V1
+⏳ ABIERTA
+Botafogo Sub-20 vs Bahia Sub-20
+Menos de 2.5 · 2.5 · cuota 1.98 · 7.00 vidas
+Modelo 71.7% · Implícita 50.6% · Edge +21.1%
+⏱ Tiempo actual: 86' · marcador 1-0
+Motivo: Menos de 2.5 2.5 elegido por V1: 71.7% de probabilidad frente a 50.6% implícita (+21.1 puntos de edge); 1-0 al Descanso, Nivel 2 · Fuerte; confianza 95.0%; exposición 7.00 vidas.
+V1
+⏳ ABIERTA
+Athlético Paranaense vs Atlético Mineiro
+No · cuota 2.02 · 10.00 vidas
+Modelo 91.0% · Implícita 49.4% · Edge +41.6%
+⏱ Tiempo actual: 81' · marcador 1-1
+Motivo: No elegido por V1: 91.0% de probabilidad frente a 49.4% implícita (+41.6 puntos de edge); 0-0 al 1', Nivel 1 · Muy fuerte; confianza 95.0%; exposición 10.00 vidas.
+V1.1
+⏳ ABIERTA
+Athlético Paranaense vs Atlético Mineiro
+No · cuota 2.02 · 3.68 vidas
+Modelo 70.5% · Implícita 49.4% · Edge +21.1%
+⏱ Tiempo actual: 81' · marcador 1-1
+Motivo: No elegido por V1.1: 70.5% de probabilidad frente a 49.4% implícita (+21.1 puntos de edge); 0-0 al 1', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 0.64; confianza 64.5%; exposición 3.68 vidas.
+V1
+⏳ ABIERTA
+Athlético Paranaense vs Atlético Mineiro
+Empate · cuota 3.45 · 4.00 vidas
+Modelo 55.5% · Implícita 29.0% · Edge +26.5%
+⏱ Tiempo actual: 81' · marcador 1-1
+Motivo: Empate elegido por V1: 55.5% de probabilidad frente a 29.0% implícita (+26.5 puntos de edge); 0-0 al 1', Nivel 3 · Moderada; confianza 95.0%; exposición 4.00 vidas.
+V1.2
+⏳ ABIERTA
+Athlético Paranaense vs Atlético Mineiro
+No · cuota 2.00 · 10.00 vidas
+Modelo 91.0% · Implícita 50.0% · Edge +41.0%
+⏱ Tiempo actual: 81' · marcador 1-1
+Motivo: No elegido por V1.2: 91.0% de probabilidad frente a 50.0% implícita (+41.0 puntos de edge); 0-0 al 1', Nivel 1 · Muy fuerte; mercado LIVE compatible con la evaluación ampliada de V1.2; confianza 95.0%; exposición 10.00 vidas.
+V1.1
+⏳ ABIERTA
+Athlético Paranaense vs Atlético Mineiro
+Menos de 2.5 · 2.5 · cuota 1.90 · 3.68 vidas
+Modelo 73.2% · Implícita 52.6% · Edge +20.6%
+⏱ Tiempo actual: 81' · marcador 1-1
+Motivo: Menos de 2.5 2.5 elegido por V1.1: 73.2% de probabilidad frente a 52.6% implícita (+20.5 puntos de edge); 0-0 al 1', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 0.64; confianza 64.5%; exposición 3.68 vidas.
+V1
+⏳ ABIERTA
+Athlético Paranaense vs Atlético Mineiro
+Menos de 2.5 · 2.5 · cuota 1.90 · 4.00 vidas
+Modelo 96.4% · Implícita 52.6% · Edge +43.8%
+⏱ Tiempo actual: 81' · marcador 1-1
+Motivo: Menos de 2.5 2.5 elegido por V1: 96.4% de probabilidad frente a 52.6% implícita (+43.8 puntos de edge); 0-0 al 1', Nivel 3 · Moderada; confianza 95.0%; exposición 4.00 vidas.
+V2.1
+✅ GANADA
+Ceará vs Criciúma
+Ceará · cuota 2.75 · 3.70 vidas
+Modelo 55.9% · Implícita 36.4% · Edge +19.5%
+⏱ Tiempo de apuesta: 13' · marcador 0-0
+Motivo: Ceará elegido por V2.1: 55.9% de probabilidad frente a 36.4% implícita (+19.5 puntos de edge); 0-0 al 13', Nivel 3 · Moderada; control temporal 0.60; confianza 65.2%; exposición 3.70 vidas; respaldo: xG: 0.20 vs 0.12, Remates al arco: 1 vs 0, Toques en área: 1 vs 0; cautelas: Posesión: 43 vs 57.
+Resultado: +6.47 vidas
+V2
+✅ GANADA
+Nautico vs Grêmio Novorizontino
+Grêmio Novorizontino · cuota 1.07 · 4.00 vidas
+Modelo 99.6% · Implícita 93.0% · Edge +6.6%
+⏱ Tiempo de apuesta: 15' · marcador 0-2
+Motivo: Grêmio Novorizontino elegido por V2: 99.6% de probabilidad frente a 93.0% implícita (+6.6 puntos de edge); 0-2 al 15', Nivel 3 · Moderada; confianza 86.2%; exposición 4.00 vidas; respaldo: xG: 0 vs 0.06, Remates al arco: 0 vs 2, Grandes ocasiones: 0 vs 1; cautelas: Posesión: 63 vs 37.
+Resultado: +0.30 vidas
 V2.2
 ✅ GANADA
-Namungo FC vs TRA United
-Menos de 2.5 · 2.5 · cuota 1.77 · 3.10 vidas
-Modelo 81.8% · Implícita 56.5% · Edge +25.2%
-⏱ Tiempo de apuesta: 41' · marcador 1-0
-Motivo: V2.2 calibra V2, exige consenso de indicadores y controla el minuto (41'). Edge calibrado: 25.2 puntos.
-Resultado: +2.38 vidas
-V1
-❌ PERDIDA
-KuPS vs AC Oulu
-Más de 2.5 · 2.5 · cuota 2.00 · 4.00 vidas
-Modelo 64.5% · Implícita 50.0% · Edge +14.5%
-⏱ Tiempo de apuesta: 3' · marcador 0-0
-Motivo: V1 usa marcador, tiempo, xG y volumen de remates. Ventaja estadística: 14.5 puntos.
-Resultado: -4.00 vidas
-V2
-❌ PERDIDA
-Al-Khaleej Khor Fakkan vs Al-Wasl
-Menos de 2.5 · 2.5 · cuota 1.84 · 4.00 vidas
-Modelo 68.7% · Implícita 54.4% · Edge +14.3%
-⏱ Tiempo de apuesta: 23' · marcador 0-0
-Motivo: V2 combina xG/xGOT, remates, ataque, pases y contexto de marcador/tiempo. Ventaja estadística: 14.3 puntos.
-Resultado: -4.00 vidas
-V1.1
-⏳ ABIERTA
-Hapoel Marmorek FC vs Maccabi Ironi Ashdod FC
-Menos de 2.5 · 2.5 · cuota 1.67 · 6.79 vidas
-Modelo 73.2% · Implícita 60.0% · Edge +13.2%
-⏱ Tiempo actual: 81' · marcador 1-1
-Motivo: V1.1 calibra V1 hacia 50%, pondera el minuto (1') y penaliza extremos. Edge calibrado: 13.2 puntos.
-V1
-⏳ ABIERTA
-Hapoel Marmorek FC vs Maccabi Ironi Ashdod FC
-Menos de 2.5 · 2.5 · cuota 1.67 · 10.00 vidas
-Modelo 96.4% · Implícita 60.0% · Edge +36.4%
-⏱ Tiempo actual: 81' · marcador 1-1
-Motivo: V1 usa marcador, tiempo, xG y volumen de remates. Ventaja estadística: 36.4 puntos.
-V1.1
-⏳ ABIERTA
-Hapoel Marmorek FC vs Maccabi Ironi Ashdod FC
-No · cuota 1.83 · 6.79 vidas
-Modelo 70.5% · Implícita 54.5% · Edge +15.9%
-⏱ Tiempo actual: 81' · marcador 1-1
-Motivo: V1.1 calibra V1 hacia 50%, pondera el minuto (1') y penaliza extremos. Edge calibrado: 15.9 puntos.
-V1
-⏳ ABIERTA
-Hapoel Marmorek FC vs Maccabi Ironi Ashdod FC
-No · cuota 1.83 · 10.00 vidas
-Modelo 91.0% · Implícita 54.5% · Edge +36.5%
-⏱ Tiempo actual: 81' · marcador 1-1
-Motivo: V1 usa marcador, tiempo, xG y volumen de remates. Ventaja estadística: 36.5 puntos.
-V1.1
-✅ GANADA
-Mornar vs FK Jezero Plav
-Más de 2.5 · 2.5 · cuota 1.84 · 3.92 vidas
-Modelo 69.7% · Implícita 54.4% · Edge +15.4%
-⏱ Tiempo de apuesta: 1' · marcador 0-0
-Motivo: V1.1 calibra V1 hacia 50%, pondera el minuto (1') y penaliza extremos. Edge calibrado: 15.4 puntos.
-Resultado: +3.29 vidas
-V1
-✅ GANADA
-Mornar vs FK Jezero Plav
-Más de 2.5 · 2.5 · cuota 1.84 · 10.00 vidas
-Modelo 89.5% · Implícita 54.4% · Edge +35.1%
-⏱ Tiempo de apuesta: 1' · marcador 0-0
-Motivo: V1 usa marcador, tiempo, xG y volumen de remates. Ventaja estadística: 35.1 puntos.
-Resultado: +8.40 vidas
+Ceará vs Criciúma
+Ceará · cuota 2.75 · 4.00 vidas
+Modelo 58.1% · Implícita 36.4% · Edge +21.7%
+⏱ Tiempo de apuesta: 13' · marcador 0-0
+Motivo: Ceará elegido por V2.2: 58.1% de probabilidad frente a 36.4% implícita (+21.7 puntos de edge); 0-0 al 13', Nivel 3 · Moderada; consenso de indicadores 84.5%; confianza 79.5%; exposición 4.00 vidas; respaldo: xG: 0.16 vs 0.12, Remates al arco: 1 vs 0, Toques en área: 1 vs 0; cautelas: Posesión: 42 vs 58.
+Resultado: +7.00 vidas
 V2
 ✅ GANADA
-Hapoel Urbani Karmiel vs Hapoel Tirat HaCarmel
-Menos de 2.5 · 2.5 · cuota 1.88 · 3.52 vidas
-Modelo 99.5% · Implícita 53.2% · Edge +46.3%
-⏱ Tiempo de apuesta: 47' · marcador 0-0
-Motivo: V2 combina xG/xGOT, remates, ataque, pases y contexto de marcador/tiempo. Ventaja estadística: 46.3 puntos.
-Resultado: +3.10 vidas
-V1.1
+Ceará vs Criciúma
+Ceará · cuota 2.75 · 4.00 vidas
+Modelo 59.9% · Implícita 36.4% · Edge +23.5%
+⏱ Tiempo de apuesta: 13' · marcador 0-0
+Motivo: Ceará elegido por V2: 59.9% de probabilidad frente a 36.4% implícita (+23.5 puntos de edge); 0-0 al 13', Nivel 3 · Moderada; confianza 85.2%; exposición 4.00 vidas; respaldo: xG: 0.16 vs 0.12, Remates al arco: 1 vs 0, Toques en área: 1 vs 0; cautelas: Posesión: 42 vs 58.
+Resultado: +7.00 vidas
+V2.1
 ✅ GANADA
-Hapoel Urbani Karmiel vs Hapoel Tirat HaCarmel
-Menos de 2.5 · 2.5 · cuota 1.88 · 10.00 vidas
-Modelo 84.1% · Implícita 53.2% · Edge +30.9%
-⏱ Tiempo de apuesta: 47' · marcador 0-0
-Motivo: V1.1 calibra V1 hacia 50%, pondera el minuto (47') y penaliza extremos. Edge calibrado: 30.9 puntos.
-Resultado: +8.80 vidas
-V1
-✅ GANADA
-Hapoel Urbani Karmiel vs Hapoel Tirat HaCarmel
-Menos de 2.5 · 2.5 · cuota 1.88 · 10.00 vidas
-Modelo 96.5% · Implícita 53.2% · Edge +43.3%
-⏱ Tiempo de apuesta: 47' · marcador 0-0
-Motivo: V1 usa marcador, tiempo, xG y volumen de remates. Ventaja estadística: 43.3 puntos.
-Resultado: +8.80 vidas
-V1.1
-⏳ ABIERTA
-NEC FC vs Express FC
-No · cuota 1.55 · 6.75 vidas
-Modelo 70.5% · Implícita 64.7% · Edge +5.8%
-⏱ Tiempo actual: 91' · marcador 0-0
-Motivo: V1.1 calibra V1 hacia 50%, pondera el minuto (1') y penaliza extremos. Edge calibrado: 5.8 puntos.
-V1.1
-✅ GANADA
-KuPS vs AC Oulu
-No · cuota 1.73 · 6.79 vidas
-Modelo 70.7% · Implícita 57.7% · Edge +13.0%
-⏱ Tiempo de apuesta: 3' · marcador 0-0
-Motivo: V1.1 calibra V1 hacia 50%, pondera el minuto (3') y penaliza extremos. Edge calibrado: 13.0 puntos.
-Resultado: +4.98 vidas
-V1
-⏳ ABIERTA
-NEC FC vs Express FC
-No · cuota 1.55 · 10.00 vidas
-Modelo 91.0% · Implícita 64.7% · Edge +26.3%
-⏱ Tiempo actual: 91' · marcador 0-0
-Motivo: V1 usa marcador, tiempo, xG y volumen de remates. Ventaja estadística: 26.3 puntos.
-V1
-✅ GANADA
-KuPS vs AC Oulu
-No · cuota 1.73 · 10.00 vidas
-Modelo 91.4% · Implícita 57.7% · Edge +33.7%
-⏱ Tiempo de apuesta: 3' · marcador 0-0
-Motivo: V1 usa marcador, tiempo, xG y volumen de remates. Ventaja estadística: 33.7 puntos.
-Resultado: +7.33 vidas
-V1.1
-⏳ ABIERTA
-NEC FC vs Express FC
-Menos de 2.5 · 2.5 · cuota 1.56 · 6.79 vidas
-Modelo 73.2% · Implícita 64.3% · Edge +8.9%
-⏱ Tiempo actual: 91' · marcador 0-0
-Motivo: V1.1 calibra V1 hacia 50%, pondera el minuto (1') y penaliza extremos. Edge calibrado: 8.9 puntos.
-V1
-⏳ ABIERTA
-NEC FC vs Express FC
-Menos de 2.5 · 2.5 · cuota 1.56 · 10.00 vidas
-Modelo 96.4% · Implícita 64.3% · Edge +32.1%
-⏱ Tiempo actual: 91' · marcador 0-0
-Motivo: V1 usa marcador, tiempo, xG y volumen de remates. Ventaja estadística: 32.2 puntos.
-V1.1
-✅ GANADA
-KuPS vs AC Oulu
-Menos de 2.5 · 2.5 · cuota 1.86 · 6.79 vidas
-Modelo 73.3% · Implícita 53.8% · Edge +19.4%
-⏱ Tiempo de apuesta: 3' · marcador 0-0
-Motivo: V1.1 calibra V1 hacia 50%, pondera el minuto (3') y penaliza extremos. Edge calibrado: 19.4 puntos.
-Resultado: +5.82 vidas
-V1
-✅ GANADA
-KuPS vs AC Oulu
-Menos de 2.5 · 2.5 · cuota 1.86 · 10.00 vidas
-Modelo 96.6% · Implícita 53.8% · Edge +42.8%
-⏱ Tiempo de apuesta: 3' · marcador 0-0
-Motivo: V1 usa marcador, tiempo, xG y volumen de remates. Ventaja estadística: 42.8 puntos.
-Resultado: +8.57 vidas
-V1.1
-⏳ ABIERTA
-Union Touarga vs Berkane
-No · cuota 1.55 · 6.75 vidas
-Modelo 70.5% · Implícita 64.7% · Edge +5.8%
-⏱ Tiempo actual: 94' · marcador 0-0
-Motivo: V1.1 calibra V1 hacia 50%, pondera el minuto (1') y penaliza extremos. Edge calibrado: 5.8 puntos.
-V1
-⏳ ABIERTA
-Union Touarga vs Berkane
-No · cuota 1.55 · 10.00 vidas
-Modelo 91.0% · Implícita 64.7% · Edge +26.3%
-⏱ Tiempo actual: 94' · marcador 0-0
-Motivo: V1 usa marcador, tiempo, xG y volumen de remates. Ventaja estadística: 26.3 puntos.
-V1.1
-❌ PERDIDA
-Mornar vs FK Jezero Plav
-Menos de 2.5 · 2.5 · cuota 1.82 · 6.79 vidas
-Modelo 73.2% · Implícita 54.8% · Edge +18.4%
-⏱ Tiempo de apuesta: 1' · marcador 0-0
-Motivo: V1.1 calibra V1 hacia 50%, pondera el minuto (1') y penaliza extremos. Edge calibrado: 18.4 puntos.
-Resultado: -6.79 vidas
-V1
-❌ PERDIDA
-Mornar vs FK Jezero Plav
-Menos de 2.5 · 2.5 · cuota 1.82 · 10.00 vidas
-Modelo 96.4% · Implícita 54.8% · Edge +41.6%
-⏱ Tiempo de apuesta: 1' · marcador 0-0
-Motivo: V1 usa marcador, tiempo, xG y volumen de remates. Ventaja estadística: 41.6 puntos.
-Resultado: -10.00 vidas
-V2
-❌ PERDIDA
-Al-Nasr Dubai SC vs Hatta SC
-Menos de 2.5 · 2.5 · cuota 2.25 · 6.94 vidas
-Modelo 94.7% · Implícita 44.4% · Edge +50.2%
-⏱ Tiempo de apuesta: 15' · marcador 0-0
-Motivo: V2 combina xG/xGOT, remates, ataque, pases y contexto de marcador/tiempo. Ventaja estadística: 50.2 puntos.
-Resultado: -6.94 vidas
-V2.2
-❌ PERDIDA
-Al-Khaleej Khor Fakkan vs Al-Wasl
-No · cuota 1.79 · 3.63 vidas
-Modelo 61.6% · Implícita 56.0% · Edge +5.5%
-⏱ Tiempo de apuesta: 17' · marcador 0-0
-Motivo: V2.2 calibra V2, exige consenso de indicadores y controla el minuto (17'). Edge calibrado: 5.6 puntos.
-Resultado: -3.63 vidas
-V1.1
-❌ PERDIDA
-Al-Khaleej Khor Fakkan vs Al-Wasl
-Menos de 2.5 · 2.5 · cuota 1.98 · 4.00 vidas
-Modelo 62.4% · Implícita 50.6% · Edge +11.8%
-⏱ Tiempo de apuesta: 17' · marcador 0-0
-Motivo: V1.1 calibra V1 hacia 50%, pondera el minuto (17') y penaliza extremos. Edge calibrado: 11.8 puntos.
-Resultado: -4.00 vidas
-V1
-✅ GANADA
-AL Nafit Maysan vs Arbil SC
-Empate · cuota 3.25 · 4.00 vidas
-Modelo 60.3% · Implícita 30.8% · Edge +29.5%
-⏱ Tiempo de apuesta: 16' · marcador 0-0
-Motivo: V1 usa marcador, tiempo, xG y volumen de remates. Ventaja estadística: 29.5 puntos.
-Resultado: +9.00 vidas
-V2
-✅ GANADA
-Al-Khaleej Khor Fakkan vs Al-Wasl
-Al-Wasl · cuota 1.45 · 10.00 vidas
-Modelo 84.1% · Implícita 68.8% · Edge +15.3%
-⏱ Tiempo de apuesta: 15' · marcador 0-0
-Motivo: V2 combina xG/xGOT, remates, ataque, pases y contexto de marcador/tiempo. Ventaja estadística: 15.3 puntos.
-Resultado: +4.55 vidas
-V2
-❌ PERDIDA
-Al-Nasr Dubai SC vs Hatta SC
-No · cuota 1.86 · 6.97 vidas
-Modelo 94.8% · Implícita 53.8% · Edge +41.0%
-⏱ Tiempo de apuesta: 15' · marcador 0-0
-Motivo: V2 combina xG/xGOT, remates, ataque, pases y contexto de marcador/tiempo. Ventaja estadística: 41.0 puntos.
-Resultado: -6.97 vidas
-V2
-❌ PERDIDA
-Al-Khaleej Khor Fakkan vs Al-Wasl
-No · cuota 1.87 · 4.00 vidas
-Modelo 66.8% · Implícita 53.6% · Edge +13.3%
-⏱ Tiempo de apuesta: 15' · marcador 0-0
-Motivo: V2 combina xG/xGOT, remates, ataque, pases y contexto de marcador/tiempo. Ventaja estadística: 13.2 puntos.
-Resultado: -4.00 vidas
-V2
-❌ PERDIDA
-Al-Nasr Dubai SC vs Hatta SC
-Empate · cuota 5.67 · 3.95 vidas
-Modelo 67.0% · Implícita 17.6% · Edge +49.4%
-⏱ Tiempo de apuesta: 15' · marcador 0-0
-Motivo: V2 combina xG/xGOT, remates, ataque, pases y contexto de marcador/tiempo. Ventaja estadística: 49.4 puntos.
-Resultado: -3.95 vidas
-V2
-✅ GANADA
-AL Nafit Maysan vs Arbil SC
-Menos de 2.5 · 2.5 · cuota 1.57 · 3.70 vidas
-Modelo 98.8% · Implícita 63.6% · Edge +35.1%
+Santos vs Flamengo
+Sí · cuota 1.82 · 3.18 vidas
+Modelo 58.2% · Implícita 55.0% · Edge +3.2%
 ⏱ Tiempo de apuesta: 12' · marcador 0-0
-Motivo: V2 combina xG/xGOT, remates, ataque, pases y contexto de marcador/tiempo. Ventaja estadística: 35.1 puntos.
-Resultado: +2.11 vidas
-V1.1
-❌ PERDIDA
-Al-Nasr Dubai SC vs Hatta SC
-Menos de 2.5 · 2.5 · cuota 2.30 · 6.79 vidas
-Modelo 73.6% · Implícita 43.5% · Edge +30.1%
-⏱ Tiempo de apuesta: 10' · marcador 0-0
-Motivo: V1.1 calibra V1 hacia 50%, pondera el minuto (10') y penaliza extremos. Edge calibrado: 30.1 puntos.
-Resultado: -6.79 vidas
-V1
-❌ PERDIDA
-Al-Nasr Dubai SC vs Hatta SC
-Menos de 2.5 · 2.5 · cuota 2.30 · 10.00 vidas
-Modelo 97.3% · Implícita 43.5% · Edge +53.8%
-⏱ Tiempo de apuesta: 10' · marcador 0-0
-Motivo: V1 usa marcador, tiempo, xG y volumen de remates. Ventaja estadística: 53.8 puntos.
-Resultado: -10.00 vidas
-V2.2
+Motivo: Sí elegido por V2.1: 58.2% de probabilidad frente a 55.0% implícita (+3.2 puntos de edge); 0-0 al 12', Nivel 3 · Moderada; control temporal 0.60; confianza 60.2%; exposición 3.18 vidas; respaldo: Remates al arco: 1 vs 0; cautelas: xG: 0.16 vs 0.28, Grandes ocasiones: 0 vs 1.
+Resultado: +2.60 vidas
+V2
 ✅ GANADA
-Al-Shamal vs Al Duhail
-No · cuota 1.88 · 3.69 vidas
-Modelo 60.2% · Implícita 53.3% · Edge +6.8%
-⏱ Tiempo de apuesta: 51' · marcador 0-1
-Motivo: V2.2 calibra V2, exige consenso de indicadores y controla el minuto (51'). Edge calibrado: 6.8 puntos.
+Santos vs Flamengo
+Sí · cuota 1.82 · 3.95 vidas
+Modelo 69.0% · Implícita 55.0% · Edge +14.0%
+⏱ Tiempo de apuesta: 12' · marcador 0-0
+Motivo: Sí elegido por V2: 69.0% de probabilidad frente a 55.0% implícita (+14.0 puntos de edge); 0-0 al 12', Nivel 3 · Moderada; confianza 73.6%; exposición 3.95 vidas; respaldo: Remates al arco: 1 vs 0; cautelas: xG: 0.16 vs 0.28, Grandes ocasiones: 0 vs 1.
 Resultado: +3.23 vidas
-V1
-❌ PERDIDA
-Al-Khaleej Khor Fakkan vs Al-Wasl
-Menos de 2.5 · 2.5 · cuota 2.25 · 4.00 vidas
-Modelo 60.9% · Implícita 44.4% · Edge +16.5%
-⏱ Tiempo de apuesta: 8' · marcador 0-0
-Motivo: V1 usa marcador, tiempo, xG y volumen de remates. Ventaja estadística: 16.5 puntos.
-Resultado: -4.00 vidas
+V2.2
+✅ GANADA
+Nautico vs Grêmio Novorizontino
+No · cuota 2.60 · 6.91 vidas
+Modelo 74.1% · Implícita 38.5% · Edge +35.6%
+⏱ Tiempo de apuesta: 13' · marcador 0-1
+Motivo: No elegido por V2.2: 74.1% de probabilidad frente a 38.5% implícita (+35.6 puntos de edge); 0-1 al 13', Nivel 2 · Fuerte; consenso de indicadores 47.0%; confianza 70.5%; exposición 6.91 vidas; respaldo: xG: 0 vs 0.06, Remates al arco: 0 vs 1.
+Resultado: +11.06 vidas
+V2.1
+✅ GANADA
+Nautico vs Grêmio Novorizontino
+No · cuota 2.60 · 3.68 vidas
+Modelo 62.7% · Implícita 38.5% · Edge +24.2%
+⏱ Tiempo de apuesta: 13' · marcador 0-1
+Motivo: No elegido por V2.1: 62.7% de probabilidad frente a 38.5% implícita (+24.2 puntos de edge); 0-1 al 13', Nivel 3 · Moderada; control temporal 0.60; confianza 64.5%; exposición 3.68 vidas; respaldo: xG: 0 vs 0.06, Remates al arco: 0 vs 1.
+Resultado: +5.89 vidas
+V2
+✅ GANADA
+Nautico vs Grêmio Novorizontino
+No · cuota 2.60 · 10.00 vidas
+Modelo 79.4% · Implícita 38.5% · Edge +40.9%
+⏱ Tiempo de apuesta: 13' · marcador 0-1
+Motivo: No elegido por V2: 79.4% de probabilidad frente a 38.5% implícita (+40.9 puntos de edge); 0-1 al 13', Nivel 1 · Muy fuerte; confianza 83.6%; exposición 10.00 vidas; respaldo: xG: 0 vs 0.06, Remates al arco: 0 vs 1.
+Resultado: +16.00 vidas
+V2
+✅ GANADA
+Ceará vs Criciúma
+No · cuota 1.67 · 10.00 vidas
+Modelo 93.2% · Implícita 60.0% · Edge +33.2%
+⏱ Tiempo de apuesta: 13' · marcador 0-0
+Motivo: No elegido por V2: 93.2% de probabilidad frente a 60.0% implícita (+33.2 puntos de edge); 0-0 al 13', Nivel 1 · Muy fuerte; confianza 81.2%; exposición 10.00 vidas; respaldo: xG: 0.03 vs 0.12.
+Resultado: +6.67 vidas
 V2.2
 ❌ PERDIDA
-Al-Shamal vs Al Duhail
-Menos de 2.5 · 2.5 · cuota 1.84 · 3.75 vidas
-Modelo 61.0% · Implícita 54.4% · Edge +6.7%
-⏱ Tiempo de apuesta: 49' · marcador 0-1
-Motivo: V2.2 calibra V2, exige consenso de indicadores y controla el minuto (49'). Edge calibrado: 6.7 puntos.
-Resultado: -3.75 vidas
+Ceará vs Criciúma
+Empate · cuota 2.95 · 3.72 vidas
+Modelo 56.7% · Implícita 33.9% · Edge +22.8%
+⏱ Tiempo de apuesta: 13' · marcador 0-0
+Motivo: Empate elegido por V2.2: 56.7% de probabilidad frente a 33.9% implícita (+22.8 puntos de edge); 0-0 al 13', Nivel 3 · Moderada; consenso de indicadores 45.0%; confianza 65.7%; exposición 3.72 vidas; respaldo: Marcador empatado: 0-0, xG: 0.03 vs 0.12.
+Resultado: -3.72 vidas
+V2.1
+✅ GANADA
+Ceará vs Criciúma
+No · cuota 1.68 · 3.47 vidas
+Modelo 68.7% · Implícita 59.5% · Edge +9.1%
+⏱ Tiempo de apuesta: 13' · marcador 0-0
+Motivo: No elegido por V2.1: 68.7% de probabilidad frente a 59.5% implícita (+9.1 puntos de edge); 0-0 al 13', Nivel 3 · Moderada; control temporal 0.60; confianza 57.5%; exposición 3.47 vidas; respaldo: xG: 0.03 vs 0.12.
+Resultado: +2.36 vidas
 V2
-✅ GANADA
-Al-Shamal vs Al Duhail
-No · cuota 1.90 · 4.00 vidas
-Modelo 62.3% · Implícita 52.6% · Edge +9.6%
-⏱ Tiempo de apuesta: 49' · marcador 0-1
-Motivo: V2 combina xG/xGOT, remates, ataque, pases y contexto de marcador/tiempo. Ventaja estadística: 9.6 puntos.
-Resultado: +3.60 vidas
+❌ PERDIDA
+Ceará vs Criciúma
+Empate · cuota 2.95 · 4.00 vidas
+Modelo 58.2% · Implícita 33.9% · Edge +24.3%
+⏱ Tiempo de apuesta: 13' · marcador 0-0
+Motivo: Empate elegido por V2: 58.2% de probabilidad frente a 33.9% implícita (+24.3 puntos de edge); 0-0 al 13', Nivel 3 · Moderada; confianza 79.5%; exposición 4.00 vidas; respaldo: Marcador empatado: 0-0, xG: 0.03 vs 0.12.
+Resultado: -4.00 vidas
 V1.1
-✅ GANADA
-Al-Khaleej Khor Fakkan vs Al-Wasl
-Más de 2.5 · 2.5 · cuota 1.57 · 6.79 vidas
-Modelo 71.5% · Implícita 63.5% · Edge +8.0%
+❌ PERDIDA
+Ceará vs Criciúma
+Sí · cuota 2.08 · 3.83 vidas
+Modelo 56.0% · Implícita 48.0% · Edge +8.0%
 ⏱ Tiempo de apuesta: 5' · marcador 0-0
-Motivo: V1.1 calibra V1 hacia 50%, pondera el minuto (5') y penaliza extremos. Edge calibrado: 8.0 puntos.
-Resultado: +3.90 vidas
-V1
-✅ GANADA
-Al-Khaleej Khor Fakkan vs Al-Wasl
-Más de 2.5 · 2.5 · cuota 1.57 · 10.00 vidas
-Modelo 93.0% · Implícita 63.5% · Edge +29.5%
-⏱ Tiempo de apuesta: 5' · marcador 0-0
-Motivo: V1 usa marcador, tiempo, xG y volumen de remates. Ventaja estadística: 29.5 puntos.
-Resultado: +5.75 vidas
-V1.1
-✅ GANADA
-AL Nafit Maysan vs Arbil SC
-Menos de 2.5 · 2.5 · cuota 1.61 · 6.79 vidas
-Modelo 73.3% · Implícita 62.3% · Edge +11.1%
-⏱ Tiempo de apuesta: 4' · marcador 0-0
-Motivo: V1.1 calibra V1 hacia 50%, pondera el minuto (4') y penaliza extremos. Edge calibrado: 11.1 puntos.
-Resultado: +4.11 vidas
-V1
-✅ GANADA
-AL Nafit Maysan vs Arbil SC
-Menos de 2.5 · 2.5 · cuota 1.61 · 10.00 vidas
-Modelo 96.7% · Implícita 62.3% · Edge +34.5%
-⏱ Tiempo de apuesta: 4' · marcador 0-0
-Motivo: V1 usa marcador, tiempo, xG y volumen de remates. Ventaja estadística: 34.5 puntos.
-Resultado: +6.06 vidas
-V1.1
+Motivo: Sí elegido por V1.1: 56.0% de probabilidad frente a 48.0% implícita (+8.0 puntos de edge); 0-0 al 5', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 0.64; confianza 69.4%; exposición 3.83 vidas.
+Resultado: -3.83 vidas
+V2.2
 ❌ PERDIDA
-Al-Nasr Dubai SC vs Hatta SC
-No · cuota 1.95 · 6.79 vidas
-Modelo 70.5% · Implícita 51.3% · Edge +19.2%
-⏱ Tiempo de apuesta: 1' · marcador 0-0
-Motivo: V1.1 calibra V1 hacia 50%, pondera el minuto (1') y penaliza extremos. Edge calibrado: 19.2 puntos.
-Resultado: -6.79 vidas
-V1.1
-❌ PERDIDA
-Al-Khaleej Khor Fakkan vs Al-Wasl
-No · cuota 2.08 · 6.79 vidas
-Modelo 70.5% · Implícita 48.0% · Edge +22.5%
-⏱ Tiempo de apuesta: 1' · marcador 0-0
-Motivo: V1.1 calibra V1 hacia 50%, pondera el minuto (1') y penaliza extremos. Edge calibrado: 22.5 puntos.
-Resultado: -6.79 vidas
-V1.1
-❌ PERDIDA
-AL Nafit Maysan vs Arbil SC
-No · cuota 1.61 · 6.79 vidas
-Modelo 70.6% · Implícita 62.3% · Edge +8.3%
-⏱ Tiempo de apuesta: 2' · marcador 0-0
-Motivo: V1.1 calibra V1 hacia 50%, pondera el minuto (2') y penaliza extremos. Edge calibrado: 8.3 puntos.
-Resultado: -6.79 vidas
-V1
-❌ PERDIDA
-Al-Nasr Dubai SC vs Hatta SC
-No · cuota 1.95 · 10.00 vidas
-Modelo 91.0% · Implícita 51.3% · Edge +39.8%
-⏱ Tiempo de apuesta: 1' · marcador 0-0
-Motivo: V1 usa marcador, tiempo, xG y volumen de remates. Ventaja estadística: 39.7 puntos.
-Resultado: -10.00 vidas
-V1
-❌ PERDIDA
-Al-Khaleej Khor Fakkan vs Al-Wasl
-No · cuota 2.08 · 10.00 vidas
-Modelo 91.0% · Implícita 48.0% · Edge +43.0%
-⏱ Tiempo de apuesta: 1' · marcador 0-0
-Motivo: V1 usa marcador, tiempo, xG y volumen de remates. Ventaja estadística: 43.0 puntos.
-Resultado: -10.00 vidas
-V1
-❌ PERDIDA
-AL Nafit Maysan vs Arbil SC
-No · cuota 1.61 · 10.00 vidas
-Modelo 91.2% · Implícita 62.3% · Edge +28.9%
-⏱ Tiempo de apuesta: 2' · marcador 0-0
-Motivo: V1 usa marcador, tiempo, xG y volumen de remates. Ventaja estadística: 28.9 puntos.
-Resultado: -10.00 vidas
-V1.1
-✅ GANADA
-AL Ittihad vs Wadi Degla
-No · cuota 1.30 · 10.00 vidas
-Modelo 88.4% · Implícita 76.9% · Edge +11.5%
-⏱ Tiempo de apuesta: 78' · marcador 0-1
-Motivo: V1.1 calibra V1 hacia 50%, pondera el minuto (78') y penaliza extremos. Edge calibrado: 11.5 puntos.
-Resultado: +3.00 vidas
-V1
-✅ GANADA
-AL Ittihad vs Wadi Degla
-No · cuota 1.30 · 10.00 vidas
-Modelo 99.2% · Implícita 76.9% · Edge +22.3%
-⏱ Tiempo de apuesta: 78' · marcador 0-1
-Motivo: V1 usa marcador, tiempo, xG y volumen de remates. Ventaja estadística: 22.3 puntos.
-Resultado: +3.00 vidas
-V2
-✅ GANADA
-Namungo FC vs TRA United
-Menos de 2.5 · 2.5 · cuota 2.35 · 3.52 vidas
-Modelo 92.9% · Implícita 42.5% · Edge +50.3%
+Santos vs Flamengo
+No · cuota 2.03 · 3.76 vidas
+Modelo 63.8% · Implícita 49.3% · Edge +14.6%
 ⏱ Tiempo de apuesta: 12' · marcador 0-0
-Motivo: V2 combina xG/xGOT, remates, ataque, pases y contexto de marcador/tiempo. Ventaja estadística: 50.3 puntos.
-Resultado: +4.75 vidas
-V2.2
+Motivo: No elegido por V2.2: 63.8% de probabilidad frente a 49.2% implícita (+14.6 puntos de edge); 0-0 al 12', Nivel 3 · Moderada; consenso de indicadores 39.0%; confianza 67.1%; exposición 3.76 vidas; respaldo: xG: 0.06 vs 0.08, Toques en área: 1 vs 5; cautelas: Remates al arco: 1 vs 0.
+Resultado: -3.76 vidas
+V2.1
 ❌ PERDIDA
-Shabab Al-Ordon SC vs Al Baqaa
-Menos de 2.5 · 2.5 · cuota 1.67 · 3.25 vidas
-Modelo 76.2% · Implícita 60.0% · Edge +16.2%
-⏱ Tiempo de apuesta: 39' · marcador 0-1
-Motivo: V2.2 calibra V2, exige consenso de indicadores y controla el minuto (39'). Edge calibrado: 16.2 puntos.
-Resultado: -3.25 vidas
+Santos vs Flamengo
+No · cuota 2.03 · 3.64 vidas
+Modelo 57.3% · Implícita 49.3% · Edge +8.0%
+⏱ Tiempo de apuesta: 12' · marcador 0-0
+Motivo: No elegido por V2.1: 57.3% de probabilidad frente a 49.2% implícita (+8.0 puntos de edge); 0-0 al 12', Nivel 3 · Moderada; control temporal 0.60; confianza 63.0%; exposición 3.64 vidas; respaldo: xG: 0.06 vs 0.08, Toques en área: 1 vs 5; cautelas: Remates al arco: 1 vs 0.
+Resultado: -3.64 vidas
 V2
 ❌ PERDIDA
-Shabab Al-Ordon SC vs Al Baqaa
-Menos de 2.5 · 2.5 · cuota 1.67 · 3.84 vidas
-Modelo 88.3% · Implícita 60.0% · Edge +28.3%
-⏱ Tiempo de apuesta: 39' · marcador 0-1
-Motivo: V2 combina xG/xGOT, remates, ataque, pases y contexto de marcador/tiempo. Ventaja estadística: 28.3 puntos.
-Resultado: -3.84 vidas
-V1.1
+Santos vs Flamengo
+No · cuota 2.03 · 7.00 vidas
+Modelo 66.9% · Implícita 49.3% · Edge +17.6%
+⏱ Tiempo de apuesta: 12' · marcador 0-0
+Motivo: No elegido por V2: 66.9% de probabilidad frente a 49.2% implícita (+17.6 puntos de edge); 0-0 al 12', Nivel 2 · Fuerte; confianza 80.0%; exposición 7.00 vidas; respaldo: xG: 0.06 vs 0.08, Toques en área: 1 vs 5; cautelas: Remates al arco: 1 vs 0.
+Resultado: -7.00 vidas
+V1
 ❌ PERDIDA
-Shabab Al-Ordon SC vs Al Baqaa
-Menos de 2.5 · 2.5 · cuota 1.67 · 4.00 vidas
-Modelo 66.6% · Implícita 60.0% · Edge +6.6%
-⏱ Tiempo de apuesta: 39' · marcador 0-1
-Motivo: V1.1 calibra V1 hacia 50%, pondera el minuto (39') y penaliza extremos. Edge calibrado: 6.6 puntos.
+Ceará vs Criciúma
+Sí · cuota 2.10 · 4.00 vidas
+Modelo 56.3% · Implícita 47.6% · Edge +8.7%
+⏱ Tiempo de apuesta: 5' · marcador 0-0
+Motivo: Sí elegido por V1: 56.3% de probabilidad frente a 47.6% implícita (+8.7 puntos de edge); 0-0 al 5', Nivel 3 · Moderada; confianza 83.7%; exposición 4.00 vidas.
+Resultado: -4.00 vidas
+V2.2
+❌ PERDIDA
+Santos vs Flamengo
+Menos de 2.5 · 2.5 · cuota 2.00 · 6.87 vidas
+Modelo 71.5% · Implícita 50.0% · Edge +21.5%
+⏱ Tiempo de apuesta: 12' · marcador 0-0
+Motivo: Menos de 2.5 2.5 elegido por V2.2: 71.5% de probabilidad frente a 50.0% implícita (+21.5 puntos de edge); 0-0 al 12', Nivel 2 · Fuerte; consenso de indicadores 39.9%; confianza 68.6%; exposición 6.87 vidas; respaldo: Remates totales: 1 vs 3, Toques en área: 1 vs 5; cautelas: Remates al arco: 1 vs 0.
+Resultado: -6.87 vidas
+V2.1
+❌ PERDIDA
+Santos vs Flamengo
+Menos de 2.5 · 2.5 · cuota 2.00 · 3.64 vidas
+Modelo 61.3% · Implícita 50.0% · Edge +11.3%
+⏱ Tiempo de apuesta: 12' · marcador 0-0
+Motivo: Menos de 2.5 2.5 elegido por V2.1: 61.3% de probabilidad frente a 50.0% implícita (+11.3 puntos de edge); 0-0 al 12', Nivel 3 · Moderada; control temporal 0.60; confianza 63.2%; exposición 3.64 vidas; respaldo: Remates totales: 1 vs 3, Toques en área: 1 vs 5; cautelas: Remates al arco: 1 vs 0.
+Resultado: -3.64 vidas
+V2
+❌ PERDIDA
+Santos vs Flamengo
+Menos de 2.5 · 2.5 · cuota 2.00 · 7.00 vidas
+Modelo 76.3% · Implícita 50.0% · Edge +26.3%
+⏱ Tiempo de apuesta: 12' · marcador 0-0
+Motivo: Menos de 2.5 2.5 elegido por V2: 76.3% de probabilidad frente a 50.0% implícita (+26.3 puntos de edge); 0-0 al 12', Nivel 2 · Fuerte; confianza 80.6%; exposición 7.00 vidas; respaldo: Remates totales: 1 vs 3, Toques en área: 1 vs 5; cautelas: Remates al arco: 1 vs 0.
+Resultado: -7.00 vidas
+V1.2
+✅ GANADA
+Nautico vs Grêmio Novorizontino
+Menos de 3.5 · 3.5 · cuota 1.92 · 2.00 vidas
+Modelo 89.6% · Implícita 52.1% · Edge +37.5%
+⏱ Tiempo de apuesta: 8' · marcador 0-1
+Motivo: Menos de 3.5 3.5 elegido por V1.2: 89.6% de probabilidad frente a 52.1% implícita (+37.5 puntos de edge); 0-1 al 8', Nivel 1 · Muy fuerte; mercado LIVE compatible con la evaluación ampliada de V1.2; confianza 95.0%; exposición 2.00 vidas.
+Resultado: +1.84 vidas
+V1.1
+✅ GANADA
+Nautico vs Grêmio Novorizontino
+No · cuota 2.40 · 6.95 vidas
+Modelo 67.3% · Implícita 41.7% · Edge +25.6%
+⏱ Tiempo de apuesta: 8' · marcador 0-1
+Motivo: No elegido por V1.1: 67.3% de probabilidad frente a 41.7% implícita (+25.6 puntos de edge); 0-1 al 8', Nivel 2 · Fuerte; calibración hacia 50% y factor temporal 0.64; confianza 72.5%; exposición 6.95 vidas.
+Resultado: +9.73 vidas
+V1
+✅ GANADA
+Nautico vs Grêmio Novorizontino
+No · cuota 2.40 · 10.00 vidas
+Modelo 84.7% · Implícita 41.7% · Edge +43.0%
+⏱ Tiempo de apuesta: 8' · marcador 0-1
+Motivo: No elegido por V1: 84.7% de probabilidad frente a 41.7% implícita (+43.0 puntos de edge); 0-1 al 8', Nivel 1 · Muy fuerte; confianza 95.0%; exposición 10.00 vidas.
+Resultado: +14.00 vidas
+V1.1
+✅ GANADA
+Santos vs Flamengo
+Sí · cuota 1.71 · 3.68 vidas
+Modelo 73.7% · Implícita 58.3% · Edge +15.3%
+⏱ Tiempo de apuesta: 2' · marcador 0-0
+Motivo: Sí elegido por V1.1: 73.7% de probabilidad frente a 58.3% implícita (+15.3 puntos de edge); 0-0 al 2', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 0.64; confianza 64.5%; exposición 3.68 vidas.
+Resultado: +2.63 vidas
+V1
+✅ GANADA
+Santos vs Flamengo
+Sí · cuota 1.71 · 4.00 vidas
+Modelo 97.4% · Implícita 58.3% · Edge +39.0%
+⏱ Tiempo de apuesta: 2' · marcador 0-0
+Motivo: Sí elegido por V1: 97.4% de probabilidad frente a 58.3% implícita (+39.1 puntos de edge); 0-0 al 2', Nivel 3 · Moderada; confianza 95.0%; exposición 4.00 vidas.
+Resultado: +2.86 vidas
+V1.1
+✅ GANADA
+Santos vs Flamengo
+Más de 2.5 · 2.5 · cuota 1.77 · 3.56 vidas
+Modelo 60.3% · Implícita 56.3% · Edge +4.0%
+⏱ Tiempo de apuesta: 2' · marcador 0-0
+Motivo: Más de 2.5 2.5 elegido por V1.1: 60.3% de probabilidad frente a 56.3% implícita (+4.0 puntos de edge); 0-0 al 2', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 0.64; confianza 69.6%; exposición 3.56 vidas.
+Resultado: +2.76 vidas
+V1
+✅ GANADA
+Santos vs Flamengo
+Más de 2.5 · 2.5 · cuota 1.77 · 7.00 vidas
+Modelo 70.6% · Implícita 56.3% · Edge +14.3%
+⏱ Tiempo de apuesta: 2' · marcador 0-0
+Motivo: Más de 2.5 2.5 elegido por V1: 70.6% de probabilidad frente a 56.3% implícita (+14.3 puntos de edge); 0-0 al 2', Nivel 2 · Fuerte; confianza 89.3%; exposición 7.00 vidas.
+Resultado: +5.42 vidas
+V1.2
+❌ PERDIDA
+Santos vs Flamengo
+Flamengo · cuota 1.80 · 2.00 vidas
+Modelo 81.8% · Implícita 55.6% · Edge +26.3%
+⏱ Tiempo de apuesta: 2' · marcador 0-0
+Motivo: Flamengo elegido por V1.2: 81.8% de probabilidad frente a 55.6% implícita (+26.3 puntos de edge); 0-0 al 2', Nivel 1 · Muy fuerte; mercado LIVE compatible con la evaluación ampliada de V1.2; confianza 95.0%; exposición 2.00 vidas.
+Resultado: -2.00 vidas
+V1.2
+✅ GANADA
+Nautico vs Grêmio Novorizontino
+No · cuota 1.97 · 10.00 vidas
+Modelo 91.4% · Implícita 50.8% · Edge +40.6%
+⏱ Tiempo de apuesta: 3' · marcador 0-0
+Motivo: No elegido por V1.2: 91.4% de probabilidad frente a 50.8% implícita (+40.6 puntos de edge); 0-0 al 3', Nivel 1 · Muy fuerte; mercado LIVE compatible con la evaluación ampliada de V1.2; confianza 95.0%; exposición 10.00 vidas.
+Resultado: +9.70 vidas
+V1.1
+✅ GANADA
+Nautico vs Grêmio Novorizontino
+Menos de 2.5 · 2.5 · cuota 1.97 · 3.68 vidas
+Modelo 73.3% · Implícita 50.8% · Edge +22.5%
+⏱ Tiempo de apuesta: 3' · marcador 0-0
+Motivo: Menos de 2.5 2.5 elegido por V1.1: 73.3% de probabilidad frente a 50.8% implícita (+22.5 puntos de edge); 0-0 al 3', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 0.64; confianza 64.5%; exposición 3.68 vidas.
+Resultado: +3.57 vidas
+V1
+✅ GANADA
+Nautico vs Grêmio Novorizontino
+Menos de 2.5 · 2.5 · cuota 1.97 · 4.00 vidas
+Modelo 96.6% · Implícita 50.8% · Edge +45.9%
+⏱ Tiempo de apuesta: 3' · marcador 0-0
+Motivo: Menos de 2.5 2.5 elegido por V1: 96.6% de probabilidad frente a 50.8% implícita (+45.9 puntos de edge); 0-0 al 3', Nivel 3 · Moderada; confianza 95.0%; exposición 4.00 vidas.
+Resultado: +3.88 vidas
+V1.2
+✅ GANADA
+Ceará vs Criciúma
+Menos de 1.5 · 1.5 · cuota 2.50 · 2.00 vidas
+Modelo 68.2% · Implícita 40.0% · Edge +28.2%
+⏱ Tiempo de apuesta: 5' · marcador 0-0
+Motivo: Menos de 1.5 1.5 elegido por V1.2: 68.2% de probabilidad frente a 40.0% implícita (+28.2 puntos de edge); 0-0 al 5', Nivel 2 · Fuerte; mercado LIVE compatible con la evaluación ampliada de V1.2; confianza 95.0%; exposición 2.00 vidas.
+Resultado: +3.00 vidas
+V1
+✅ GANADA
+Ceará vs Criciúma
+No · cuota 1.70 · 10.00 vidas
+Modelo 91.2% · Implícita 58.8% · Edge +32.4%
+⏱ Tiempo de apuesta: 2' · marcador 0-0
+Motivo: No elegido por V1: 91.2% de probabilidad frente a 58.8% implícita (+32.4 puntos de edge); 0-0 al 2', Nivel 1 · Muy fuerte; confianza 95.0%; exposición 10.00 vidas.
+Resultado: +7.00 vidas
+V1.1
+✅ GANADA
+Ceará vs Criciúma
+Menos de 2.5 · 2.5 · cuota 1.52 · 3.68 vidas
+Modelo 73.2% · Implícita 65.6% · Edge +7.7%
+⏱ Tiempo de apuesta: 2' · marcador 0-0
+Motivo: Menos de 2.5 2.5 elegido por V1.1: 73.2% de probabilidad frente a 65.6% implícita (+7.7 puntos de edge); 0-0 al 2', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 0.64; confianza 64.5%; exposición 3.68 vidas.
+Resultado: +1.93 vidas
+V1
+❌ PERDIDA
+Ceará vs Criciúma
+Empate · cuota 3.15 · 4.00 vidas
+Modelo 55.8% · Implícita 31.8% · Edge +24.0%
+⏱ Tiempo de apuesta: 2' · marcador 0-0
+Motivo: Empate elegido por V1: 55.8% de probabilidad frente a 31.8% implícita (+24.0 puntos de edge); 0-0 al 2', Nivel 3 · Moderada; confianza 95.0%; exposición 4.00 vidas.
 Resultado: -4.00 vidas
 V1
 ❌ PERDIDA
-Shabab Al-Ordon SC vs Al Baqaa
-Menos de 2.5 · 2.5 · cuota 1.67 · 7.00 vidas
-Modelo 72.6% · Implícita 60.0% · Edge +12.6%
-⏱ Tiempo de apuesta: 39' · marcador 0-1
-Motivo: V1 usa marcador, tiempo, xG y volumen de remates. Ventaja estadística: 12.6 puntos.
-Resultado: -7.00 vidas
-V2.2
+Santos vs Flamengo
+No · cuota 2.17 · 10.00 vidas
+Modelo 91.2% · Implícita 46.2% · Edge +45.0%
+⏱ Tiempo de apuesta: 2' · marcador 0-0
+Motivo: No elegido por V1: 91.2% de probabilidad frente a 46.2% implícita (+45.0 puntos de edge); 0-0 al 2', Nivel 1 · Muy fuerte; confianza 95.0%; exposición 10.00 vidas.
+Resultado: -10.00 vidas
+V1.1
 ❌ PERDIDA
-Duhok FC vs Al Zawraa
-Menos de 2.5 · 2.5 · cuota 1.82 · 3.22 vidas
-Modelo 81.5% · Implícita 54.8% · Edge +26.7%
-⏱ Tiempo de apuesta: 38' · marcador 1-0
-Motivo: V2.2 calibra V2, exige consenso de indicadores y controla el minuto (38'). Edge calibrado: 26.7 puntos.
-Resultado: -3.22 vidas
-V2.2
+Santos vs Flamengo
+No · cuota 2.17 · 3.68 vidas
+Modelo 70.6% · Implícita 46.2% · Edge +24.4%
+⏱ Tiempo de apuesta: 2' · marcador 0-0
+Motivo: No elegido por V1.1: 70.6% de probabilidad frente a 46.2% implícita (+24.4 puntos de edge); 0-0 al 2', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 0.64; confianza 64.5%; exposición 3.68 vidas.
+Resultado: -3.68 vidas
+V1
 ✅ GANADA
-Hapoel Nir Ramat Hasharon FC vs Hapoel Azor FC
-Menos de 2.5 · 2.5 · cuota 1.83 · 3.10 vidas
-Modelo 74.5% · Implícita 54.5% · Edge +19.9%
-⏱ Tiempo de apuesta: 36' · marcador 1-0
-Motivo: V2.2 calibra V2, exige consenso de indicadores y controla el minuto (36'). Edge calibrado: 19.9 puntos.
+Santos vs Flamengo
+Empate · cuota 3.67 · 4.00 vidas
+Modelo 55.8% · Implícita 27.3% · Edge +28.5%
+⏱ Tiempo de apuesta: 2' · marcador 0-0
+Motivo: Empate elegido por V1: 55.8% de probabilidad frente a 27.3% implícita (+28.5 puntos de edge); 0-0 al 2', Nivel 3 · Moderada; confianza 95.0%; exposición 4.00 vidas.
+Resultado: +10.67 vidas
+V1.2
+✅ GANADA
+Ceará vs Criciúma
+No · cuota 1.70 · 10.00 vidas
+Modelo 91.2% · Implícita 58.8% · Edge +32.4%
+⏱ Tiempo de apuesta: 2' · marcador 0-0
+Motivo: No elegido por V1.2: 91.2% de probabilidad frente a 58.8% implícita (+32.4 puntos de edge); 0-0 al 2', Nivel 1 · Muy fuerte; mercado LIVE compatible con la evaluación ampliada de V1.2; confianza 95.0%; exposición 10.00 vidas.
+Resultado: +7.00 vidas
+V1.1
+✅ GANADA
+Ceará vs Criciúma
+No · cuota 1.70 · 3.68 vidas
+Modelo 70.6% · Implícita 58.8% · Edge +11.8%
+⏱ Tiempo de apuesta: 2' · marcador 0-0
+Motivo: No elegido por V1.1: 70.6% de probabilidad frente a 58.8% implícita (+11.8 puntos de edge); 0-0 al 2', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 0.64; confianza 64.5%; exposición 3.68 vidas.
 Resultado: +2.58 vidas
 V1
+✅ GANADA
+Ceará vs Criciúma
+Menos de 2.5 · 2.5 · cuota 1.52 · 4.00 vidas
+Modelo 96.5% · Implícita 65.6% · Edge +31.0%
+⏱ Tiempo de apuesta: 2' · marcador 0-0
+Motivo: Menos de 2.5 2.5 elegido por V1: 96.5% de probabilidad frente a 65.6% implícita (+31.0 puntos de edge); 0-0 al 2', Nivel 3 · Moderada; confianza 95.0%; exposición 4.00 vidas.
+Resultado: +2.10 vidas
+V1.2
 ❌ PERDIDA
-Duhok FC vs Al Zawraa
-Empate · cuota 3.50 · 4.00 vidas
-Modelo 62.0% · Implícita 28.6% · Edge +33.4%
-⏱ Tiempo de apuesta: 35' · marcador 1-0
-Motivo: V1 usa marcador, tiempo, xG y volumen de remates. Ventaja estadística: 33.4 puntos.
+Santos vs Flamengo
+No · cuota 2.17 · 10.00 vidas
+Modelo 91.2% · Implícita 46.2% · Edge +45.0%
+⏱ Tiempo de apuesta: 2' · marcador 0-0
+Motivo: No elegido por V1.2: 91.2% de probabilidad frente a 46.2% implícita (+45.0 puntos de edge); 0-0 al 2', Nivel 1 · Muy fuerte; mercado LIVE compatible con la evaluación ampliada de V1.2; confianza 95.0%; exposición 10.00 vidas.
+Resultado: -10.00 vidas
+V1.1
+❌ PERDIDA
+Santos vs Flamengo
+Menos de 2.5 · 2.5 · cuota 2.15 · 3.68 vidas
+Modelo 73.2% · Implícita 46.5% · Edge +26.7%
+⏱ Tiempo de apuesta: 2' · marcador 0-0
+Motivo: Menos de 2.5 2.5 elegido por V1.1: 73.2% de probabilidad frente a 46.5% implícita (+26.7 puntos de edge); 0-0 al 2', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 0.64; confianza 64.5%; exposición 3.68 vidas.
+Resultado: -3.68 vidas
+V1
+❌ PERDIDA
+Santos vs Flamengo
+Menos de 2.5 · 2.5 · cuota 2.15 · 4.00 vidas
+Modelo 96.5% · Implícita 46.5% · Edge +50.0%
+⏱ Tiempo de apuesta: 2' · marcador 0-0
+Motivo: Menos de 2.5 2.5 elegido por V1: 96.5% de probabilidad frente a 46.5% implícita (+50.0 puntos de edge); 0-0 al 2', Nivel 3 · Moderada; confianza 95.0%; exposición 4.00 vidas.
 Resultado: -4.00 vidas
-V1.1
+V2.1
+✅ GANADA
+Atlético de Cali vs Real Cartagena
+Empate · cuota 1.73 · 3.53 vidas
+Modelo 75.4% · Implícita 57.7% · Edge +17.7%
+⏱ Tiempo de apuesta: 72' · marcador 2-2
+Motivo: Empate elegido por V2.1: 75.4% de probabilidad frente a 57.7% implícita (+17.7 puntos de edge); 2-2 al 72', Nivel 3 · Moderada; control temporal 1.00; confianza 59.6%; exposición 3.53 vidas; respaldo: Marcador empatado: 2-2; cautelas: Remates al arco: 4 vs 2.
+Resultado: +2.59 vidas
+V2
+✅ GANADA
+Atlético de Cali vs Real Cartagena
+Empate · cuota 1.73 · 3.64 vidas
+Modelo 85.3% · Implícita 57.7% · Edge +27.6%
+⏱ Tiempo de apuesta: 72' · marcador 2-2
+Motivo: Empate elegido por V2: 85.3% de probabilidad frente a 57.7% implícita (+27.6 puntos de edge); 2-2 al 72', Nivel 3 · Moderada; confianza 63.3%; exposición 3.64 vidas; respaldo: Marcador empatado: 2-2; cautelas: Remates al arco: 4 vs 2.
+Resultado: +2.67 vidas
+V2.1
 ❌ PERDIDA
-AL Ittihad vs Wadi Degla
-Empate · cuota 1.69 · 3.61 vidas
-Modelo 62.2% · Implícita 59.1% · Edge +3.1%
-⏱ Tiempo de apuesta: 69' · marcador 0-0
-Motivo: V1.1 calibra V1 hacia 50%, pondera el minuto (69') y penaliza extremos. Edge calibrado: 3.1 puntos.
-Resultado: -3.61 vidas
-V1.1
-✅ GANADA
-Hapoel Nir Ramat Hasharon FC vs Hapoel Azor FC
-Menos de 2.5 · 2.5 · cuota 2.00 · 4.00 vidas
-Modelo 60.3% · Implícita 50.0% · Edge +10.3%
-⏱ Tiempo de apuesta: 32' · marcador 1-0
-Motivo: V1.1 calibra V1 hacia 50%, pondera el minuto (32') y penaliza extremos. Edge calibrado: 10.3 puntos.
-Resultado: +4.00 vidas
-V1
-✅ GANADA
-Hapoel Nir Ramat Hasharon FC vs Hapoel Azor FC
-Menos de 2.5 · 2.5 · cuota 2.05 · 4.00 vidas
-Modelo 60.9% · Implícita 48.8% · Edge +12.1%
-⏱ Tiempo de apuesta: 30' · marcador 1-0
-Motivo: V1 usa marcador, tiempo, xG y volumen de remates. Ventaja estadística: 12.1 puntos.
-Resultado: +4.20 vidas
-V1.1
-✅ GANADA
-Hapoel Urbani Karmiel vs Hapoel Tirat HaCarmel
-No · cuota 1.40 · 7.00 vidas
-Modelo 77.7% · Implícita 71.4% · Edge +6.3%
-⏱ Tiempo de apuesta: 33' · marcador 0-0
-Motivo: V1.1 calibra V1 hacia 50%, pondera el minuto (33') y penaliza extremos. Edge calibrado: 6.3 puntos.
-Resultado: +2.80 vidas
-V1.1
-✅ GANADA
-Namungo FC vs TRA United
-Menos de 2.5 · 2.5 · cuota 1.50 · 6.79 vidas
-Modelo 73.3% · Implícita 66.7% · Edge +6.6%
-⏱ Tiempo de apuesta: 3' · marcador 0-0
-Motivo: V1.1 calibra V1 hacia 50%, pondera el minuto (3') y penaliza extremos. Edge calibrado: 6.6 puntos.
-Resultado: +3.40 vidas
-V1
-✅ GANADA
-Namungo FC vs TRA United
-Menos de 2.5 · 2.5 · cuota 1.50 · 10.00 vidas
-Modelo 96.6% · Implícita 66.7% · Edge +30.0%
-⏱ Tiempo de apuesta: 3' · marcador 0-0
-Motivo: V1 usa marcador, tiempo, xG y volumen de remates. Ventaja estadística: 30.0 puntos.
-Resultado: +5.00 vidas
-V1
-❌ PERDIDA
-AL Ittihad vs Wadi Degla
-Empate · cuota 1.76 · 4.00 vidas
-Modelo 62.6% · Implícita 56.8% · Edge +5.8%
-⏱ Tiempo de apuesta: 67' · marcador 0-0
-Motivo: V1 usa marcador, tiempo, xG y volumen de remates. Ventaja estadística: 5.8 puntos.
-Resultado: -4.00 vidas
+CD Santo Domingo vs Portoviejo
+Menos de 2.5 · 2.5 · cuota 1.52 · 3.55 vidas
+Modelo 75.7% · Implícita 65.6% · Edge +10.1%
+⏱ Tiempo de apuesta: 70' · marcador 2-0
+Motivo: Menos de 2.5 2.5 elegido por V2.1: 75.7% de probabilidad frente a 65.6% implícita (+10.1 puntos de edge); 2-0 al 70', Nivel 3 · Moderada; control temporal 1.00; confianza 60.2%; exposición 3.55 vidas; respaldo: Remates totales: 4 vs 6; cautelas: Remates al arco: 3 vs 1.
+Resultado: -3.55 vidas
 V2
 ❌ PERDIDA
-Al-Shamal vs Al Duhail
-Menos de 2.5 · 2.5 · cuota 2.02 · 4.00 vidas
-Modelo 60.1% · Implícita 49.4% · Edge +10.7%
-⏱ Tiempo de apuesta: 46' · marcador 0-1
-Motivo: V2 combina xG/xGOT, remates, ataque, pases y contexto de marcador/tiempo. Ventaja estadística: 10.7 puntos.
-Resultado: -4.00 vidas
-V1.1
-✅ GANADA
-Shabab Al-Ordon SC vs Al Baqaa
-No · cuota 1.38 · 3.81 vidas
-Modelo 76.2% · Implícita 72.2% · Edge +4.0%
-⏱ Tiempo de apuesta: 30' · marcador 0-0
-Motivo: V1.1 calibra V1 hacia 50%, pondera el minuto (30') y penaliza extremos. Edge calibrado: 4.0 puntos.
-Resultado: +1.47 vidas
-V1.1
-❌ PERDIDA
-RC Kouba vs USM El Harrach
-Menos de 2.5 · 2.5 · cuota 1.70 · 3.67 vidas
-Modelo 62.4% · Implícita 58.8% · Edge +3.6%
-⏱ Tiempo de apuesta: 69' · marcador 2-0
-Motivo: V1.1 calibra V1 hacia 50%, pondera el minuto (69') y penaliza extremos. Edge calibrado: 3.6 puntos.
+CD Santo Domingo vs Portoviejo
+Menos de 2.5 · 2.5 · cuota 1.52 · 3.67 vidas
+Modelo 85.7% · Implícita 65.6% · Edge +20.1%
+⏱ Tiempo de apuesta: 70' · marcador 2-0
+Motivo: Menos de 2.5 2.5 elegido por V2: 85.7% de probabilidad frente a 65.6% implícita (+20.1 puntos de edge); 2-0 al 70', Nivel 3 · Moderada; confianza 64.2%; exposición 3.67 vidas; respaldo: Remates totales: 4 vs 6; cautelas: Remates al arco: 3 vs 1.
 Resultado: -3.67 vidas
-V1
-❌ PERDIDA
-RC Kouba vs USM El Harrach
-Menos de 2.5 · 2.5 · cuota 1.70 · 4.00 vidas
-Modelo 65.9% · Implícita 58.8% · Edge +7.1%
-⏱ Tiempo de apuesta: 69' · marcador 2-0
-Motivo: V1 usa marcador, tiempo, xG y volumen de remates. Ventaja estadística: 7.1 puntos.
-Resultado: -4.00 vidas
 V1.1
 ❌ PERDIDA
-Hapoel Nir Ramat Hasharon FC vs Hapoel Azor FC
-No · cuota 2.07 · 4.00 vidas
-Modelo 62.3% · Implícita 48.3% · Edge +14.0%
-⏱ Tiempo de apuesta: 26' · marcador 1-0
-Motivo: V1.1 calibra V1 hacia 50%, pondera el minuto (26') y penaliza extremos. Edge calibrado: 14.0 puntos.
-Resultado: -4.00 vidas
-V1.1
-✅ GANADA
-RC Kouba vs USM El Harrach
-No · cuota 1.22 · 3.68 vidas
-Modelo 85.2% · Implícita 81.8% · Edge +3.4%
-⏱ Tiempo de apuesta: 66' · marcador 2-0
-Motivo: V1.1 calibra V1 hacia 50%, pondera el minuto (66') y penaliza extremos. Edge calibrado: 3.4 puntos.
-Resultado: +0.82 vidas
-V1.1
-✅ GANADA
-Al-Shamal vs Al Duhail
-No · cuota 2.15 · 7.00 vidas
-Modelo 72.4% · Implícita 46.5% · Edge +25.9%
-⏱ Tiempo de apuesta: 43' · marcador 0-1
-Motivo: V1.1 calibra V1 hacia 50%, pondera el minuto (43') y penaliza extremos. Edge calibrado: 25.9 puntos.
-Resultado: +8.05 vidas
-V1.1
-✅ GANADA
-Poli Timisoara vs Csa Steaua Bucuresti
-Menos de 2.5 · 2.5 · cuota 1.50 · 6.94 vidas
-Modelo 79.6% · Implícita 66.7% · Edge +13.0%
-⏱ Tiempo de apuesta: 27' · marcador 0-0
-Motivo: V1.1 calibra V1 hacia 50%, pondera el minuto (27') y penaliza extremos. Edge calibrado: 13.0 puntos.
-Resultado: +3.47 vidas
-V1
-✅ GANADA
-Al-Shamal vs Al Duhail
-No · cuota 2.15 · 10.00 vidas
-Modelo 80.5% · Implícita 46.5% · Edge +34.0%
-⏱ Tiempo de apuesta: 43' · marcador 0-1
-Motivo: V1 usa marcador, tiempo, xG y volumen de remates. Ventaja estadística: 34.0 puntos.
-Resultado: +11.50 vidas
+CD Santo Domingo vs Portoviejo
+Menos de 2.5 · 2.5 · cuota 1.52 · 3.92 vidas
+Modelo 70.5% · Implícita 65.6% · Edge +4.9%
+⏱ Tiempo de apuesta: 70' · marcador 2-0
+Motivo: Menos de 2.5 2.5 elegido por V1.1: 70.5% de probabilidad frente a 65.6% implícita (+4.9 puntos de edge); 2-0 al 70', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 1.00; confianza 77.8%; exposición 3.92 vidas.
+Resultado: -3.92 vidas
 V1
 ❌ PERDIDA
-Poli Timisoara vs Csa Steaua Bucuresti
-No · cuota 1.61 · 10.00 vidas
-Modelo 89.7% · Implícita 62.3% · Edge +27.5%
-⏱ Tiempo de apuesta: 27' · marcador 0-0
-Motivo: V1 usa marcador, tiempo, xG y volumen de remates. Ventaja estadística: 27.5 puntos.
+CD Santo Domingo vs Portoviejo
+Menos de 2.5 · 2.5 · cuota 1.52 · 10.00 vidas
+Modelo 76.2% · Implícita 65.6% · Edge +10.7%
+⏱ Tiempo de apuesta: 70' · marcador 2-0
+Motivo: Menos de 2.5 2.5 elegido por V1: 76.2% de probabilidad frente a 65.6% implícita (+10.7 puntos de edge); 2-0 al 70', Nivel 1 · Muy fuerte; confianza 85.7%; exposición 10.00 vidas.
 Resultado: -10.00 vidas
+V2
+❌ PERDIDA
+CD Santo Domingo vs Portoviejo
+CD Santo Domingo · cuota 1.13 · 3.58 vidas
+Modelo 94.0% · Implícita 88.2% · Edge +5.8%
+⏱ Tiempo de apuesta: 68' · marcador 1-0
+Motivo: CD Santo Domingo elegido por V2: 94.0% de probabilidad frente a 88.2% implícita (+5.8 puntos de edge); 1-0 al 68', Nivel 3 · Moderada; confianza 62.9%; exposición 3.58 vidas; respaldo: Remates al arco: 2 vs 1, Marcador favorable: 1-0; cautelas: Posesión: 47 vs 53.
+Resultado: -3.58 vidas
+V1.1
+❌ PERDIDA
+CD Santo Domingo vs Portoviejo
+No · cuota 1.22 · 4.00 vidas
+Modelo 87.9% · Implícita 81.8% · Edge +6.1%
+⏱ Tiempo de apuesta: 68' · marcador 1-0
+Motivo: No elegido por V1.1: 87.9% de probabilidad frente a 81.8% implícita (+6.1 puntos de edge); 1-0 al 68', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 1.00; confianza 78.5%; exposición 4.00 vidas.
+Resultado: -4.00 vidas
+V2
+❌ PERDIDA
+Atlético de Cali vs Real Cartagena
+Real Cartagena · cuota 1.23 · 3.21 vidas
+Modelo 84.9% · Implícita 81.3% · Edge +3.7%
+⏱ Tiempo de apuesta: 64' · marcador 1-2
+Motivo: Real Cartagena elegido por V2: 84.9% de probabilidad frente a 81.2% implícita (+3.7 puntos de edge); 1-2 al 64', Nivel 3 · Moderada; confianza 59.3%; exposición 3.21 vidas; respaldo: Posesión: 46 vs 54, Marcador favorable: 1-2; cautelas: Remates al arco: 4 vs 2.
+Resultado: -3.21 vidas
+V2.1
+✅ GANADA
+Atlético Grau vs Chankas CYC
+Empate · cuota 2.25 · 3.72 vidas
+Modelo 56.9% · Implícita 44.4% · Edge +12.5%
+⏱ Tiempo de apuesta: 57' · marcador 0-0
+Motivo: Empate elegido por V2.1: 56.9% de probabilidad frente a 44.4% implícita (+12.5 puntos de edge); 0-0 al 57', Nivel 3 · Moderada; control temporal 1.00; confianza 65.8%; exposición 3.72 vidas; respaldo: Marcador empatado: 0-0; cautelas: xG: 0.28 vs 0.15, Remates al arco: 5 vs 0.
+Resultado: +4.65 vidas
+V2
+✅ GANADA
+Atlético Grau vs Chankas CYC
+Empate · cuota 2.25 · 3.90 vidas
+Modelo 59.6% · Implícita 44.4% · Edge +15.2%
+⏱ Tiempo de apuesta: 57' · marcador 0-0
+Motivo: Empate elegido por V2: 59.6% de probabilidad frente a 44.4% implícita (+15.2 puntos de edge); 0-0 al 57', Nivel 3 · Moderada; confianza 71.9%; exposición 3.90 vidas; respaldo: Marcador empatado: 0-0; cautelas: xG: 0.28 vs 0.15, Remates al arco: 5 vs 0.
+Resultado: +4.88 vidas
+V1.1
+✅ GANADA
+Atlético Grau vs Chankas CYC
+Empate · cuota 2.25 · 4.00 vidas
+Modelo 60.6% · Implícita 44.4% · Edge +16.1%
+⏱ Tiempo de apuesta: 57' · marcador 0-0
+Motivo: Empate elegido por V1.1: 60.6% de probabilidad frente a 44.4% implícita (+16.2 puntos de edge); 0-0 al 57', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 1.00; confianza 84.4%; exposición 4.00 vidas.
+Resultado: +5.00 vidas
+V1.1
+✅ GANADA
+Atlético de Cali vs Real Cartagena
+Empate · cuota 4.75 · 4.00 vidas
+Modelo 56.7% · Implícita 21.1% · Edge +35.7%
+⏱ Tiempo de apuesta: 62' · marcador 1-2
+Motivo: Empate elegido por V1.1: 56.7% de probabilidad frente a 21.1% implícita (+35.7 puntos de edge); 1-2 al 62', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 1.00; confianza 85.1%; exposición 4.00 vidas.
+Resultado: +15.00 vidas
+V1
+✅ GANADA
+Atlético de Cali vs Real Cartagena
+Empate · cuota 4.75 · 4.00 vidas
+Modelo 58.6% · Implícita 21.1% · Edge +37.6%
+⏱ Tiempo de apuesta: 62' · marcador 1-2
+Motivo: Empate elegido por V1: 58.6% de probabilidad frente a 21.1% implícita (+37.6 puntos de edge); 1-2 al 62', Nivel 3 · Moderada; confianza 95.0%; exposición 4.00 vidas.
+Resultado: +15.00 vidas
+V1
+✅ GANADA
+Atlético Grau vs Chankas CYC
+Empate · cuota 2.50 · 4.00 vidas
+Modelo 55.4% · Implícita 40.0% · Edge +15.4%
+⏱ Tiempo de apuesta: 50' · marcador 0-0
+Motivo: Empate elegido por V1: 55.4% de probabilidad frente a 40.0% implícita (+15.4 puntos de edge); 0-0 al 50', Nivel 3 · Moderada; confianza 90.4%; exposición 4.00 vidas.
+Resultado: +6.00 vidas
+V1.1
+✅ GANADA
+Portmore United vs Waterhouse
+Menos de 2.5 · 2.5 · cuota 2.60 · 4.00 vidas
+Modelo 55.4% · Implícita 38.5% · Edge +16.9%
+⏱ Tiempo de apuesta: 50' · marcador 1-1
+Motivo: Menos de 2.5 2.5 elegido por V1.1: 55.4% de probabilidad frente a 38.5% implícita (+16.9 puntos de edge); 1-1 al 50', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 0.94; confianza 82.2%; exposición 4.00 vidas.
+Resultado: +6.40 vidas
+V1
+✅ GANADA
+Portmore United vs Waterhouse
+Empate · cuota 2.15 · 4.00 vidas
+Modelo 60.0% · Implícita 46.5% · Edge +13.4%
+⏱ Tiempo de apuesta: 49' · marcador 1-1
+Motivo: Empate elegido por V1: 60.0% de probabilidad frente a 46.5% implícita (+13.5 puntos de edge); 1-1 al 49', Nivel 3 · Moderada; confianza 88.5%; exposición 4.00 vidas.
+Resultado: +4.60 vidas
 V2.2
-❌ PERDIDA
-RC Kouba vs USM El Harrach
-Menos de 2.5 · 2.5 · cuota 1.70 · 3.12 vidas
-Modelo 70.6% · Implícita 58.8% · Edge +11.8%
-⏱ Tiempo de apuesta: 66' · marcador 2-0
-Motivo: V2.2 calibra V2, exige consenso de indicadores y controla el minuto (66'). Edge calibrado: 11.8 puntos.
-Resultado: -3.12 vidas
-V2
-❌ PERDIDA
-RC Kouba vs USM El Harrach
-Menos de 2.5 · 2.5 · cuota 1.70 · 3.73 vidas
-Modelo 78.7% · Implícita 58.8% · Edge +19.8%
-⏱ Tiempo de apuesta: 66' · marcador 2-0
-Motivo: V2 combina xG/xGOT, remates, ataque, pases y contexto de marcador/tiempo. Ventaja estadística: 19.8 puntos.
-Resultado: -3.73 vidas
-V1
 ✅ GANADA
-RC Kouba vs USM El Harrach
-No · cuota 1.21 · 10.00 vidas
-Modelo 95.1% · Implícita 82.6% · Edge +12.5%
-⏱ Tiempo de apuesta: 66' · marcador 2-0
-Motivo: V1 usa marcador, tiempo, xG y volumen de remates. Ventaja estadística: 12.5 puntos.
-Resultado: +2.11 vidas
+CD Santo Domingo vs Portoviejo
+Empate · cuota 1.88 · 3.49 vidas
+Modelo 73.1% · Implícita 53.3% · Edge +19.7%
+⏱ Tiempo de apuesta: 46' · marcador 0-0
+Motivo: Empate elegido por V2.2: 73.1% de probabilidad frente a 53.3% implícita (+19.7 puntos de edge); 0-0 al 46', Nivel 3 · Moderada; consenso de indicadores 40.0%; confianza 58.3%; exposición 3.49 vidas; respaldo: Marcador empatado: 0-0, Remates al arco: 0 vs 1.
+Resultado: +3.05 vidas
+V2.1
+✅ GANADA
+CD Santo Domingo vs Portoviejo
+Empate · cuota 1.88 · 3.58 vidas
+Modelo 69.3% · Implícita 53.3% · Edge +15.9%
+⏱ Tiempo de apuesta: 46' · marcador 0-0
+Motivo: Empate elegido por V2.1: 69.2% de probabilidad frente a 53.3% implícita (+15.9 puntos de edge); 0-0 al 46', Nivel 3 · Moderada; control temporal 0.95; confianza 61.3%; exposición 3.58 vidas; respaldo: Marcador empatado: 0-0, Remates al arco: 0 vs 1.
+Resultado: +3.13 vidas
 V2
 ✅ GANADA
-Al-Shamal vs Al Duhail
-Al Duhail · cuota 1.36 · 3.96 vidas
-Modelo 76.8% · Implícita 73.3% · Edge +3.5%
-⏱ Tiempo de apuesta: 43' · marcador 0-1
-Motivo: V2 combina xG/xGOT, remates, ataque, pases y contexto de marcador/tiempo. Ventaja estadística: 3.5 puntos.
-Resultado: +1.44 vidas
-V1
+CD Santo Domingo vs Portoviejo
+Empate · cuota 1.88 · 3.74 vidas
+Modelo 78.1% · Implícita 53.3% · Edge +24.8%
+⏱ Tiempo de apuesta: 46' · marcador 0-0
+Motivo: Empate elegido por V2: 78.1% de probabilidad frente a 53.3% implícita (+24.8 puntos de edge); 0-0 al 46', Nivel 3 · Moderada; confianza 66.5%; exposición 3.74 vidas; respaldo: Marcador empatado: 0-0, Remates al arco: 0 vs 1.
+Resultado: +3.27 vidas
+V1.2
 ✅ GANADA
-Shabab Al-Ordon SC vs Al Baqaa
-No · cuota 1.40 · 7.00 vidas
-Modelo 78.7% · Implícita 71.4% · Edge +7.3%
-⏱ Tiempo de apuesta: 22' · marcador 0-0
-Motivo: V1 usa marcador, tiempo, xG y volumen de remates. Ventaja estadística: 7.3 puntos.
-Resultado: +2.80 vidas
+CD Santo Domingo vs Portoviejo
+Empate · cuota 1.88 · 4.00 vidas
+Modelo 65.1% · Implícita 53.3% · Edge +11.8%
+⏱ Tiempo de apuesta: 46' · marcador 0-0
+Motivo: Empate elegido por V1.2: 65.1% de probabilidad frente a 53.3% implícita (+11.8 puntos de edge); 0-0 al 46', Nivel 2 · Fuerte; mercado LIVE compatible con la evaluación ampliada de V1.2; confianza 86.8%; exposición 4.00 vidas.
+Resultado: +3.50 vidas
 V2
 ✅ GANADA
-Poli Timisoara vs Csa Steaua Bucuresti
-Menos de 2.5 · 2.5 · cuota 1.50 · 3.81 vidas
-Modelo 98.9% · Implícita 66.7% · Edge +32.3%
-⏱ Tiempo de apuesta: 27' · marcador 0-0
-Motivo: V2 combina xG/xGOT, remates, ataque, pases y contexto de marcador/tiempo. Ventaja estadística: 32.3 puntos.
-Resultado: +1.91 vidas
+São Paulo FC SP Sub-20 vs Paranaense Sub-20
+São Paulo FC SP Sub-20 · cuota 1.24 · 3.68 vidas
+Modelo 90.1% · Implícita 81.0% · Edge +9.2%
+⏱ Tiempo de apuesta: 48' · marcador 1-0
+Motivo: São Paulo FC SP Sub-20 elegido por V2: 90.1% de probabilidad frente a 81.0% implícita (+9.2 puntos de edge); 1-0 al 48', Nivel 3 · Moderada; confianza 64.5%; exposición 3.68 vidas; respaldo: Remates al arco: 2 vs 0, Posesión: 55 vs 45, Marcador favorable: 1-0.
+Resultado: +0.87 vidas
 V1.1
 ❌ PERDIDA
-Al-Shamal vs Al Duhail
-Menos de 2.5 · 2.5 · cuota 2.20 · 4.00 vidas
-Modelo 62.8% · Implícita 45.5% · Edge +17.4%
-⏱ Tiempo de apuesta: 43' · marcador 0-1
-Motivo: V1.1 calibra V1 hacia 50%, pondera el minuto (43') y penaliza extremos. Edge calibrado: 17.4 puntos.
-Resultado: -4.00 vidas
-V2
-❌ PERDIDA
-Duhok FC vs Al Zawraa
-Menos de 2.5 · 2.5 · cuota 2.05 · 3.52 vidas
-Modelo 93.0% · Implícita 48.8% · Edge +44.3%
-⏱ Tiempo de apuesta: 28' · marcador 1-0
-Motivo: V2 combina xG/xGOT, remates, ataque, pases y contexto de marcador/tiempo. Ventaja estadística: 44.3 puntos.
-Resultado: -3.52 vidas
-V2
-✅ GANADA
-Hapoel Nir Ramat Hasharon FC vs Hapoel Azor FC
-Menos de 2.5 · 2.5 · cuota 2.10 · 3.73 vidas
-Modelo 68.3% · Implícita 47.6% · Edge +20.7%
-⏱ Tiempo de apuesta: 25' · marcador 1-0
-Motivo: V2 combina xG/xGOT, remates, ataque, pases y contexto de marcador/tiempo. Ventaja estadística: 20.7 puntos.
-Resultado: +4.10 vidas
-V1.1
-❌ PERDIDA
-Poli Timisoara vs Csa Steaua Bucuresti
-No · cuota 1.61 · 7.00 vidas
-Modelo 76.6% · Implícita 62.3% · Edge +14.4%
-⏱ Tiempo de apuesta: 27' · marcador 0-0
-Motivo: V1.1 calibra V1 hacia 50%, pondera el minuto (27') y penaliza extremos. Edge calibrado: 14.4 puntos.
-Resultado: -7.00 vidas
-V1.1
-❌ PERDIDA
-Duhok FC vs Al Zawraa
-Menos de 2.5 · 2.5 · cuota 2.05 · 7.00 vidas
-Modelo 72.8% · Implícita 48.8% · Edge +24.0%
-⏱ Tiempo de apuesta: 28' · marcador 1-0
-Motivo: V1.1 calibra V1 hacia 50%, pondera el minuto (28') y penaliza extremos. Edge calibrado: 24.0 puntos.
-Resultado: -7.00 vidas
-V1
-❌ PERDIDA
-Al-Shamal vs Al Duhail
-Menos de 2.5 · 2.5 · cuota 2.20 · 4.00 vidas
-Modelo 67.5% · Implícita 45.5% · Edge +22.0%
-⏱ Tiempo de apuesta: 43' · marcador 0-1
-Motivo: V1 usa marcador, tiempo, xG y volumen de remates. Ventaja estadística: 22.0 puntos.
+São Paulo FC SP Sub-20 vs Paranaense Sub-20
+Empate · cuota 4.40 · 4.00 vidas
+Modelo 57.1% · Implícita 22.7% · Edge +34.4%
+⏱ Tiempo de apuesta: 48' · marcador 1-0
+Motivo: Empate elegido por V1.1: 57.1% de probabilidad frente a 22.7% implícita (+34.4 puntos de edge); 1-0 al 48', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 0.94; confianza 83.0%; exposición 4.00 vidas.
 Resultado: -4.00 vidas
 V1
+❌ PERDIDA
+São Paulo FC SP Sub-20 vs Paranaense Sub-20
+Empate · cuota 4.40 · 4.00 vidas
+Modelo 59.8% · Implícita 22.7% · Edge +37.0%
+⏱ Tiempo de apuesta: 48' · marcador 1-0
+Motivo: Empate elegido por V1: 59.8% de probabilidad frente a 22.7% implícita (+37.0 puntos de edge); 1-0 al 48', Nivel 3 · Moderada; confianza 95.0%; exposición 4.00 vidas.
+Resultado: -4.00 vidas
+V2.1
 ✅ GANADA
-Hapoel Urbani Karmiel vs Hapoel Tirat HaCarmel
-No · cuota 1.43 · 10.00 vidas
-Modelo 85.0% · Implícita 70.0% · Edge +15.0%
-⏱ Tiempo de apuesta: 22' · marcador 0-0
-Motivo: V1 usa marcador, tiempo, xG y volumen de remates. Ventaja estadística: 15.0 puntos.
-Resultado: +4.29 vidas
+Bentin Tacna Heroica vs Carlos Mannucci
+Empate · cuota 1.60 · 3.53 vidas
+Modelo 73.8% · Implícita 62.5% · Edge +11.3%
+⏱ Tiempo de apuesta: 72' · marcador 0-0
+Motivo: Empate elegido por V2.1: 73.8% de probabilidad frente a 62.5% implícita (+11.3 puntos de edge); 0-0 al 72', Nivel 3 · Moderada; control temporal 1.00; confianza 59.6%; exposición 3.53 vidas; respaldo: Marcador empatado: 0-0; cautelas: Remates al arco: 5 vs 2.
+Resultado: +2.12 vidas
+V2
+✅ GANADA
+Bentin Tacna Heroica vs Carlos Mannucci
+Empate · cuota 1.60 · 3.64 vidas
+Modelo 83.1% · Implícita 62.5% · Edge +20.6%
+⏱ Tiempo de apuesta: 72' · marcador 0-0
+Motivo: Empate elegido por V2: 83.1% de probabilidad frente a 62.5% implícita (+20.6 puntos de edge); 0-0 al 72', Nivel 3 · Moderada; confianza 63.3%; exposición 3.64 vidas; respaldo: Marcador empatado: 0-0; cautelas: Remates al arco: 5 vs 2.
+Resultado: +2.18 vidas
+V1.2
+✅ GANADA
+Bentin Tacna Heroica vs Carlos Mannucci
+Menos de 0.5 · 0.5 · cuota 1.68 · 7.00 vidas
+Modelo 67.4% · Implícita 59.5% · Edge +7.8%
+⏱ Tiempo de apuesta: 72' · marcador 0-0
+Motivo: Menos de 0.5 0.5 elegido por V1.2: 67.4% de probabilidad frente a 59.5% implícita (+7.8 puntos de edge); 0-0 al 72', Nivel 2 · Fuerte; mercado LIVE compatible con la evaluación ampliada de V1.2; confianza 82.8%; exposición 7.00 vidas.
+Resultado: +4.76 vidas
+V2.1
+✅ GANADA
+Portmore United vs Waterhouse
+Empate · cuota 2.13 · 3.55 vidas
+Modelo 70.1% · Implícita 47.1% · Edge +23.0%
+⏱ Tiempo de apuesta: 49' · marcador 1-1
+Motivo: Empate elegido por V2.1: 70.1% de probabilidad frente a 47.1% implícita (+23.0 puntos de edge); 1-1 al 49', Nivel 3 · Moderada; control temporal 0.95; confianza 60.2%; exposición 3.55 vidas; respaldo: Marcador empatado: 1-1.
+Resultado: +3.99 vidas
+V2
+✅ GANADA
+Portmore United vs Waterhouse
+Empate · cuota 2.13 · 3.69 vidas
+Modelo 79.4% · Implícita 47.1% · Edge +32.3%
+⏱ Tiempo de apuesta: 49' · marcador 1-1
+Motivo: Empate elegido por V2: 79.4% de probabilidad frente a 47.1% implícita (+32.3 puntos de edge); 1-1 al 49', Nivel 3 · Moderada; confianza 64.9%; exposición 3.69 vidas; respaldo: Marcador empatado: 1-1.
+Resultado: +4.15 vidas
+V1.1
+✅ GANADA
+Portmore United vs Waterhouse
+Empate · cuota 2.13 · 4.00 vidas
+Modelo 57.3% · Implícita 47.1% · Edge +10.2%
+⏱ Tiempo de apuesta: 49' · marcador 1-1
+Motivo: Empate elegido por V1.1: 57.3% de probabilidad frente a 47.1% implícita (+10.2 puntos de edge); 1-1 al 49', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 0.94; confianza 77.8%; exposición 4.00 vidas.
+Resultado: +4.50 vidas
 V1
 ✅ GANADA
-Poli Timisoara vs Csa Steaua Bucuresti
-Menos de 2.5 · 2.5 · cuota 1.50 · 10.00 vidas
-Modelo 94.2% · Implícita 66.7% · Edge +27.5%
-⏱ Tiempo de apuesta: 27' · marcador 0-0
-Motivo: V1 usa marcador, tiempo, xG y volumen de remates. Ventaja estadística: 27.5 puntos.
+Portmore United vs Waterhouse
+Menos de 2.5 · 2.5 · cuota 2.75 · 4.00 vidas
+Modelo 55.9% · Implícita 36.4% · Edge +19.5%
+⏱ Tiempo de apuesta: 49' · marcador 1-1
+Motivo: Menos de 2.5 2.5 elegido por V1: 55.9% de probabilidad frente a 36.4% implícita (+19.5 puntos de edge); 1-1 al 49', Nivel 3 · Moderada; confianza 94.5%; exposición 4.00 vidas.
+Resultado: +7.00 vidas
+V2.1
+✅ GANADA
+Maghreb Fez vs Raja Casablanca
+Empate · cuota 1.56 · 3.53 vidas
+Modelo 77.9% · Implícita 64.3% · Edge +13.6%
+⏱ Tiempo de apuesta: 76' · marcador 0-0
+Motivo: Empate elegido por V2.1: 77.9% de probabilidad frente a 64.3% implícita (+13.6 puntos de edge); 0-0 al 76', Nivel 3 · Moderada; control temporal 1.00; confianza 59.6%; exposición 3.53 vidas; respaldo: Marcador empatado: 0-0; cautelas: Remates al arco: 4 vs 2.
+Resultado: +1.96 vidas
+V2
+✅ GANADA
+Maghreb Fez vs Raja Casablanca
+Empate · cuota 1.56 · 3.64 vidas
+Modelo 88.7% · Implícita 64.3% · Edge +24.4%
+⏱ Tiempo de apuesta: 76' · marcador 0-0
+Motivo: Empate elegido por V2: 88.7% de probabilidad frente a 64.3% implícita (+24.4 puntos de edge); 0-0 al 76', Nivel 3 · Moderada; confianza 63.3%; exposición 3.64 vidas; respaldo: Marcador empatado: 0-0; cautelas: Remates al arco: 4 vs 2.
+Resultado: +2.02 vidas
+V1.1
+✅ GANADA
+Bentin Tacna Heroica vs Carlos Mannucci
+Empate · cuota 1.67 · 3.73 vidas
+Modelo 63.9% · Implícita 60.0% · Edge +3.9%
+⏱ Tiempo de apuesta: 69' · marcador 0-0
+Motivo: V1.1 calibra V1 hacia 50%, pondera el minuto (69') y penaliza extremos. Edge calibrado: 3.9 puntos.
+Resultado: +2.49 vidas
+V1
+✅ GANADA
+Bentin Tacna Heroica vs Carlos Mannucci
+Empate · cuota 1.67 · 4.00 vidas
+Modelo 67.8% · Implícita 60.0% · Edge +7.8%
+⏱ Tiempo de apuesta: 69' · marcador 0-0
+Motivo:
+Resultado: +2.67 vidas
+V1.2
+✅ GANADA
+Maghreb Fez vs Raja Casablanca
+Menos de 0.5 · 0.5 · cuota 1.72 · 5.00 vidas
+Modelo 73.5% · Implícita 58.1% · Edge +15.4%
+⏱ Tiempo de apuesta: 71' · marcador 0-0
+Motivo: V1.2 reutiliza V1 y amplía la evaluación LIVE a mercados compatibles. Cuota 1.72, edge 15.4 puntos.
+Resultado: +3.60 vidas
+V1.2
+✅ GANADA
+Maghreb Fez vs Raja Casablanca
+Empate · cuota 1.79 · 7.00 vidas
+Modelo 70.8% · Implícita 56.0% · Edge +14.8%
+⏱ Tiempo de apuesta: 68' · marcador 0-0
+Motivo: V1.2 reutiliza V1 y amplía la evaluación LIVE a mercados compatibles. Cuota 1.79, edge 14.8 puntos.
+Resultado: +5.50 vidas
+V1.1
+✅ GANADA
+Maghreb Fez vs Raja Casablanca
+Empate · cuota 1.80 · 4.00 vidas
+Modelo 65.2% · Implícita 55.6% · Edge +9.6%
+⏱ Tiempo de apuesta: 67' · marcador 0-0
+Motivo: V1.1 calibra V1 hacia 50%, pondera el minuto (67') y penaliza extremos. Edge calibrado: 9.6 puntos.
+Resultado: +3.20 vidas
+V2.1
+✅ GANADA
+Portmore United vs Waterhouse
+Menos de 2.5 · 2.5 · cuota 2.67 · 3.49 vidas
+Modelo 68.0% · Implícita 37.5% · Edge +30.5%
+⏱ Tiempo de apuesta: Descanso · marcador 1-1
+Motivo: V2.1 calibra V2 hacia 50% y controla el minuto (45'). Edge calibrado: 30.5 puntos.
+Resultado: +5.82 vidas
+V2
+✅ GANADA
+Portmore United vs Waterhouse
+Menos de 2.5 · 2.5 · cuota 2.67 · 3.61 vidas
+Modelo 76.3% · Implícita 37.5% · Edge +38.8%
+⏱ Tiempo de apuesta: Descanso · marcador 1-1
+Motivo: V2 combina xG/xGOT, remates, ataque, pases y contexto de marcador/tiempo. Ventaja estadística: 38.8 puntos.
+Resultado: +6.02 vidas
+V1.1
+✅ GANADA
+CD Santo Domingo vs Portoviejo
+Empate · cuota 2.05 · 4.00 vidas
+Modelo 60.4% · Implícita 48.8% · Edge +11.6%
+⏱ Tiempo de apuesta: 45' · marcador 0-0
+Motivo: V1.1 calibra V1 hacia 50%, pondera el minuto (45') y penaliza extremos. Edge calibrado: 11.6 puntos.
+Resultado: +4.20 vidas
+V1
+✅ GANADA
+Maghreb Fez vs Raja Casablanca
+Empate · cuota 2.25 · 4.00 vidas
+Modelo 61.5% · Implícita 44.4% · Edge +17.1%
+⏱ Tiempo de apuesta: 55' · marcador 0-0
+Motivo:
 Resultado: +5.00 vidas
 V1
+✅ GANADA
+CD Santo Domingo vs Portoviejo
+Empate · cuota 2.05 · 4.00 vidas
+Modelo 62.3% · Implícita 48.8% · Edge +13.5%
+⏱ Tiempo de apuesta: 43' · marcador 0-0
+Motivo:
+Resultado: +4.20 vidas
+V1.2
+⏳ ABIERTA
+Flamengo Sub-20 vs Vasco da Gama Sub-20
+Vasco da Gama Sub-20 · cuota 2.40 · 5.00 vidas
+Modelo 73.7% · Implícita 41.7% · Edge +32.1%
+⏱ Tiempo actual: 99' · marcador 2-2
+Motivo: V1.2 reutiliza V1 y amplía la evaluación LIVE a mercados compatibles. Cuota 2.40, edge 32.1 puntos.
+V2.2
+✅ GANADA
+Atlético Grau vs Chankas CYC
+No · cuota 1.43 · 6.86 vidas
+Modelo 78.8% · Implícita 69.7% · Edge +9.1%
+⏱ Tiempo de apuesta: 40' · marcador 0-0
+Motivo: V2.2 selecciona por valor, confianza, consenso, cobertura y momento. Score 0.475; edge 9.1%.
+Resultado: +2.98 vidas
+V2
 ❌ PERDIDA
-Duhok FC vs Al Zawraa
-Menos de 2.5 · 2.5 · cuota 2.05 · 10.00 vidas
-Modelo 84.0% · Implícita 48.8% · Edge +35.2%
-⏱ Tiempo de apuesta: 28' · marcador 1-0
-Motivo: V1 usa marcador, tiempo, xG y volumen de remates. Ventaja estadística: 35.2 puntos.
-Resultado: -10.00 vidas
+Atlético Grau vs Chankas CYC
+Chankas CYC · cuota 2.13 · 4.00 vidas
+Modelo 61.3% · Implícita 47.1% · Edge +14.3%
+⏱ Tiempo de apuesta: 39' · marcador 0-1
+Motivo: V2 combina xG/xGOT, remates, ataque, pases y contexto de marcador/tiempo. Ventaja estadística: 14.3 puntos.
+Resultado: -4.00 vidas
+V2.1
+✅ GANADA
+Atlético Grau vs Chankas CYC
+Menos de 2.5 · 2.5 · cuota 2.25 · 3.70 vidas
+Modelo 66.7% · Implícita 44.4% · Edge +22.3%
+⏱ Tiempo de apuesta: 39' · marcador 0-1
+Motivo: V2.1 calibra V2 hacia 50% y controla el minuto (39'). Edge calibrado: 22.3 puntos.
+Resultado: +4.63 vidas
+V2
+✅ GANADA
+Atlético Grau vs Chankas CYC
+Menos de 2.5 · 2.5 · cuota 2.25 · 6.94 vidas
+Modelo 74.5% · Implícita 44.4% · Edge +30.0%
+⏱ Tiempo de apuesta: 39' · marcador 0-1
+Motivo: V2 combina xG/xGOT, remates, ataque, pases y contexto de marcador/tiempo. Ventaja estadística: 30.0 puntos.
+Resultado: +8.68 vidas
+V1.1
+✅ GANADA
+Atlético Grau vs Chankas CYC
+Menos de 2.5 · 2.5 · cuota 2.25 · 7.00 vidas
+Modelo 71.9% · Implícita 44.4% · Edge +27.4%
+⏱ Tiempo de apuesta: 39' · marcador 0-1
+Motivo: V1.1 calibra V1 hacia 50%, pondera el minuto (39') y penaliza extremos. Edge calibrado: 27.4 puntos.
+Resultado: +8.75 vidas
+V1
+✅ GANADA
+Atlético Grau vs Chankas CYC
+Menos de 2.5 · 2.5 · cuota 2.25 · 7.00 vidas
+Modelo 79.8% · Implícita 44.4% · Edge +35.4%
+⏱ Tiempo de apuesta: 39' · marcador 0-1
+Motivo:
+Resultado: +8.75 vidas
+V1.2
+⚪ CANCELADA
+CD Santo Domingo vs Portoviejo
+Portoviejo · cuota 2.25 · 7.00 vidas
+Modelo 74.2% · Implícita 44.4% · Edge +29.7%
+⏱ Tiempo de apuesta: 33' · marcador 0-0
+Motivo: V1.2 reutiliza V1 y amplía la evaluación LIVE a mercados compatibles. Cuota 2.25, edge 29.7 puntos.
+V1.2
+✅ GANADA
+Atlético de Cali vs Real Cartagena
+Menos de 4.5 · 4.5 · cuota 1.84 · 5.00 vidas
+Modelo 85.2% · Implícita 54.4% · Edge +30.9%
+⏱ Tiempo de apuesta: 41' · marcador 1-1
+Motivo: V1.2 reutiliza V1 y amplía la evaluación LIVE a mercados compatibles. Cuota 1.84, edge 30.9 puntos.
+Resultado: +4.20 vidas
+V2.1
+❌ PERDIDA
+São Paulo FC SP Sub-20 vs Paranaense Sub-20
+Menos de 2.5 · 2.5 · cuota 2.15 · 3.46 vidas
+Modelo 78.6% · Implícita 46.5% · Edge +32.0%
+⏱ Tiempo de apuesta: 37' · marcador 1-0
+Motivo: V2.1 calibra V2 hacia 50% y controla el minuto (37'). Edge calibrado: 32.0 puntos.
+Resultado: -3.46 vidas
+V2
+❌ PERDIDA
+São Paulo FC SP Sub-20 vs Paranaense Sub-20
+Menos de 2.5 · 2.5 · cuota 2.15 · 3.55 vidas
+Modelo 91.8% · Implícita 46.5% · Edge +45.2%
+⏱ Tiempo de apuesta: 37' · marcador 1-0
+Motivo: V2 combina xG/xGOT, remates, ataque, pases y contexto de marcador/tiempo. Ventaja estadística: 45.2 puntos.
+Resultado: -3.55 vidas
+V1.1
+❌ PERDIDA
+São Paulo FC SP Sub-20 vs Paranaense Sub-20
+Menos de 2.5 · 2.5 · cuota 2.15 · 7.00 vidas
+Modelo 70.2% · Implícita 46.5% · Edge +23.7%
+⏱ Tiempo de apuesta: 37' · marcador 1-0
+Motivo: V1.1 calibra V1 hacia 50%, pondera el minuto (37') y penaliza extremos. Edge calibrado: 23.7 puntos.
+Resultado: -7.00 vidas
 V1
 ❌ PERDIDA
-Hapoel Nir Ramat Hasharon FC vs Hapoel Azor FC
-No · cuota 2.10 · 4.00 vidas
-Modelo 66.1% · Implícita 47.6% · Edge +18.5%
-⏱ Tiempo de apuesta: 25' · marcador 1-0
-Motivo: V1 usa marcador, tiempo, xG y volumen de remates. Ventaja estadística: 18.5 puntos.
-Resultado
+São Paulo FC SP Sub-20 vs Paranaense Sub-20
+Menos de 2.5 · 2.5 · cuota 2.15 · 7.00 vidas
+Modelo 77.5% · Implícita 46.5% · Edge +31.0%
+⏱ Tiempo de apuesta: 37' · marcador 1-0
+Motivo:
+Resultado: -7.00 vidas
+V1.2
+⏳ ABIERTA
+Atletico Rojiblanco vs San Antonio FC
+Menos de 3.5 · 3.5 · cuota 1.63 · 10.00 vidas
+Modelo 100.0% · Implícita 61.4% · Edge +38.6%
+⏱ Tiempo actual: No Iniciado · marcador 0-0
+Motivo: V1.2 reutiliza V1 y amplía la evaluación LIVE a mercados compatibles. Cuota 1.63, edge 38.7 puntos.
+V2.1
+✅ GANADA
+Atlético Grau vs Chankas CYC
+No · cuota 1.50 · 6.79 vidas
+Modelo 74.3% · Implícita 66.7% · Edge +7.6%
+⏱ Tiempo de apuesta: 34' · marcador 0-0
+Motivo: V2.1 calibra V2 hacia 50% y controla el minuto (34'). Edge calibrado: 7.6 puntos.
+Resultado: +3.40 vidas
+V1.2
+✅ GANADA
+Atlético Grau vs Chankas CYC
+Menos de 1.5 · 1.5 · cuota 2.30 · 2.00 vidas
+Modelo 81.3% · Implícita 43.5% · Edge +37.8%
+⏱ Tiempo de apuesta: 34' · marcador 0-0
+Motivo: V1.2 reutiliza V1 y amplía la evaluación LIVE a mercados compatibles. Cuota 2.30, edge 37.8 puntos.
+Resultado: +2.60 vidas
+V1.2
+❌ PERDIDA
+São Paulo FC SP Sub-20 vs Paranaense Sub-20
+No · cuota 1.50 · 2.00 vidas
+Modelo 91.2% · Implícita 66.7% · Edge +24.6%
+⏱ Tiempo de apuesta: 30' · marcador 0-0
+Motivo: V1.2 reutiliza V1 y amplía la evaluación LIVE a mercados compatibles. Cuota 1.50, edge 24.6 puntos.
+Resultado: -2.00 vidas
+V1.2
+✅ GANADA
+Portmore United vs Waterhouse
+Menos de 3.5 · 3.5 · cuota 1.70 · 5.00 vidas
+Modelo 80.1% · Implícita 58.8% · Edge +21.3%
+⏱ Tiempo de apuesta: 33' · marcador 1-1
+Motivo: V1.2 reutiliza V1 y amplía la evaluación LIVE a mercados compatibles. Cuota 1.70, edge 21.3 puntos.
+Resultado: +3.50 vidas
+V1.2
+⚪ CANCELADA
+Atlético de Cali vs Real Cartagena
+Atlético de Cali · cuota 2.33 · 7.00 vidas
+Modelo 74.0% · Implícita 42.9% · Edge +31.1%
+⏱ Tiempo de apuesta: 34' · marcador 1-1
+Motivo: V1.2 reutiliza V1 y amplía la evaluación LIVE a mercados compatibles. Cuota 2.33, edge 31.1 puntos.
+V1.1
+⏳ ABIERTA
+Atletico Rojiblanco vs San Antonio FC
+Empate · cuota 6.75 · 10.00 vidas
+Modelo 88.6% · Implícita 14.8% · Edge +73.8%
+⏱ Tiempo actual: No Iniciado · marcador 0-0
+Motivo: V1.1 calibra V1 hacia 50%, pondera el minuto (88') y penaliza extremos. Edge calibrado: 73.8 puntos.
+V1
+⏳ ABIERTA
+Atletico Rojiblanco vs San Antonio FC
+Empate · cuota 6.75 · 10.00 vidas
+Modelo 100.0% · Implícita 14.8% · Edge +85.2%
+⏱ Tiempo actual: No Iniciado · marcador 0-0
+Motivo:
+V1.2
+❌ PERDIDA
+São Paulo FC SP Sub-20 vs Paranaense Sub-20
+Menos de 1.5 · 1.5 · cuota 2.20 · 10.00 vidas
+Modelo 82.0% · Implícita 45.5% · Edge +36.5%
+⏱ Tiempo de apuesta: 30' · marcador 0-0
+Motivo: V1.2 reutiliza V1 y amplía la evaluación LIVE a mercados compatibles. Cuota 2.20, edge 36.5 puntos.
+Resultado: -10.00 vidas
+V1.1
+❌ PERDIDA
+São Paulo FC SP Sub-20 vs Paranaense Sub-20
+No · cuota 1.50 · 7.00 vidas
+Modelo 77.6% · Implícita 66.7% · Edge +11.0%
+⏱ Tiempo de apuesta: 30' · marcador 0-0
+Motivo: V1.1 calibra V1 hacia 50%, pondera el minuto (30') y penaliza extremos. Edge calibrado: 11.0 puntos.
+Resultado: -7.00 vidas
+V1
+❌ PERDIDA
+São Paulo FC SP Sub-20 vs Paranaense Sub-20
+No · cuota 1.50 · 10.00 vidas
+Modelo 91.2% · Implícita 66.7% · Edge +24.6%
+⏱ Tiempo de apuesta: 30' · marcador 0-0
+Motivo:
+Resultado: -10.00 vidas
+V1.2
+⏳ ABIERTA
+Flamengo Sub-20 vs Vasco da Gama Sub-20
+Menos de 3.5 · 3.5 · cuota 1.88 · 7.00 vidas
+Modelo 78.0% · Implícita 53.3% · Edge +24.6%
+⏱ Tiempo actual: 99' · marcador 2-2
+Motivo: V1.2 reutiliza V1 y amplía la evaluación LIVE a mercados compatibles. Cuota 1.88, edge 24.6 puntos.
+V1.1
+⏳ ABIERTA
+Flamengo Sub-20 vs Vasco da Gama Sub-20
+Empate · cuota 4.40 · 7.00 vidas
+Modelo 72.6% · Implícita 22.7% · Edge +49.9%
+⏱ Tiempo actual: 99' · marcador 2-2
+Motivo: V1.1 calibra V1 hacia 50%, pondera el minuto (72') y penaliza extremos. Edge calibrado: 49.9 puntos.
+V1
+⏳ ABIERTA
+Flamengo Sub-20 vs Vasco da Gama Sub-20
+Empate · cuota 4.40 · 7.00 vidas
+Modelo 79.0% · Implícita 22.7% · Edge +56.3%
+⏱ Tiempo actual: 99' · marcador 2-2
+Motivo:
+V2
+✅ GANADA
+Atlético Grau vs Chankas CYC
+No · cuota 1.59 · 6.97 vidas
+Modelo 79.2% · Implícita 63.0% · Edge +16.2%
+⏱ Tiempo de apuesta: 22' · marcador 0-0
+Motivo: V2 combina xG/xGOT, remates, ataque, pases y contexto de marcador/tiempo. Ventaja estadística: 16.2 puntos.
+Resultado: +4.10 vidas
+V1.2
+✅ GANADA
+Atlético Grau vs Chankas CYC
+No · cuota 1.59 · 10.00 vidas
+Modelo 85.1% · Implícita 63.0% · Edge +22.2%
+⏱ Tiempo de apuesta: 22' · marcador 0-0
+Motivo: V1.2 reutiliza V1 y amplía la evaluación LIVE a mercados compatibles. Cuota 1.59, edge 22.2 puntos.
+Resultado: +5.88 vidas
+V1.1
+✅ GANADA
+Atlético Grau vs Chankas CYC
+No · cuota 1.59 · 7.00 vidas
+Modelo 70.8% · Implícita 63.0% · Edge +7.9%
+⏱ Tiempo de apuesta: 22' · marcador 0-0
+Motivo: V1.1 calibra V1 hacia 50%, pondera el minuto (22') y penaliza extremos. Edge calibrado: 7.9 puntos.
+Resultado: +4.12 vidas
+V1
+✅ GANADA
+Atlético Grau vs Chankas CYC
+No · cuota 1.59 · 10.00 vidas
+Modelo 85.1% · Implícita 63.0% · Edge +22.2%
+⏱ Tiempo de apuesta: 22' · marcador 0-0
+Motivo:
+Resultado: +5.88 vidas
+V1
+❌ PERDIDA
+CD Santo Domingo vs Portoviejo
+No · cuota 1.21 · 10.00 vidas
+Modelo 92.5% · Implícita 82.6% · Edge +9.9%
+⏱ Tiempo de apuesta: 33' · marcador 0-0
+Motivo:
+Resultado: -10.00 vidas
+V1.2
+⚪ CANCELADA
+Portmore United vs Waterhouse
+Portmore United · cuota 1.68 · 7.00 vidas
+Modelo 70.5% · Implícita 59.5% · Edge +11.0%
+⏱ Tiempo de apuesta: 33' · marcador 1-1
+Motivo: V1.2 reutiliza V1 y amplía la evaluación LIVE a mercados compatibles. Cuota 1.68, edge 11.0 puntos.
