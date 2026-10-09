@@ -522,7 +522,7 @@ class LiveExperimentManager:
         text = market + " " + selection
         # Ultra score-derived markets: team totals and half-line handicaps.
         if any(x in text for x in ("team total", "goles del equipo", "goles equipo", "home team goals", "away team goals", "local total", "visitante total")):
-            number_match = re.search(r"([+-]?\\d+(?:[.,]\\d+)?)", f"{line} {text}")
+            number_match = re.search(r"([+-]?\d+(?:[.,]\d+)?)", f"{line} {text}")
             if number_match:
                 target = float(number_match.group(1).replace(",", "."))
                 home_name = str(experiment.home_team or "").casefold()
