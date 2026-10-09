@@ -1,4 +1,5 @@
 import os
+import time
 from typing import Any, Dict, List, Optional
 
 import requests
@@ -50,12 +51,23 @@ class FlashscoreClient:
             }
         )
 
+    def _get_with_retries(self, url: str, params=None):
+        """Reintenta brevemente errores transitorios de red/TLS."""
+        last_error = None
+        for attempt in range(3):
+            try:
+                return self.session.get(url, params=params, timeout=self.timeout)
+            except requests.exceptions.RequestException as exc:
+                last_error = exc
+                if attempt == 2:
+                    break
+                time.sleep(0.25 * (2 ** attempt))
+        raise FlashscoreAPIError(
+            f"Fallo de conexión con Flashscore tras 3 intentos: {last_error}"
+        ) from last_error
+
     def _request(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        response = self.session.get(
-            self.BASE_URL,
-            params=params,
-            timeout=self.timeout,
-        )
+        response = self._get_with_retries(self.BASE_URL, params=params)
         try:
             payload = response.json()
         except ValueError as exc:
@@ -77,7 +89,7 @@ class FlashscoreClient:
 
 
     def _feed_request(self, url: Optional[str] = None) -> str:
-        response = self.session.get(url or self.LIVE_FEED_URL, timeout=self.timeout)
+        response = self._get_with_retries(url or self.LIVE_FEED_URL)
         if response.status_code >= 400:
             raise FlashscoreAPIError(
                 f"Flashscore feed HTTP {response.status_code}: {response.text[:300]}"
