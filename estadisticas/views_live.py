@@ -5,6 +5,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.db import transaction
 import logging
+import time
 from concurrent.futures import ThreadPoolExecutor
 from threading import Thread
 
@@ -530,7 +531,7 @@ def _experimento_estado_global():
 
         # Detecta partidos LIVE nuevos mientras el laboratorio ya está activo.
         # El mapeo automático solo se hace para partidos que todavía no existen.
-        if running:
+        if running or cache.get("live_experiment_worker_enabled"):
             running_ids = {int(x.ecuabet_event_id) for x in running}
             for event in live_events:
                 if event.get("id") is None:
@@ -807,6 +808,27 @@ def _crear_experimento_desde_evento(event):
         close_old_connections()
 
 
+def _bucle_laboratorio_live():
+    """Mantiene el análisis LIVE activo sin depender del sondeo del navegador."""
+    from django.db import close_old_connections
+
+    intervalo = max(3, int(getattr(settings, "LIVE_EXPERIMENT_CYCLE_SECONDS", 5)))
+    try:
+        while cache.get("live_experiment_worker_enabled"):
+            close_old_connections()
+            try:
+                state = _experimento_estado_global()
+                cache.set("live_experiment_state_payload", state, max(30, intervalo * 6))
+                logger.info("Ciclo LIVE: %s partidos, %s experimentos, %s entradas.", state.get("live_count", 0), len(state.get("experiments", [])), len(state.get("entries", [])))
+            except Exception:
+                logger.exception("Falló un ciclo continuo del laboratorio LIVE.")
+            finally:
+                close_old_connections()
+            time.sleep(intervalo)
+    finally:
+        cache.delete("live_experiment_worker_enabled")
+        close_old_connections()
+
 def _iniciar_laboratorio_live_en_segundo_plano():
     """Hace el mapeo y el primer análisis fuera de la petición HTTP."""
     from django.db import close_old_connections
@@ -875,11 +897,16 @@ def _iniciar_laboratorio_live_en_segundo_plano():
     finally:
         cache.delete("live_experiment_starting")
         close_old_connections()
+        if cache.get("live_experiment_worker_enabled"):
+            Thread(target=_bucle_laboratorio_live, name="live-laboratory-cycle", daemon=True).start()
 
 
 def api_live_experiment_start_all(request):
     if request.method != "POST":
         return JsonResponse({"ok": False, "error": "Método no permitido."}, status=405)
+
+    if cache.get("live_experiment_worker_enabled"):
+        return JsonResponse({"ok": True, "running": True, "starting": False, "busy": True, "start_message": "El análisis continuo ya está activo."})
 
     if not cache.add("live_experiment_starting", True, 300):
         return JsonResponse({
@@ -893,6 +920,8 @@ def api_live_experiment_start_all(request):
 
     try:
         cache.delete("live_experiment_start_result")
+        cache.delete("live_experiment_state_payload")
+        cache.set("live_experiment_worker_enabled", True, 3600)
         worker = Thread(
             target=_iniciar_laboratorio_live_en_segundo_plano,
             name="live-laboratory-start",
@@ -916,6 +945,7 @@ def api_live_experiment_stop_all(request):
     if request.method != "POST":
         return JsonResponse({"ok": False, "error": "Método no permitido."}, status=405)
     try:
+        cache.delete("live_experiment_worker_enabled")
         running = list(LiveExperiment.objects.filter(status="RUNNING"))
         stopped = 0
         for experiment in running:
@@ -934,8 +964,17 @@ def api_live_experiment_state(request):
     if request.method != "GET":
         return JsonResponse({"ok": False, "error": "Método no permitido."}, status=405)
     try:
-        return JsonResponse(_experimento_estado_global())
+        if cache.get("live_experiment_worker_enabled") and request.GET.get("fresh") != "1":
+            snapshot = cache.get("live_experiment_state_payload")
+            if snapshot is not None:
+                return JsonResponse(snapshot)
+            return JsonResponse({"ok": True, "running": True, "starting": True, "busy": True, "experiments": [], "entries": [], "live_count": 0, "processing_errors": [], "start_message": "El motor está preparando el primer ciclo de análisis LIVE."})
+        state = _experimento_estado_global()
+        if cache.get("live_experiment_worker_enabled"):
+            cache.set("live_experiment_state_payload", state, 120)
+        return JsonResponse(state)
     except Exception as exc:
+        logger.exception("Error obteniendo estado del laboratorio LIVE.")
         return JsonResponse({"ok": False, "error": str(exc)}, status=502)
 
 
