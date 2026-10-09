@@ -699,6 +699,18 @@ class LiveExperimentManager:
                 Decimal(str(cls.INITIAL_LIVES)) + total_pnl,
             )
             available_lives = max(Decimal("0"), total_capital - open_staked)
+            settled_entries = [e for e in motor_entries if e.status in {"WON", "LOST"}]
+            brier_score = (
+                sum((float(e.model_probability) - (1.0 if e.status == "WON" else 0.0)) ** 2 for e in settled_entries)
+                / len(settled_entries)
+            ) if settled_entries else None
+            log_loss = (
+                sum(
+                    -((1.0 if e.status == "WON" else 0.0) * __import__("math").log(max(0.0001, min(0.9999, float(e.model_probability))))
+                    + (0.0 if e.status == "WON" else 1.0) * __import__("math").log(1 - max(0.0001, min(0.9999, float(e.model_probability)))))
+                    for e in settled_entries
+                ) / len(settled_entries)
+            ) if settled_entries else None
             motors[motor] = {
                 "label": cls.LABELS[motor],
                 "decisions": len(motor_entries),
@@ -717,6 +729,8 @@ class LiveExperimentManager:
                 "min_lives": float(min(curve)),
                 "roi": float((total_pnl / total_staked) * 100) if total_staked else 0.0,
                 "hit_rate": float((sum(1 for e in motor_entries if e.status == "WON") / max(1, sum(1 for e in motor_entries if e.status in {"WON", "LOST"}))) * 100),
+                "brier_score": brier_score,
+                "log_loss": log_loss,
                 "best_level": best.level if best else 0,
                 "best_probability": float(best.model_probability) if best else 0,
                 "best_selection": best.selection if best else "",
