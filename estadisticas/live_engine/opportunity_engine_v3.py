@@ -11,6 +11,10 @@ import re
 import statistics
 from typing import Any, Dict, List
 
+from django.utils import timezone
+
+from ..models import LiveExperimentEntry
+
 from .opportunity_levels import enrich
 
 
@@ -81,6 +85,26 @@ class LiveOpportunityEngineV3:
         return min(90.0, max(1.0, minute))
 
     @classmethod
+    def _historical_market_rate(cls, market: str, probability: float):
+        """Calibración empírica usando solo apuestas V3 ya liquidadas antes de ahora."""
+        lower = max(0.01, probability - 0.10)
+        upper = min(0.99, probability + 0.10)
+        history = LiveExperimentEntry.objects.filter(
+            motor="V3",
+            market=market,
+            status__in=("WON", "LOST"),
+            placed_at__lt=timezone.now(),
+            model_probability__gte=lower,
+            model_probability__lte=upper,
+        )
+        total = history.count()
+        if total < 20:
+            return None, total
+        wins = history.filter(status="WON").count()
+        # Suavizado Beta(1,1) evita que muestras finitas creen probabilidades 0/100%.
+        return (wins + 1) / (total + 2), total
+
+    @classmethod
     def evaluate(cls, match) -> List[Dict[str, Any]]:
         if getattr(match, "is_finished", False):
             return []
@@ -122,6 +146,12 @@ class LiveOpportunityEngineV3:
             # Proxy conservador hasta que exista un conjunto histórico suficiente
             # y estrictamente anterior al partido para calibración empírica.
             calibrated = 0.70 * median_p + 0.30 * fair_p
+            historical_rate, historical_n = cls._historical_market_rate(
+                str(exemplar.get("market") or ""), median_p
+            )
+            if historical_rate is not None:
+                empirical_weight = 0.50 if historical_n >= 50 else 0.35
+                calibrated = (1 - empirical_weight) * calibrated + empirical_weight * historical_rate
             calibrated = max(0.02, min(0.98, calibrated))
             raw_implied = 1.0 / price
             edge = calibrated - fair_p
@@ -157,7 +187,8 @@ class LiveOpportunityEngineV3:
                 "edge_pct": round(conservative_edge * 100, 2),
                 "confidence": round(confidence, 3),
                 "model": "v3_conservative_ensemble",
-                "calibration": "market_shrinkage_proxy_pending_historical_validation",
+                "calibration": "historical_market_calibration" if historical_rate is not None else "market_shrinkage_proxy_pending_20_settled_v3_bets",
+                "calibration_sample": historical_n,
                 "calibration_sources": [label for label, _ in observations],
                 "consensus_score": round(consensus, 3),
                 "model_dispersion": round(dispersion, 4),
@@ -175,7 +206,7 @@ class LiveOpportunityEngineV3:
                     f"dispersión {dispersion*100:.1f} puntos, minuto {elapsed:.0f}'. "
                     + ("Edge extremo sometido a validación adicional. " if extreme else "")
                     + ("Candidata excepcional para una tercera apuesta, sujeta a límites de riesgo. " if exceptional else "")
-                    + ("Estimación de calibración provisional; requiere validación histórica fuera de muestra. " if len(observations) < 3 else "")
+                    + (f"Calibración empírica de mercado con {historical_n} apuestas V3 liquidadas. " if historical_rate is not None else f"Calibración provisional: {historical_n}/20 apuestas históricas V3 liquidadas en el rango. ")
                 ),
             })
             prepared = enrich(prepared)
