@@ -529,32 +529,59 @@ def _experimento_estado_global():
             LiveExperiment.objects.filter(status="RUNNING").order_by("-started_at")
         )
 
-        # Detecta partidos LIVE nuevos mientras el laboratorio ya está activo.
-        # El mapeo automático solo se hace para partidos que todavía no existen.
-        if running or cache.get("live_experiment_worker_enabled"):
-            running_ids = {int(x.ecuabet_event_id) for x in running}
-            for event in live_events:
-                if event.get("id") is None:
-                    continue
-                event_id = int(event["id"])
-                if event_id in running_ids:
-                    continue
-                try:
-                    match = collector.construir_automatico(event_id)
-                    if match.is_finished:
-                        continue
-                    experiment = LiveExperimentManager.start(match)
-                    running.append(experiment)
-                    running_ids.add(event_id)
-                except Exception as exc:
-                    logger.exception(
-                        "No se pudo incorporar el nuevo LIVE %s al laboratorio.",
-                        event_id,
-                    )
-
-        # Este es el cambio importante: un solo GetLivenow por ciclo y
-        # reutilización del flashscore_event_id ya confirmado.
+        # Primero analizar los experimentos ya vinculados: un partido nuevo que tarde
+        # en mapearse nunca debe bloquear las apuestas de los partidos que ya corren.
         processing_errors = _procesar_experimentos_live(live_events, running)
+
+        # Descubrir eventos nuevos en paralelo y aplicar backoff a vinculaciones
+        # fallidas para no repetir decenas de llamadas lentas en cada ciclo.
+        mapping_errors = []
+        if cache.get("live_experiment_worker_enabled"):
+            running_ids = {int(x.ecuabet_event_id) for x in running}
+            candidates = [
+                event for event in live_events
+                if event.get("id") is not None
+                and int(event["id"]) not in running_ids
+                and not cache.get(f"live_experiment_map_retry:{int(event['id'])}")
+            ]
+            def map_event(event):
+                from django.db import close_old_connections
+                event_id = int(event["id"])
+                try:
+                    close_old_connections()
+                    result = _crear_experimento_desde_evento(event)
+                    if result.get("created"):
+                        cache.delete(f"live_experiment_map_retry:{event_id}")
+                    elif result.get("error"):
+                        cache.set(f"live_experiment_map_retry:{event_id}", True, 45)
+                    return result
+                finally:
+                    close_old_connections()
+
+            if candidates:
+                with ThreadPoolExecutor(
+                    max_workers=min(6, len(candidates)),
+                    thread_name_prefix="live-map-cycle",
+                ) as executor:
+                    for result in executor.map(map_event, candidates):
+                        if result.get("created") and result.get("experiment"):
+                            running.append(result["experiment"])
+                        elif result.get("error"):
+                            mapping_errors.append({
+                                "event_id": result.get("event_id"),
+                                "match": result.get("match"),
+                                "error": result.get("error"),
+                            })
+            # Ejecutar también el primer análisis de los experimentos recién creados.
+            newly_created = [
+                exp for exp in running
+                if int(exp.ecuabet_event_id) in {
+                    int(event["id"]) for event in candidates
+                    if event.get("id") is not None
+                }
+            ]
+            if newly_created:
+                processing_errors.extend(_procesar_experimentos_live(live_events, newly_created))
 
         finalized_matches = []
         pending_final_count = 0
@@ -644,6 +671,8 @@ def _experimento_estado_global():
             ],
             "pending_final_count": pending_final_count,
             "processing_errors": processing_errors[:20],
+            "mapping_errors": mapping_errors[:20],
+            "mapping_error_count": len(mapping_errors),
             "startup_result": cache.get("live_experiment_start_result"),
             "busy": False,
         }
@@ -792,6 +821,7 @@ def _crear_experimento_desde_evento(event):
             "experiment": experiment,
         }
     except Exception as exc:
+        cache.set(f"live_experiment_map_retry:{event_id}", True, 45)
         logger.exception(
             "No se pudo iniciar experimento para Ecuabet %s (%s).",
             event_id,
