@@ -186,7 +186,7 @@ class LiveExperimentManager:
             votes = int(opportunity.get("consensus_votes") or 0)
             support_ratio = float(opportunity.get("consensus_support_ratio") or 0)
             if votes < 3:
-                return f"Espía rechaza: consenso insuficiente ({votes}/6 fuentes independientes; mínimo 3; V4 no suma voto por derivar de V1.1)."
+                return f"Espía rechaza: consenso insuficiente ({votes}/7 motores visibles; mínimo 3)."
             if support_ratio < 0.60:
                 return f"Espía rechaza: respaldo de {support_ratio * 100:.1f}% inferior al 60%."
             if cls._level(opportunity) not in {1, 2}:
@@ -348,10 +348,10 @@ class LiveExperimentManager:
                 "consensus_support_ratio": round(support_ratio, 6),
                 "consensus_total_voters": total_voters,
                 "consensus_motors": supporting_motors, "opposing_motors": opposing_motors,
-                "v4_confirmation": key in v4_keys,
-                "supporting_factors": ["Respaldo independiente: " + motor for motor in supporting_motors],
+                "v4_confirmation": "V4" in supporting_motors,
+                "supporting_factors": ["Motor a favor: " + motor for motor in supporting_motors],
                 "contradicting_factors": ["Señal contraria: " + motor for motor in opposing_motors],
-                "reason": "Consenso del Espía: " + ", ".join(supporting_motors) + ("; V4 también confirma, sin sumar voto independiente" if key in v4_keys else ""),
+                "reason": "Consenso del Espía: " + ", ".join(supporting_motors),
                 "spy_market_family": family_line,
             })
             result.append(candidate)
@@ -538,9 +538,9 @@ class LiveExperimentManager:
             ratio = float(opportunity.get("consensus_support_ratio") or 0) * 100
             supporters = ", ".join(opportunity.get("consensus_motors") or [])
             return (
-                f"Espía apuesta {selection}{line_text}: consenso independiente {votes}/6 fuentes (7 motores observados; V4 es confirmación no independiente; {ratio:.0f}% de respaldo; {supporters}); "
+                f"Espía apuesta {selection}{line_text}: consenso de {votes}/7 motores visibles ({ratio:.0f}% de respaldo; {supporters}); "
                 f"probabilidad agregada {model_p * 100:.1f}%, edge {edge * 100:+.1f} puntos, confianza media {confidence * 100:.1f}%; "
-                f"stake {stake:.2f} vida. Solo una apuesta por partido y capital independiente de 50 vidas. "
+                f"stake dinámico {stake:.2f} vidas según consenso, confianza y edge; puede usar de 1 hasta todo el capital disponible (50 vidas iniciales). Solo una apuesta por partido. "
                 f"Contexto LIVE: minuto {minute_text}, marcador {score}."
             )
         probability_text = f"{model_p * 100:.1f}%"
