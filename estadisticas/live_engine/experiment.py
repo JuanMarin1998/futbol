@@ -58,35 +58,108 @@ class LiveExperimentManager:
             status="RUNNING",
         )
 
-    @classmethod
-    def _calibrate_v4_probability(cls, raw_probability: float):
-        """Calibración prudente para V4 usando solo resultados V1.1 ya liquidados."""
-        raw_probability = max(0.0, min(1.0, float(raw_probability)))
-        rows = list(
-            LiveExperimentEntry.objects.filter(
-                motor="V11", status__in=("WON", "LOST")
-            ).order_by("-placed_at").values_list("model_probability", "status")[:1000]
-        )
-        bucket = min(9, int(raw_probability * 10))
-        matched = []
-        for probability, status in rows:
-            try:
-                p = max(0.0, min(1.0, float(probability)))
-            except (TypeError, ValueError):
-                continue
-            if min(9, int(p * 10)) == bucket:
-                matched.append(1.0 if status == "WON" else 0.0)
-        sample_size = len(matched)
-        if sample_size >= 20:
-            calibrated = (sum(matched) + 20.0 * raw_probability) / (sample_size + 20.0)
-            method = "bin_historico_suavizado"
+    @staticmethod
+    def _v4_market_selection_key(opportunity):
+        """Familia y selección comparables; no mezcla empate con victoria ni goles."""
+        key = LiveExperimentManager._key(opportunity).split("|")
+        market = key[0] if key else ""
+        selection = key[1] if len(key) > 1 else ""
+        if market in {"resultado", "1x2", "ganador"}:
+            family = "resultado"
+        elif market in {"doble oportunidad"}:
+            family = "doble_oportunidad"
+        elif market in {"ambos marcan"}:
+            family = "ambos_marcan"
+        elif market in {"total goles"}:
+            family = "total_goles"
         else:
-            calibrated = 0.5 + (raw_probability - 0.5) * 0.70
-            method = "encogimiento_provisional_hacia_50"
-        return round(max(0.02, min(0.98, calibrated)), 6), sample_size, method
+            family = market
+        return family, selection
 
     @classmethod
-    def _prepare_opportunities(cls, motor: str, opportunities):
+    def _calibrate_v4_probability(cls, raw_probability: float, opportunity, market_probability: float):
+        """Calibra solo con apuestas V1.1 liquidadas del mismo mercado y selección.
+
+        Si no hay una muestra comparable suficiente, no finge precisión: aproxima
+        la probabilidad al mercado y devuelve una muestra insuficiente, que V4
+        rechazará en sus filtros de elegibilidad.
+        """
+        raw_probability = max(0.0, min(1.0, float(raw_probability)))
+        market_probability = max(0.01, min(0.99, float(market_probability)))
+        target_key = cls._v4_market_selection_key(opportunity)
+        rows = LiveExperimentEntry.objects.filter(
+            motor="V11", status__in=("WON", "LOST")
+        ).order_by("-placed_at").values_list(
+            "market", "selection", "model_probability", "status"
+        )[:2000]
+        matched = []
+        for market, selection, probability, status in rows:
+            if cls._v4_market_selection_key({"market": market, "selection": selection}) != target_key:
+                continue
+            try:
+                probability = max(0.0, min(1.0, float(probability)))
+            except (TypeError, ValueError):
+                continue
+            matched.append((probability, 1.0 if status == "WON" else 0.0))
+
+        sample_size = len(matched)
+        if sample_size >= 20:
+            # Calibración empírica suavizada con prior de mercado, no con el
+            # porcentaje bruto potencialmente inflado del propio modelo.
+            prior_weight = 20.0
+            observed_rate = sum(result for _, result in matched) / sample_size
+            calibrated = (
+                sample_size * observed_rate + prior_weight * market_probability
+            ) / (sample_size + prior_weight)
+            method = "mercado_seleccion_especifica_suavizado"
+        else:
+            # Sin evidencia comparable suficiente, no se declara edge real.
+            calibrated = 0.5 * raw_probability + 0.5 * market_probability
+            method = "provisional_retraida_al_mercado_muestra_insuficiente"
+        return round(max(0.02, min(0.98, calibrated)), 6), sample_size, method
+
+    @staticmethod
+    def _v4_minute(match):
+        """Extrae el minuto de feeds como 86', 90+2 o 45+1."""
+        raw = str(getattr(match, "minute", "") or "").strip()
+        found = re.search(r"(\d{1,3})(?:\s*\+\s*(\d{1,2}))?", raw)
+        if not found:
+            return None
+        minute = int(found.group(1))
+        added = int(found.group(2) or 0)
+        return min(130, minute + added)
+
+    @staticmethod
+    def _v4_is_draw(opportunity):
+        market, selection = LiveExperimentManager._v4_market_selection_key(opportunity)
+        return market == "resultado" and selection == "x"
+
+    @classmethod
+    def _v4_live_context_reason(cls, opportunity, match):
+        """Evita señales de empate que contradicen un marcador tardío."""
+        if not cls._v4_is_draw(opportunity):
+            return ""
+        try:
+            home_score = int(match.home_score)
+            away_score = int(match.away_score)
+        except (TypeError, ValueError):
+            return "V4 descarta el empate: marcador LIVE no verificable."
+        minute = cls._v4_minute(match)
+        if minute is not None and minute >= 75 and home_score != away_score:
+            return (
+                f"V4 descarta el empate: al minuto {minute}, el marcador "
+                f"{home_score}-{away_score} no está igualado; la señal contradice "
+                "el estado actual del partido."
+            )
+        if minute is not None and minute >= 60 and abs(home_score - away_score) >= 2:
+            return (
+                f"V4 descarta el empate: diferencia de {abs(home_score - away_score)} "
+                f"goles al minuto {minute}; riesgo tardío demasiado alto."
+            )
+        return ""
+
+    @classmethod
+    def _prepare_opportunities(cls, motor: str, opportunities, match=None):
         """Añade metadatos de nivel solo en la capa del laboratorio.
 
         V1 y V2 permanecen como motores base originales. Los niveles usados
@@ -104,12 +177,29 @@ class LiveExperimentManager:
 
             if motor == "V4":
                 raw_probability = model_probability
-                model_probability, calibration_n, calibration_method = cls._calibrate_v4_probability(raw_probability)
+                if price <= 1:
+                    continue
+                implied_for_calibration = 1.0 / price
+                market_probability = opportunity.get("market_fair_probability")
+                try:
+                    market_probability = float(market_probability) if market_probability is not None else implied_for_calibration
+                except (TypeError, ValueError):
+                    market_probability = implied_for_calibration
+                if not 0 < market_probability < 1:
+                    market_probability = implied_for_calibration
+                model_probability, calibration_n, calibration_method = cls._calibrate_v4_probability(
+                    raw_probability, opportunity, market_probability
+                )
                 opportunity["raw_model_probability"] = round(raw_probability, 6)
                 opportunity["model_probability"] = model_probability
                 opportunity["calibration_sample_size"] = calibration_n
                 opportunity["calibration_method"] = calibration_method
                 opportunity["calibration_adjustment"] = round(model_probability - raw_probability, 6)
+                opportunity["v4_market_probability_used"] = round(market_probability, 6)
+                if match is not None:
+                    context_reason = cls._v4_live_context_reason(opportunity, match)
+                    if context_reason:
+                        opportunity["v4_context_rejection"] = context_reason
 
             # Si el motor no ofrece cuotas completas para una probabilidad justa,
             # se usa la probabilidad implícita y se deja registrada esa limitación.
@@ -201,18 +291,25 @@ class LiveExperimentManager:
         if motor == "V4":
             if opportunity.get("unsupported_market"):
                 return "Descartada V4: mercado sin probabilidad verificable para calibrar y liquidar."
+            if opportunity.get("v4_context_rejection"):
+                return str(opportunity["v4_context_rejection"])
             if Decimal(str(opportunity.get("price") or 0)) < Decimal("1.25"):
                 return "Descartada V4: cuota inferior a 1.25."
+            calibration_n = int(opportunity.get("calibration_sample_size") or 0)
+            if calibration_n < 20:
+                return (
+                    "Descartada V4: solo hay "
+                    f"{calibration_n} resultados V1.1 liquidados del mismo mercado y selección; "
+                    "se requieren al menos 20 para estimar una probabilidad calibrada."
+                )
             if cls._level(opportunity) not in {1, 2}:
                 return "Descartada V4: solo acepta niveles 1 y 2."
             edge_v4 = float(opportunity.get("edge") or 0)
             confidence_v4 = float(opportunity.get("confidence") or 0)
-            calibration_n = int(opportunity.get("calibration_sample_size") or 0)
-            minimum_edge = 0.07 if calibration_n < 20 else 0.05
-            if edge_v4 < minimum_edge:
-                return f"Descartada V4: edge {edge_v4 * 100:.1f} puntos inferior al mínimo {minimum_edge * 100:.1f} (muestra de calibración: {calibration_n})."
-            if confidence_v4 < 0.55:
-                return "Descartada V4: confianza inferior al 55%."
+            if edge_v4 < 0.05:
+                return f"Descartada V4: edge calibrado {edge_v4 * 100:.1f} puntos inferior al mínimo 5.0."
+            if confidence_v4 < 0.60:
+                return "Descartada V4: confianza inferior al 60%."
         # Este control va antes de los filtros de nivel: una repetición debe
         # quedar identificada como tal aunque su señal haya cambiado de nivel.
         if LiveExperimentEntry.objects.filter(
@@ -889,7 +986,7 @@ class LiveExperimentManager:
                 opportunities = [] if match_is_final else cls._spy_opportunities(opportunities_by_motor)
             else:
                 opportunities = [] if match_is_final else cls._prepare_opportunities(
-                    motor, getattr(match, cls.OPPORTUNITY_ATTRS[motor], []) or []
+                    motor, getattr(match, cls.OPPORTUNITY_ATTRS[motor], []) or [], match=match
                 )
             opportunities_by_motor[motor] = opportunities
             lives_before = cls._ledger_lives(experiment, motor)
