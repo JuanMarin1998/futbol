@@ -46,6 +46,13 @@ class UltraMarketEvaluator:
         selection = str(odd.get("name") or "")
         text = f"{market} {selection}".casefold()
         line = cls._line(odd)
+        # Segment-specific odds cannot be priced/settled from the full-time score.
+        if any(token in text for token in (
+            "first half", "1st half", "primer tiempo", "primera parte", "primera mitad",
+            "1er tiempo", "1ª parte", "2nd half", "second half", "segunda parte",
+            "half time", "half-time", "ht result", "period 1", "period 2",
+        )):
+            return None, None
         # Common score-derived markets already supported by V1.2.
         # Team totals must be handled before the generic total-goals mapper.
         if any(token in text for token in ("team total", "goles del equipo", "goles equipo", "home team goals", "away team goals", "local total", "visitante total")) and line is not None:
@@ -240,8 +247,10 @@ class UltraMarketEvaluator:
                 raw_fields = {"raw_model_probability": round(raw_probability, 4), "temporal_factor": round(temporal, 3), "calibration": "shrink_to_50_v1_1_ultra"}
             else:
                 signal_key = key if key in {"home", "draw", "away", "over_2_5", "under_2_5", "btts_yes", "btts_no"} else (
-                    "over_2_5" if key in {"over_total", "over_team", "over_3.5", "over_4.5", "over_5.5", "under_total", "under_team", "under_3.5", "under_4.5", "under_5.5"} else (
-                        ("home" if extra and extra[0] == "home" else "away") if key == "handicap" else key
+                    "over_2_5" if key.startswith("over_") else (
+                        "under_2_5" if key.startswith("under_") else (
+                            ("home" if extra and extra[0] == "home" else "away") if key == "handicap" else key
+                        )
                     )
                 )
                 support, contra, coverage, strength = LiveOpportunityEngineV2._signals(
