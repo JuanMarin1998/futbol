@@ -480,7 +480,7 @@ def _experimento_estado_global():
                 started_at__date=today,
             ).order_by("-updated_at")[:100]
         )
-        serialized = [LiveExperimentManager.serialize(x) for x in experiments]
+        serialized = [LiveExperimentManager.serialize(x, snapshot_limit=3, opportunity_limit=12) for x in experiments]
         return {
             "ok": True, "running": True, "starting": True,
             "experiments": serialized,
@@ -503,7 +503,7 @@ def _experimento_estado_global():
             )
             .order_by("-updated_at")[:100]
         )
-        serialized = [LiveExperimentManager.serialize(x) for x in experiments]
+        serialized = [LiveExperimentManager.serialize(x, snapshot_limit=3, opportunity_limit=12) for x in experiments]
         return {
             "ok": True,
             "running": any(x.get("status") == "RUNNING" for x in serialized),
@@ -645,7 +645,7 @@ def _experimento_estado_global():
             experiment for experiment in all_experiments
             if timezone.localtime(experiment.started_at).date() == today
         ]
-        serialized = [LiveExperimentManager.serialize(x) for x in experiments]
+        serialized = [LiveExperimentManager.serialize(x, snapshot_limit=3, opportunity_limit=12) for x in experiments]
 
         entries = []
         for exp in serialized:
