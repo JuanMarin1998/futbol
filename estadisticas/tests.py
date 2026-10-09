@@ -8,6 +8,9 @@ from django.test import SimpleTestCase
 from .live_engine.opportunity_engine import LiveOpportunityEngine
 from .live_engine.opportunity_engine_v3 import LiveOpportunityEngineV3
 from .live_engine.experiment import LiveExperimentManager
+from .live_engine.models import LiveMatch
+from .live_engine.opportunity_engine_v2_ultra import LiveOpportunityEngineV2Ultra
+from .live_engine.opportunity_engine_v11_ultra import LiveOpportunityEngineV11Ultra
 
 
 class LiveOpportunityEngineV3Tests(SimpleTestCase):
@@ -149,3 +152,76 @@ class LiveEngineCalibrationAndDedupTests(SimpleTestCase):
         self.assertEqual(result["sample_size"], 1)
         self.assertEqual(result["win_rate"], 100.0)
 
+
+
+
+class UltraMotorTests(SimpleTestCase):
+    def setUp(self):
+        self.match = LiveMatch(
+            home_team="Home FC",
+            away_team="Away FC",
+            minute="65",
+            period="2nd half",
+            home_score=1,
+            away_score=0,
+            data_quality=0.9,
+            mapping_confidence=0.95,
+            performance={
+                "home": {
+                    "expected_goals": 1.4, "xg": 1.4, "xg_on_target": 1.0,
+                    "total_shots": 10, "shots_on_target": 4, "big_chances": 2,
+                    "touches_in_opposition_box": 20, "final_third_passes": 40,
+                    "expected_assists": 0.6, "ball_possession": 58,
+                },
+                "away": {
+                    "expected_goals": 0.5, "xg": 0.5, "xg_on_target": 0.2,
+                    "total_shots": 4, "shots_on_target": 1, "big_chances": 0,
+                    "touches_in_opposition_box": 7, "final_third_passes": 18,
+                    "expected_assists": 0.1, "ball_possession": 42,
+                },
+            },
+            odds=[
+                {"market_name": "1X2", "name": "Home", "price": 1.70, "odd_status": "active"},
+                {"market_name": "Total Goals", "name": "Over 3.5", "line": "3.5", "price": 2.40, "odd_status": "active"},
+                {"market_name": "Home Team Total Goals", "name": "Over 0.5", "line": "0.5", "price": 1.55, "odd_status": "active"},
+                {"market_name": "Asian Handicap", "name": "Home", "line": "-0.5", "price": 1.80, "odd_status": "active"},
+                {"market_name": "Player to Score", "name": "Anytime", "price": 2.00, "odd_status": "active"},
+                {"market_name": "1X2", "name": "Away", "price": 3.90, "odd_status": "suspended"},
+            ],
+        )
+
+    def test_v2_ultra_scans_score_modelable_markets_and_audits_unsupported_ones(self):
+        result = LiveOpportunityEngineV2Ultra.evaluate(self.match)
+        markets = {(x["market"], x["selection"]) for x in result}
+        self.assertIn(("1X2", "Home"), markets)
+        self.assertIn(("Total Goals", "Over 3.5"), markets)
+        self.assertIn(("Home Team Total Goals", "Over 0.5"), markets)
+        self.assertIn(("Asian Handicap", "Home"), markets)
+        unsupported = next(x for x in result if x["market"] == "Player to Score")
+        self.assertTrue(unsupported["unsupported_market"])
+        self.assertNotIn(("1X2", "Away"), markets)
+
+    def test_v11_ultra_uses_calibration_and_temporal_metadata(self):
+        result = LiveOpportunityEngineV11Ultra.evaluate(self.match)
+        home = next(x for x in result if x["market"] == "1X2" and x["selection"] == "Home")
+        self.assertEqual(home["calibration"], "shrink_to_50_v1_1_ultra")
+        self.assertIn("temporal_factor", home)
+        self.assertGreaterEqual(home["model_probability"], 0.03)
+        self.assertLessEqual(home["model_probability"], 0.97)
+
+    def test_ultra_stakes_respect_level_and_motor_specific_maximums(self):
+        from decimal import Decimal
+        very_strong = {"level": 1, "confidence": 1.0, "edge": 0.30}
+        strong = {"level": 2, "confidence": 1.0, "edge": 0.20}
+        self.assertEqual(LiveExperimentManager._stake(very_strong, Decimal("100"), "V2U"), Decimal("20.00"))
+        self.assertEqual(LiveExperimentManager._stake(strong, Decimal("100"), "V11U"), Decimal("15.00"))
+        self.assertEqual(LiveExperimentManager._stake(strong, Decimal("100"), "V2U"), Decimal("0"))
+        self.assertEqual(LiveExperimentManager._stake(very_strong, Decimal("100"), "V11U"), Decimal("0"))
+
+    def test_ultra_motors_have_independent_registry_and_market_sources(self):
+        self.assertIn("V2U", LiveExperimentManager.MOTORS)
+        self.assertIn("V11U", LiveExperimentManager.MOTORS)
+        self.assertEqual(LiveExperimentManager.LABELS["V2U"], "V2.Ultra")
+        self.assertEqual(LiveExperimentManager.LABELS["V11U"], "V1.1 Ultra")
+        self.assertEqual(LiveExperimentManager.OPPORTUNITY_ATTRS["V2U"], "opportunities_v2_ultra")
+        self.assertEqual(LiveExperimentManager.OPPORTUNITY_ATTRS["V11U"], "opportunities_v11_ultra")
