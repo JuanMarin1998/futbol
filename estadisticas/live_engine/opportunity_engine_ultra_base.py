@@ -50,9 +50,9 @@ class UltraMarketEvaluator:
         # Team totals must be handled before the generic total-goals mapper.
         if any(token in text for token in ("team total", "goles del equipo", "goles equipo", "home team goals", "away team goals", "local total", "visitante total")) and line is not None:
             if abs(line * 2 - round(line * 2)) < 0.001 and not line.is_integer():
-                normalized_selection = re.sub(r"\\W+", "", selection.casefold())
-                home = re.sub(r"\\W+", "", str(match.home_team or "").casefold())
-                away = re.sub(r"\\W+", "", str(match.away_team or "").casefold())
+                normalized_selection = re.sub(r"\W+", "", selection.casefold())
+                home = re.sub(r"\W+", "", str(match.home_team or "").casefold())
+                away = re.sub(r"\W+", "", str(match.away_team or "").casefold())
                 side = "home" if ("home" in text or "local" in text or (home and (home in normalized_selection or normalized_selection in home))) else (
                     "away" if ("away" in text or "visitante" in text or (away and (away in normalized_selection or normalized_selection in away))) else None
                 )
@@ -62,9 +62,9 @@ class UltraMarketEvaluator:
 
         # Half-goal handicaps only (no push outcome); selection must identify a side.
         if any(token in text for token in ("handicap", "handicap asiático", "asian handicap", "spread")) and line is not None:
-            normalized_selection = re.sub(r"\\W+", "", selection.casefold())
-            home = re.sub(r"\\W+", "", str(match.home_team or "").casefold())
-            away = re.sub(r"\\W+", "", str(match.away_team or "").casefold())
+            normalized_selection = re.sub(r"\W+", "", selection.casefold())
+            home = re.sub(r"\W+", "", str(match.home_team or "").casefold())
+            away = re.sub(r"\W+", "", str(match.away_team or "").casefold())
             side = "home" if ("home" in normalized_selection or "local" in normalized_selection or (home and (home in normalized_selection or normalized_selection in home))) else (
                 "away" if ("away" in normalized_selection or "visitante" in normalized_selection or (away and (away in normalized_selection or normalized_selection in away))) else None
             )
@@ -210,7 +210,9 @@ class UltraMarketEvaluator:
                 raw_fields = {"raw_model_probability": round(raw_probability, 4), "temporal_factor": round(temporal, 3), "calibration": "shrink_to_50_v1_1_ultra"}
             else:
                 signal_key = key if key in {"home", "draw", "away", "over_2_5", "under_2_5", "btts_yes", "btts_no"} else (
-                    "over_2_5" if key in {"over_total", "under_total"} and extra == 2.5 else key
+                    "over_2_5" if key in {"over_total", "over_team", "over_3.5", "over_4.5", "over_5.5", "under_total", "under_team", "under_3.5", "under_4.5", "under_5.5"} else (
+                        ("home" if extra and extra[0] == "home" else "away") if key == "handicap" else key
+                    )
                 )
                 support, contra, coverage, strength = LiveOpportunityEngineV2._signals(
                     signal_key, home, away, hs, aw, elapsed
