@@ -284,12 +284,11 @@ class LiveExperimentManager:
     def _spy_opportunities(cls, opportunities_by_motor):
         """Agrega señales de los motores visibles, aunque no hayan realizado apuesta.
 
-        V4 reutiliza la fuente de V1.1 y no se cuenta como voto independiente.
-        Cada motor aporta como máximo una señal por mercado/línea.
+        Se consideran los siete motores visibles, incluido V4: aunque parte de V1.1,
+        su calibración y filtros generan una evaluación distinta. Cada motor aporta
+        como máximo una señal por mercado/línea.
         """
-        source_motors = ("V11", "V12", "V21", "V22", "V2U", "V11U")
-        # V4 se inspecciona como confirmación secundaria, pero nunca suma un voto porque deriva de V1.1.
-        v4_keys = {cls._key(item) for item in opportunities_by_motor.get("V4", [])}
+        source_motors = ("V11", "V12", "V21", "V22", "V2U", "V11U", "V4")
         per_family = {}
         for motor in source_motors:
             best_by_family = {}
