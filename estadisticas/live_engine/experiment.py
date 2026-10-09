@@ -884,7 +884,7 @@ class LiveExperimentManager:
         }
 
     @classmethod
-    def serialize(cls, experiment):
+    def serialize(cls, experiment, snapshot_limit=None, opportunity_limit=None):
         entries = []
         motors = {}
         for motor in cls.MOTORS:
@@ -989,6 +989,33 @@ class LiveExperimentManager:
 
         ranked = [(data["current_lives"], data["hit_rate"], motor) for motor, data in motors.items() if data["decisions"]]
         safest_motor = max(ranked, default=(0, 0, None))[2]
+        snapshot_rows = experiment.snapshots.all().order_by(
+            "-created_at", "-id"
+        )
+        if snapshot_limit is not None:
+            snapshot_rows = snapshot_rows[:max(0, int(snapshot_limit))]
+        snapshot_rows = list(snapshot_rows)
+        if snapshot_limit is not None:
+            snapshot_rows.reverse()
+        serialized_snapshots = []
+        for snapshot in snapshot_rows:
+            opportunities = snapshot.all_opportunities or []
+            if opportunity_limit is not None and isinstance(opportunities, list):
+                opportunities = opportunities[:max(0, int(opportunity_limit))]
+            serialized_snapshots.append({
+                "id": snapshot.id,
+                "motor": snapshot.motor,
+                "minute": snapshot.minute,
+                "period": snapshot.period,
+                "home_score": snapshot.home_score,
+                "away_score": snapshot.away_score,
+                "lives_before": float(snapshot.lives_before),
+                "lives_after": float(snapshot.lives_after),
+                "selected_opportunity": snapshot.selected_opportunity,
+                "all_opportunities": opportunities,
+                "decision_reason": snapshot.decision_reason,
+                "created_at": snapshot.created_at.isoformat(),
+            })
         return {
             "id": experiment.id, "status": experiment.status,
             "ecuabet_event_id": experiment.ecuabet_event_id, "flashscore_event_id": experiment.flashscore_event_id,
@@ -1007,21 +1034,5 @@ class LiveExperimentManager:
             "stopped_at": experiment.stopped_at.isoformat() if experiment.stopped_at else None,
             "finished_at": experiment.finished_at.isoformat() if experiment.finished_at else None,
             "motors": motors, "safest_motor": safest_motor, "entries": entries,
-            "snapshots": [
-                {
-                    "id": snapshot.id,
-                    "motor": snapshot.motor,
-                    "minute": snapshot.minute,
-                    "period": snapshot.period,
-                    "home_score": snapshot.home_score,
-                    "away_score": snapshot.away_score,
-                    "lives_before": float(snapshot.lives_before),
-                    "lives_after": float(snapshot.lives_after),
-                    "selected_opportunity": snapshot.selected_opportunity,
-                    "all_opportunities": snapshot.all_opportunities,
-                    "decision_reason": snapshot.decision_reason,
-                    "created_at": snapshot.created_at.isoformat(),
-                }
-                for snapshot in experiment.snapshots.all().order_by("created_at", "id")
-            ],
+            "snapshots": serialized_snapshots,
         }
