@@ -277,7 +277,9 @@ class LiveExperimentManager:
         if motor == "V3":
             base += "; filtro de cuota 1.40–2.10, edge conservador y consenso auxiliar"
             if opportunity.get("exceptional_third_bet"):
-                base += "; candidata excepcional para tercera apuesta, sujeta a límites de exposición"
+                base += "; candidata excepcional por edge conservador >=10 puntos, confianza >=68% y baja dispersión"
+            if cls._current_bets(experiment, motor) >= 2:
+                base += "; tercera apuesta autorizada solo porque aporta una familia de mercado distinta, mantiene el tope de 4 vidas por partido y el máximo de 10 vidas abiertas globales"
         elif motor == "V11":
             calibration = opportunity.get("calibration")
             temporal = opportunity.get("temporal_factor")
