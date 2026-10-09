@@ -17,15 +17,15 @@ class LiveExperimentManager:
     INITIAL_LIVES = Decimal("100")
     MAX_STAKE = Decimal("10")
     MIN_STAKE = Decimal("1")
-    MOTORS = ("V1", "V11", "V12", "V2", "V21", "V22", "V3", "V2U", "V11U")
-    # Pausa temporal de apuestas nuevas; los motores siguen visibles y auditables.
+    MOTORS = ("V1", "V11", "V12", "V2", "V21", "V22", "V3", "V2U", "V11U", "V4")
+    # V1/V2/V3 quedan en pausa; su código e historial se conservan.
     PAUSED_MOTORS = frozenset({"V1", "V2", "V3"})
-    LABELS = {"V1": "V1", "V11": "V1.1", "V12": "V1.2", "V2": "V2", "V21": "V2.1", "V22": "V2.2", "V3": "V3", "V2U": "V2.Ultra", "V11U": "V1.1 Ultra"}
+    LABELS = {"V1": "V1", "V11": "V1.1", "V12": "V1.2", "V2": "V2", "V21": "V2.1", "V22": "V2.2", "V3": "V3", "V2U": "V2.Ultra", "V11U": "V1.1 Ultra", "V4": "V4 · Calibración prudente"}
     OPPORTUNITY_ATTRS = {
         "V1": "opportunities", "V11": "opportunities_v11", "V12": "opportunities_v12",
         "V2": "opportunities_v2", "V21": "opportunities_v21", "V22": "opportunities_v22",
         "V3": "opportunities_v3", "V2U": "opportunities_v2_ultra",
-        "V11U": "opportunities_v11_ultra",
+        "V11U": "opportunities_v11_ultra", "V4": "opportunities_v11",
     }
 
     LEVEL_RANGES = {
@@ -58,6 +58,33 @@ class LiveExperimentManager:
         )
 
     @classmethod
+    def _calibrate_v4_probability(cls, raw_probability: float):
+        """Calibración prudente para V4 usando solo resultados V1.1 ya liquidados."""
+        raw_probability = max(0.0, min(1.0, float(raw_probability)))
+        rows = list(
+            LiveExperimentEntry.objects.filter(
+                motor="V11", status__in=("WON", "LOST")
+            ).order_by("-placed_at").values_list("model_probability", "status")[:1000]
+        )
+        bucket = min(9, int(raw_probability * 10))
+        matched = []
+        for probability, status in rows:
+            try:
+                p = max(0.0, min(1.0, float(probability)))
+            except (TypeError, ValueError):
+                continue
+            if min(9, int(p * 10)) == bucket:
+                matched.append(1.0 if status == "WON" else 0.0)
+        sample_size = len(matched)
+        if sample_size >= 20:
+            calibrated = (sum(matched) + 20.0 * raw_probability) / (sample_size + 20.0)
+            method = "bin_historico_suavizado"
+        else:
+            calibrated = 0.5 + (raw_probability - 0.5) * 0.70
+            method = "encogimiento_provisional_hacia_50"
+        return round(max(0.02, min(0.98, calibrated)), 6), sample_size, method
+
+    @classmethod
     def _prepare_opportunities(cls, motor: str, opportunities):
         """Añade metadatos de nivel solo en la capa del laboratorio.
 
@@ -74,25 +101,45 @@ class LiveExperimentManager:
             except (TypeError, ValueError):
                 continue
 
-            # V1/V1.1/V1.2/V2/V2.1/V2.2 calculan el edge frente a la
-            # probabilidad implícita de la cuota. Recalcular en una sola capa
-            # impide que edge, edge_pct y la auditoría arrastren datos distintos.
+            if motor == "V4":
+                raw_probability = model_probability
+                model_probability, calibration_n, calibration_method = cls._calibrate_v4_probability(raw_probability)
+                opportunity["raw_model_probability"] = round(raw_probability, 6)
+                opportunity["model_probability"] = model_probability
+                opportunity["calibration_sample_size"] = calibration_n
+                opportunity["calibration_method"] = calibration_method
+                opportunity["calibration_adjustment"] = round(model_probability - raw_probability, 6)
+
+            # Si el motor no ofrece cuotas completas para una probabilidad justa,
+            # se usa la probabilidad implícita y se deja registrada esa limitación.
             if motor != "V3":
                 if price <= 1 or not 0 <= model_probability <= 1:
                     continue
                 implied = 1.0 / price
-                edge = model_probability - implied
+                market_probability = implied
+                edge_basis = "probabilidad_implícita_de_cuota"
+                if motor == "V4" and opportunity.get("market_fair_probability") is not None:
+                    try:
+                        candidate_fair = float(opportunity["market_fair_probability"])
+                        if 0 < candidate_fair < 1:
+                            market_probability = candidate_fair
+                            edge_basis = "probabilidad_justa_disponible"
+                    except (TypeError, ValueError):
+                        pass
+                edge = model_probability - market_probability
                 opportunity["implied_probability"] = round(implied, 6)
                 opportunity["edge"] = round(edge, 6)
                 opportunity["edge_pct"] = round(edge * 100, 2)
-                opportunity["edge_basis"] = "probabilidad_implícita_de_cuota"
+                opportunity["edge_basis"] = edge_basis
+                if motor == "V4":
+                    opportunity["v4_market_probability_used"] = round(market_probability, 6)
             else:
                 # V3 compara contra la probabilidad justa sin margen; su edge
                 # conservador no debe confundirse con modelo menos implícita bruta.
                 opportunity["edge_basis"] = "probabilidad_justa_de_mercado"
                 opportunity["edge_pct"] = round(float(opportunity.get("edge") or 0) * 100, 2)
 
-            if motor in {"V1", "V11", "V2", "V12", "V21", "V22", "V2U", "V11U"}:
+            if motor in {"V1", "V11", "V2", "V12", "V21", "V22", "V2U", "V11U", "V4"}:
                 opportunity = enrich(opportunity)
             prepared.append(opportunity)
         return prepared
@@ -101,7 +148,7 @@ class LiveExperimentManager:
     def _motor_limit(cls, motor: str) -> int:
         if motor == "V3":
             return 3
-        return 2 if motor in {"V12", "V22"} else 999999
+        return 2 if motor in {"V12", "V22", "V4"} else 999999
 
     @classmethod
     def _current_bets(cls, experiment, motor: str) -> int:
@@ -132,6 +179,21 @@ class LiveExperimentManager:
             return "Descartada: oportunidad sin mercado/selección/línea válidos."
         if motor in {"V2U", "V11U"} and opportunity.get("unsupported_market"):
             return "Mercado auditado, no apostable: falta un modelo de probabilidad fiable o datos finales verificables para liquidarlo."
+        if motor == "V4":
+            if opportunity.get("unsupported_market"):
+                return "Descartada V4: mercado sin probabilidad verificable para calibrar y liquidar."
+            if Decimal(str(opportunity.get("price") or 0)) < Decimal("1.25"):
+                return "Descartada V4: cuota inferior a 1.25."
+            if cls._level(opportunity) not in {1, 2}:
+                return "Descartada V4: solo acepta niveles 1 y 2."
+            edge_v4 = float(opportunity.get("edge") or 0)
+            confidence_v4 = float(opportunity.get("confidence") or 0)
+            calibration_n = int(opportunity.get("calibration_sample_size") or 0)
+            minimum_edge = 0.07 if calibration_n < 20 else 0.05
+            if edge_v4 < minimum_edge:
+                return f"Descartada V4: edge {edge_v4 * 100:.1f} puntos inferior al mínimo {minimum_edge * 100:.1f} (muestra de calibración: {calibration_n})."
+            if confidence_v4 < 0.55:
+                return "Descartada V4: confianza inferior al 55%."
         # Este control va antes de los filtros de nivel: una repetición debe
         # quedar identificada como tal aunque su señal haya cambiado de nivel.
         if LiveExperimentEntry.objects.filter(
@@ -232,6 +294,11 @@ class LiveExperimentManager:
         level = cls._level(opportunity)
         if level == 0 or lives < cls.MIN_STAKE:
             return Decimal("0")
+        if motor == "V4":
+            edge = Decimal(str(opportunity.get("edge") or 0))
+            confidence = Decimal(str(opportunity.get("confidence") or 0))
+            stake = Decimal("2") if edge >= Decimal("0.10") and confidence >= Decimal("0.70") else Decimal("1")
+            return min(stake, Decimal("2"), lives).quantize(Decimal("0.01"), rounding=ROUND_DOWN)
         if motor in {"V2U", "V11U"}:
             required_level = 1 if motor == "V2U" else 2
             if level != required_level:
@@ -390,6 +457,15 @@ class LiveExperimentManager:
                 base += "; candidata excepcional por edge conservador >=10 puntos, confianza >=68% y baja dispersión"
             if cls._current_bets(experiment, motor) >= 2:
                 base += "; tercera apuesta autorizada solo porque aporta una familia de mercado distinta, mantiene el tope de 4 vidas por partido y el máximo de 10 vidas abiertas globales"
+        elif motor == "V4":
+            raw_p = float(opportunity.get("raw_model_probability") or model_p)
+            calibration_n = int(opportunity.get("calibration_sample_size") or 0)
+            calibration_method = str(opportunity.get("calibration_method") or "sin datos")
+            base += (
+                f"; V4 deriva de V1.1 y calibra {raw_p * 100:.1f}% a {model_p * 100:.1f}% "
+                f"({calibration_method}, {calibration_n} casos históricos en el intervalo); "
+                "stake prudente de 1–2 vidas, máximo 2 apuestas por partido y 10 vidas abiertas por día"
+            )
         elif motor == "V11U":
             temporal = opportunity.get("temporal_factor")
             if temporal is not None:
@@ -440,6 +516,24 @@ class LiveExperimentManager:
         lives = cls._ledger_lives(experiment, motor)
         candidates = [o for o in opportunities if cls._eligible(experiment, motor, o)]
         if not candidates or lives < cls.MIN_STAKE:
+            return None, Decimal("0")
+
+        if motor == "V4":
+            candidates.sort(key=lambda o: (
+                float(o.get("edge") or 0),
+                float(o.get("confidence") or 0),
+                cls._level(o),
+            ), reverse=True)
+            daily_open = LiveExperimentEntry.objects.filter(
+                experiment__started_at__date=timezone.localdate(), motor="V4", status="OPEN"
+            )
+            committed_today = sum((Decimal(str(e.stake)) for e in daily_open), Decimal("0"))
+            remaining_daily = max(Decimal("0"), Decimal("10") - committed_today)
+            for candidate in candidates:
+                stake = min(cls._stake(candidate, lives, motor), remaining_daily)
+                stake = stake.quantize(Decimal("0.01"), rounding=ROUND_DOWN)
+                if stake >= cls.MIN_STAKE:
+                    return candidate, stake
             return None, Decimal("0")
 
         if motor == "V3":
