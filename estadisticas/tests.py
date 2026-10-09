@@ -5,6 +5,7 @@ from types import SimpleNamespace
 
 from django.test import SimpleTestCase
 
+from .live_engine.opportunity_engine import LiveOpportunityEngine
 from .live_engine.opportunity_engine_v3 import LiveOpportunityEngineV3
 from .live_engine.experiment import LiveExperimentManager
 
