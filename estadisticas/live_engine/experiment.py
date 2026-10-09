@@ -12,7 +12,7 @@ from .opportunity_levels import enrich
 
 
 class LiveExperimentManager:
-    """Laboratorio virtual con diez motores internos y siete motores visibles sobre el mismo snapshot LIVE."""
+    """Laboratorio LIVE: siete motores visibles existentes más el Espía independiente."""
 
     INITIAL_LIVES = Decimal("100")
     INITIAL_LIVES_BY_MOTOR = {"ESP": Decimal("50")}
