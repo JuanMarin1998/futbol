@@ -238,6 +238,10 @@ class LiveExperimentManager:
         market = normalize(opportunity.get("market"))
         selection = normalize(opportunity.get("selection"))
         line = normalize(opportunity.get("line")).replace(",", ".")
+        if not line and any(token in f"{market} {selection}" for token in ("total", "over", "under", "goles", "mas", "menos")):
+            found_line = re.search(r"(\\d+(?:\\.\\d+)?)", f"{market} {selection}")
+            if found_line:
+                line = found_line.group(1)
         # Unifica nombres habituales del mismo mercado entre feeds.
         if any(token in market for token in ("1x2", "resultado", "ganador", "match winner")):
             market = "resultado"
