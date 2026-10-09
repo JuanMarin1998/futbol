@@ -211,6 +211,11 @@ class LiveOpportunityEngineV3:
             if confidence > 0.50:
                 confidence = 0.50 + (confidence - 0.50) * temporal_factor
             extreme = edge >= cls.MAX_EXTREME_EDGE
+            if extreme and consensus_count < 2 and not (quality >= 0.75 and mapping >= 0.85):
+                # Una ventaja extrema requiere más evidencia; no se descarta automáticamente.
+                uncertainty_penalty = min(0.18, uncertainty_penalty + 0.05)
+                conservative_edge = edge - uncertainty_penalty
+                confidence = max(0.35, confidence - 0.04)
             exceptional = (
                 conservative_edge >= 0.10
                 and confidence >= 0.68
@@ -250,7 +255,7 @@ class LiveOpportunityEngineV3:
                     f"edge conservador {conservative_edge*100:+.1f} puntos; "
                     f"consenso {consensus_count}/6, "
                     f"dispersión {dispersion*100:.1f} puntos, minuto {elapsed:.0f}'. "
-                    + ("Edge extremo sometido a validación adicional. " if extreme else "")
+                    + ("Edge extremo: penalización extra y validación reforzada por consenso/calidad. " if extreme else "")
                     + ("Candidata excepcional para una tercera apuesta, sujeta a límites de riesgo. " if exceptional else "")
                     + (f"Calibración empírica de mercado con {historical_n} apuestas V3 liquidadas. " if historical_rate is not None else f"Calibración provisional: {historical_n}/20 apuestas históricas V3 liquidadas en el rango. ")
                 ),
