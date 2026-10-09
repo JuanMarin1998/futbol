@@ -722,8 +722,9 @@ class LiveExperimentManager:
             ) if settled_entries else None
             log_loss = (
                 sum(
-                    -((1.0 if e.status == "WON" else 0.0) * math.log(max(0.0001, min(0.9999, float(e.model_probability))))
-                    + (0.0 if e.status == "WON" else 1.0) * math.log(1 - max(0.0001, min(0.9999, float(e.model_probability)))))
+                    -math.log(max(0.0001, min(0.9999, float(e.model_probability))))
+                    if e.status == "WON"
+                    else -math.log(1 - max(0.0001, min(0.9999, float(e.model_probability))))
                     for e in settled_entries
                 ) / len(settled_entries)
             ) if settled_entries else None
