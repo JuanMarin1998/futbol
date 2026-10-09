@@ -266,16 +266,26 @@ class LiveExperimentManager:
         probability_text = f"{model_p * 100:.1f}%"
         implied_text = f"{implied * 100:.1f}%"
         edge_text = f"{edge * 100:+.1f} puntos"
-        line_text = f" {line}" if line else ""
+        line_text = f" {line}" if line and line.casefold() not in selection.casefold() else ""
         level_name = cls._level_name(level)
-        base = (
-            f"{selection}{line_text} elegido por {label}: {probability_text} de probabilidad "
-            f"frente a {implied_text} implícita ({edge_text} de edge); "
-            f"{score} al {minute_text}, Nivel {level} · {level_name}"
-        )
+        if motor == "V3":
+            market_fair = float(opportunity.get("market_fair_probability") or implied)
+            market_fair_text = f"{market_fair * 100:.1f}%"
+            base = (
+                f"{selection}{line_text} elegido por V3: probabilidad prudente {probability_text}; "
+                f"probabilidad implícita de la cuota {implied_text}, probabilidad justa de mercado {market_fair_text}; "
+                f"edge conservador {edge_text} tras penalización; contexto al momento de apostar: "
+                f"{score} al {minute_text}, Nivel {level} · {level_name}"
+            )
+            base += "; filtro de cuota 1.40–2.10 y consenso auxiliar"
+        else:
+            base = (
+                f"{selection}{line_text} elegido por {label}: {probability_text} de probabilidad "
+                f"frente a {implied_text} implícita ({edge_text} de edge); "
+                f"{score} al {minute_text}, Nivel {level} · {level_name}"
+            )
 
         if motor == "V3":
-            base += "; filtro de cuota 1.40–2.10, edge conservador y consenso auxiliar"
             if opportunity.get("exceptional_third_bet"):
                 base += "; candidata excepcional por edge conservador >=10 puntos, confianza >=68% y baja dispersión"
             if cls._current_bets(experiment, motor) >= 2:
@@ -759,7 +769,12 @@ class LiveExperimentManager:
                 "match": f"{experiment.home_team} vs {experiment.away_team}",
                 "market": e.market, "selection": e.selection, "line": e.line,
                 "price": float(e.price), "model_probability": e.model_probability,
-                "implied_probability": e.implied_probability, "edge_pct": round(e.edge * 100, 2),
+                "implied_probability": e.implied_probability,
+                "market_fair_probability": (
+                    e.opportunity_snapshot.get("market_fair_probability")
+                    if isinstance(e.opportunity_snapshot, dict) else None
+                ),
+                "edge_pct": round(e.edge * 100, 2),
                 "level": e.level, "level_name": e.level_name, "stake": float(e.stake),
                 "potential_profit": float(e.potential_profit), "status": e.status, "pnl": float(e.pnl),
                 "reason": e.reason, "supporting_factors": e.supporting_factors,
