@@ -15,17 +15,18 @@ class LiveExperimentManager:
     """Laboratorio virtual con diez motores internos y siete motores visibles sobre el mismo snapshot LIVE."""
 
     INITIAL_LIVES = Decimal("100")
+    INITIAL_LIVES_BY_MOTOR = {"ESP": Decimal("50")}
     MAX_STAKE = Decimal("10")
     MIN_STAKE = Decimal("1")
-    MOTORS = ("V1", "V11", "V12", "V2", "V21", "V22", "V3", "V2U", "V11U", "V4")
+    MOTORS = ("V1", "V11", "V12", "V2", "V21", "V22", "V3", "V2U", "V11U", "V4", "ESP")
     # V1/V2/V3 quedan en pausa; su código e historial se conservan.
     PAUSED_MOTORS = frozenset({"V1", "V2", "V3"})
-    LABELS = {"V1": "V1", "V11": "V1.1", "V12": "V1.2", "V2": "V2", "V21": "V2.1", "V22": "V2.2", "V3": "V3", "V2U": "V2.Ultra", "V11U": "V1.1 Ultra", "V4": "V4 · Calibración prudente"}
+    LABELS = {"V1": "V1", "V11": "V1.1", "V12": "V1.2", "V2": "V2", "V21": "V2.1", "V22": "V2.2", "V3": "V3", "V2U": "V2.Ultra", "V11U": "V1.1 Ultra", "V4": "V4 · Calibración prudente", "ESP": "🕵️ Espía de Apuestas"}
     OPPORTUNITY_ATTRS = {
         "V1": "opportunities", "V11": "opportunities_v11", "V12": "opportunities_v12",
         "V2": "opportunities_v2", "V21": "opportunities_v21", "V22": "opportunities_v22",
         "V3": "opportunities_v3", "V2U": "opportunities_v2_ultra",
-        "V11U": "opportunities_v11_ultra", "V4": "opportunities_v11",
+        "V11U": "opportunities_v11_ultra", "V4": "opportunities_v11", "ESP": "opportunities_v11",
     }
 
     LEVEL_RANGES = {
@@ -148,6 +149,8 @@ class LiveExperimentManager:
     def _motor_limit(cls, motor: str) -> int:
         if motor == "V3":
             return 3
+        if motor == "ESP":
+            return 1
         return 2 if motor in {"V12", "V22", "V4"} else 999999
 
     @classmethod
@@ -280,7 +283,7 @@ class LiveExperimentManager:
             motor=motor,
         ).order_by("placed_at", "id")
 
-        lives = Decimal(str(cls.INITIAL_LIVES))
+        lives = cls._initial_lives(motor)
         for entry in entries:
             if entry.status in {"OPEN", "LOST"}:
                 lives -= Decimal(str(entry.stake))
@@ -848,7 +851,7 @@ class LiveExperimentManager:
             return experiment
         final_home, final_away = int(experiment.final_home_score), int(experiment.final_away_score)
         for motor in cls.MOTORS:
-            current = cls.INITIAL_LIVES
+            current = cls._initial_lives(motor)
             entries = list(experiment.entries.filter(motor=motor).order_by("placed_at", "id"))
             for entry in entries:
                 if entry.status == "CANCELLED":
@@ -994,7 +997,7 @@ class LiveExperimentManager:
             total_staked = sum((Decimal(str(e.stake)) for e in motor_entries), Decimal("0"))
             best = max(motor_entries, key=lambda e: (e.level, e.model_probability, e.edge), default=None)
             # Reconstruct equity curve from 100 so every motor is measured identically.
-            curve = [cls.INITIAL_LIVES]
+            curve = [cls._initial_lives(motor)]
             for e in sorted(motor_entries, key=lambda x: (x.placed_at, x.id)):
                 if e.status == "OPEN" or e.status == "LOST": curve.append(curve[-1] - e.stake)
                 elif e.status == "WON": curve.append(curve[-1] + e.pnl)
@@ -1005,7 +1008,7 @@ class LiveExperimentManager:
             )
             total_capital = max(
                 Decimal("0"),
-                Decimal(str(cls.INITIAL_LIVES)) + total_pnl,
+                cls._initial_lives(motor) + total_pnl,
             )
             available_lives = max(Decimal("0"), total_capital - open_staked)
             settled_entries = [e for e in motor_entries if e.status in {"WON", "LOST"}]
