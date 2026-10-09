@@ -47,6 +47,30 @@ class UltraMarketEvaluator:
         text = f"{market} {selection}".casefold()
         line = cls._line(odd)
         # Common score-derived markets already supported by V1.2.
+        # Team totals must be handled before the generic total-goals mapper.
+        if any(token in text for token in ("team total", "goles del equipo", "goles equipo", "home team goals", "away team goals", "local total", "visitante total")) and line is not None:
+            if abs(line * 2 - round(line * 2)) < 0.001 and not line.is_integer():
+                normalized_selection = re.sub(r"\\W+", "", selection.casefold())
+                home = re.sub(r"\\W+", "", str(match.home_team or "").casefold())
+                away = re.sub(r"\\W+", "", str(match.away_team or "").casefold())
+                side = "home" if ("home" in text or "local" in text or (home and (home in normalized_selection or normalized_selection in home))) else (
+                    "away" if ("away" in text or "visitante" in text or (away and (away in normalized_selection or normalized_selection in away))) else None
+                )
+                if side and any(token in text for token in ("over", "under", "más", "mas", "menos")):
+                    kind = "over_team" if any(token in text for token in ("over", "más", "mas")) else "under_team"
+                    return kind, (side, line)
+
+        # Half-goal handicaps only (no push outcome); selection must identify a side.
+        if any(token in text for token in ("handicap", "handicap asiático", "asian handicap", "spread")) and line is not None:
+            normalized_selection = re.sub(r"\\W+", "", selection.casefold())
+            home = re.sub(r"\\W+", "", str(match.home_team or "").casefold())
+            away = re.sub(r"\\W+", "", str(match.away_team or "").casefold())
+            side = "home" if ("home" in normalized_selection or "local" in normalized_selection or (home and (home in normalized_selection or normalized_selection in home))) else (
+                "away" if ("away" in normalized_selection or "visitante" in normalized_selection or (away and (away in normalized_selection or normalized_selection in away))) else None
+            )
+            if side and abs(line * 2 - round(line * 2)) < 0.001 and not line.is_integer():
+                return "handicap", (side, line)
+
         key = LiveOpportunityEngineV12._market_key(
             market, selection, odd.get("line"), match.home_team, match.away_team
         )
@@ -91,6 +115,16 @@ class UltraMarketEvaluator:
     def _probability(cls, key, extra, probabilities, hs, aw, lh, la):
         if key in probabilities:
             return probabilities[key]
+        if key.startswith(("over_", "under_")) and key not in {"over_total", "under_total", "over_team", "under_team"}:
+            try:
+                line = float(key.split("_", 1)[1])
+            except (TypeError, ValueError):
+                line = None
+            if line is not None and abs(line * 2 - round(line * 2)) < 0.001 and not line.is_integer():
+                total = hs + aw
+                needed = math.floor(line - total) + 1
+                over = 1.0 if needed <= 0 else 1.0 - cls._poisson_cdf(needed - 1, lh + la)
+                return over if key.startswith("over_") else 1.0 - over
         if key in {"over_total", "under_total"}:
             line = float(extra)
             total = hs + aw
@@ -106,7 +140,7 @@ class UltraMarketEvaluator:
             return over if key == "over_team" else 1.0 - over
         if key == "handicap":
             side, handicap = extra
-            home_p = draw_p = away_p = 0.0
+            covered = 0.0
             for future_home in range(11):
                 ph = LiveOpportunityEngine._poisson_pmf(future_home, lh)
                 for future_away in range(11):
@@ -114,14 +148,9 @@ class UltraMarketEvaluator:
                     diff = (hs + future_home) - (aw + future_away)
                     adjusted = diff + handicap if side == "home" else -diff + handicap
                     if adjusted > 0:
-                        home_p += ph * pa
-                    elif adjusted == 0:
-                        draw_p += ph * pa
-                    else:
-                        away_p += ph * pa
-            # Only two-way/Asian handicap selections are eligible. The half-line
-            # restriction means a push cannot occur; use the selected-side win.
-            return home_p if side == "home" else away_p
+                        covered += ph * pa
+            # Only two-way/Asian half-line handicaps are modelled; no push.
+            return covered
         return None
 
     @classmethod
