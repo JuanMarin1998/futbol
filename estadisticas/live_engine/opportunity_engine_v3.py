@@ -139,7 +139,7 @@ class LiveOpportunityEngineV3:
                 conservative_edge >= 0.10
                 and confidence >= 0.68
                 and dispersion <= 0.10
-                and (consensus >= 2 / len(cls.ENGINES) or (quality >= 0.75 and mapping >= 0.85))
+                and (consensus >= 2 / len(cls.SOURCE_ATTRS) or (quality >= 0.75 and mapping >= 0.85))
             )
             if conservative_edge < cls.MIN_EDGE or confidence < 0.50:
                 continue
@@ -185,7 +185,6 @@ class LiveOpportunityEngineV3:
             result.append(prepared)
 
         result.sort(key=lambda o: (
-            bool(o.get("exceptional_third_bet")),
             float(o.get("edge") or 0),
             float(o.get("confidence") or 0),
             float(o.get("consensus_score") or 0),
