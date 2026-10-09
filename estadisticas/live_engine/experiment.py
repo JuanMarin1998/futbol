@@ -74,7 +74,9 @@ class LiveExperimentManager:
             family = "total_goles"
         else:
             family = market
-        return family, selection
+        line = key[2] if len(key) > 2 else ""
+        # Las líneas de totales no son intercambiables (p. ej., 2.5 y 3.5).
+        return family, selection, line if family == "total_goles" else ""
 
     @classmethod
     def _calibrate_v4_probability(cls, raw_probability: float, opportunity, market_probability: float):
@@ -131,8 +133,8 @@ class LiveExperimentManager:
 
     @staticmethod
     def _v4_is_draw(opportunity):
-        market, selection = LiveExperimentManager._v4_market_selection_key(opportunity)
-        return market == "resultado" and selection == "x"
+        key = LiveExperimentManager._v4_market_selection_key(opportunity)
+        return key[0] == "resultado" and key[1] == "x"
 
     @classmethod
     def _v4_live_context_reason(cls, opportunity, match):
