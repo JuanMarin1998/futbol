@@ -322,7 +322,6 @@ class LiveExperimentManager:
 
         if motor == "V3":
             candidates.sort(key=lambda o: (
-                bool(o.get("exceptional_third_bet")),
                 float(o.get("edge") or 0),
                 float(o.get("confidence") or 0),
                 float(o.get("consensus_score") or 0),
@@ -722,7 +721,7 @@ class LiveExperimentManager:
             log_loss = (
                 sum(
                     -((1.0 if e.status == "WON" else 0.0) * math.log(max(0.0001, min(0.9999, float(e.model_probability))))
-                    + (0.0 if e.status == "WON" else 1.0) * __import__("math").log(1 - max(0.0001, min(0.9999, float(e.model_probability)))))
+                    + (0.0 if e.status == "WON" else 1.0) * math.log(1 - max(0.0001, min(0.9999, float(e.model_probability)))))
                     for e in settled_entries
                 ) / len(settled_entries)
             ) if settled_entries else None
