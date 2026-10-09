@@ -186,7 +186,7 @@ class LiveExperimentManager:
             votes = int(opportunity.get("consensus_votes") or 0)
             support_ratio = float(opportunity.get("consensus_support_ratio") or 0)
             if votes < 3:
-                return f"Espía rechaza: consenso insuficiente ({votes}/7 motores independientes; mínimo 3)."
+                return f"Espía rechaza: consenso insuficiente ({votes}/6 fuentes independientes; mínimo 3; V4 no suma voto por derivar de V1.1)."
             if support_ratio < 0.60:
                 return f"Espía rechaza: respaldo de {support_ratio * 100:.1f}% inferior al 60%."
             if cls._level(opportunity) not in {1, 2}:
@@ -288,6 +288,8 @@ class LiveExperimentManager:
         Cada motor aporta como máximo una señal por mercado/línea.
         """
         source_motors = ("V11", "V12", "V21", "V22", "V2U", "V11U")
+        # V4 se inspecciona como confirmación secundaria, pero nunca suma un voto porque deriva de V1.1.
+        v4_keys = {cls._key(item) for item in opportunities_by_motor.get("V4", [])}
         per_family = {}
         for motor in source_motors:
             best_by_family = {}
@@ -347,9 +349,10 @@ class LiveExperimentManager:
                 "consensus_support_ratio": round(support_ratio, 6),
                 "consensus_total_voters": total_voters,
                 "consensus_motors": supporting_motors, "opposing_motors": opposing_motors,
+                "v4_confirmation": key in v4_keys,
                 "supporting_factors": ["Respaldo independiente: " + motor for motor in supporting_motors],
                 "contradicting_factors": ["Señal contraria: " + motor for motor in opposing_motors],
-                "reason": "Consenso del Espía: " + ", ".join(supporting_motors),
+                "reason": "Consenso del Espía: " + ", ".join(supporting_motors) + ("; V4 también confirma, sin sumar voto independiente" if key in v4_keys else ""),
                 "spy_market_family": family_line,
             })
             result.append(candidate)
@@ -536,7 +539,7 @@ class LiveExperimentManager:
             ratio = float(opportunity.get("consensus_support_ratio") or 0) * 100
             supporters = ", ".join(opportunity.get("consensus_motors") or [])
             return (
-                f"Espía apuesta {selection}{line_text}: consenso independiente {votes}/7 ({ratio:.0f}% de respaldo; {supporters}); "
+                f"Espía apuesta {selection}{line_text}: consenso independiente {votes}/6 ({ratio:.0f}% de respaldo; {supporters}); "
                 f"probabilidad agregada {model_p * 100:.1f}%, edge {edge * 100:+.1f} puntos, confianza media {confidence * 100:.1f}%; "
                 f"stake {stake:.2f} vida. Solo una apuesta por partido y capital independiente de 50 vidas. "
                 f"Contexto LIVE: minuto {minute_text}, marcador {score}."
