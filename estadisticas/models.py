@@ -336,7 +336,9 @@ class LiveExperimentEntry(models.Model):
         ("V11", "Motor V1.1"),
         ("V12", "Motor V1.2"),
         ("V2", "Motor V2"),
+        ("V21", "Motor V2.1"),
         ("V22", "Motor V2.2"),
+        ("V3", "Motor V3"),
     ]
 
     experiment = models.ForeignKey(

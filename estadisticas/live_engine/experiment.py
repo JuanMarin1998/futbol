@@ -1,4 +1,5 @@
 from decimal import Decimal, ROUND_DOWN
+import math
 import re
 from typing import Any, Dict, Optional
 
@@ -10,16 +11,17 @@ from .opportunity_levels import enrich
 
 
 class LiveExperimentManager:
-    """Laboratorio virtual que ejecuta seis motores sobre el mismo snapshot LIVE."""
+    """Laboratorio virtual que ejecuta siete motores sobre el mismo snapshot LIVE."""
 
     INITIAL_LIVES = Decimal("100")
     MAX_STAKE = Decimal("10")
     MIN_STAKE = Decimal("1")
-    MOTORS = ("V1", "V11", "V12", "V2", "V21", "V22")
-    LABELS = {"V1": "V1", "V11": "V1.1", "V12": "V1.2", "V2": "V2", "V21": "V2.1", "V22": "V2.2"}
+    MOTORS = ("V1", "V11", "V12", "V2", "V21", "V22", "V3")
+    LABELS = {"V1": "V1", "V11": "V1.1", "V12": "V1.2", "V2": "V2", "V21": "V2.1", "V22": "V2.2", "V3": "V3"}
     OPPORTUNITY_ATTRS = {
         "V1": "opportunities", "V11": "opportunities_v11", "V12": "opportunities_v12",
         "V2": "opportunities_v2", "V21": "opportunities_v21", "V22": "opportunities_v22",
+        "V3": "opportunities_v3",
     }
 
     LEVEL_RANGES = {
@@ -67,6 +69,8 @@ class LiveExperimentManager:
 
     @classmethod
     def _motor_limit(cls, motor: str) -> int:
+        if motor == "V3":
+            return 3
         return 2 if motor in {"V12", "V22"} else 999999
 
     @classmethod
@@ -80,14 +84,38 @@ class LiveExperimentManager:
             Decimal("0"),
         )
 
+    @staticmethod
+    def _v3_market_family(opportunity: Dict[str, Any]) -> str:
+        text = f"{opportunity.get('market', '')} {opportunity.get('selection', '')}".casefold()
+        if any(token in text for token in ("ambos", "btts", "both teams", "total", "over", "under", "más", "mas", "menos", "goles")):
+            return "goles_btts"
+        if any(token in text for token in ("1x2", "resultado", "ganador", "match winner", "doble", "double chance", "sin empate", "draw no bet", "dnb")):
+            return "resultado"
+        return re.sub(r"\s+", " ", str(opportunity.get("market") or "").casefold().strip())
+
     @classmethod
     def _eligibility_reason(cls, experiment, motor: str, opportunity: Dict[str, Any]) -> str:
         key = cls._key(opportunity)
         if not key:
             return "Descartada: oportunidad sin mercado/selección/línea válidos."
-        if cls._current_bets(experiment, motor) >= cls._motor_limit(motor):
-            return "Descartada: este motor ya alcanzó el máximo de 2 apuestas por partido."
+        current_bets = cls._current_bets(experiment, motor)
+        if current_bets >= cls._motor_limit(motor):
+            return "Descartada: este motor ya alcanzó el máximo de apuestas por partido."
         price = Decimal(str(opportunity.get("price") or 0))
+        if motor == "V3":
+            if current_bets >= 2 and not opportunity.get("exceptional_third_bet"):
+                return "Descartada V3: la tercera apuesta requiere justificación excepcional."
+            if price < Decimal("1.40") or price > Decimal("2.10"):
+                return "Descartada V3: cuota fuera del rango 1.40–2.10."
+            if float(opportunity.get("edge") or 0) < 0.045:
+                return "Descartada V3: edge conservador inferior a 4.5 puntos."
+            if float(opportunity.get("confidence") or 0) < 0.50:
+                return "Descartada V3: confianza inferior al 50%."
+            if current_bets:
+                family = cls._v3_market_family(opportunity)
+                previous = experiment.entries.filter(motor="V3").exclude(status="CANCELLED")
+                if any(cls._v3_market_family({"market": e.market, "selection": e.selection}) == family for e in previous):
+                    return "Descartada V3: exposición correlacionada con una apuesta previa del mismo partido/mercado."
         level = cls._level(opportunity)
         if level == 0:
             model_p = float(opportunity.get("model_probability") or 0)
@@ -246,7 +274,13 @@ class LiveExperimentManager:
             f"{score} al {minute_text}, Nivel {level} · {level_name}"
         )
 
-        if motor == "V11":
+        if motor == "V3":
+            base += "; filtro de cuota 1.40–2.10, edge conservador y consenso auxiliar"
+            if opportunity.get("exceptional_third_bet"):
+                base += "; candidata excepcional por edge conservador >=10 puntos, confianza >=68% y baja dispersión"
+            if cls._current_bets(experiment, motor) >= 2:
+                base += "; tercera apuesta autorizada solo porque aporta una familia de mercado distinta, mantiene el tope de 4 vidas por partido y el máximo de 10 vidas abiertas globales"
+        elif motor == "V11":
             calibration = opportunity.get("calibration")
             temporal = opportunity.get("temporal_factor")
             if calibration:
@@ -288,6 +322,27 @@ class LiveExperimentManager:
         if not candidates or lives < cls.MIN_STAKE:
             return None, Decimal("0")
 
+        if motor == "V3":
+            candidates.sort(key=lambda o: (
+                float(o.get("edge") or 0),
+                float(o.get("confidence") or 0),
+                float(o.get("consensus_score") or 0),
+            ), reverse=True)
+            daily_open = LiveExperimentEntry.objects.filter(
+                experiment__started_at__date=timezone.localdate(), motor="V3", status="OPEN"
+            )
+            committed_today = sum((Decimal(str(e.stake)) for e in daily_open), Decimal("0"))
+            remaining_daily = max(Decimal("0"), Decimal("10") - committed_today)
+            remaining_match = max(Decimal("0"), Decimal("4") - cls._exposure(experiment, "V3"))
+            for candidate in candidates:
+                edge = Decimal(str(candidate.get("edge") or 0))
+                confidence = Decimal(str(candidate.get("confidence") or 0))
+                stake = min(Decimal("1.00"), Decimal("0.50") + max(Decimal("0"), edge) * Decimal("2") + max(Decimal("0"), confidence - Decimal("0.50")))
+                stake = min(stake, lives, remaining_daily, remaining_match, Decimal("2.00"))
+                stake = stake.quantize(Decimal("0.01"), rounding=ROUND_DOWN)
+                if stake >= Decimal("0.50"):
+                    return candidate, stake
+            return None, Decimal("0")
         if motor == "V22":
             candidates.sort(key=lambda o: (
                 float(o.get("consensus_score") or 0),
@@ -645,7 +700,7 @@ class LiveExperimentManager:
             total_pnl = sum((Decimal(str(e.pnl)) for e in motor_entries), Decimal("0"))
             total_staked = sum((Decimal(str(e.stake)) for e in motor_entries), Decimal("0"))
             best = max(motor_entries, key=lambda e: (e.level, e.model_probability, e.edge), default=None)
-            # Reconstruct equity curve from 100 so all six motors are measured identically.
+            # Reconstruct equity curve from 100 so every motor is measured identically.
             curve = [cls.INITIAL_LIVES]
             for e in sorted(motor_entries, key=lambda x: (x.placed_at, x.id)):
                 if e.status == "OPEN" or e.status == "LOST": curve.append(curve[-1] - e.stake)
@@ -660,6 +715,19 @@ class LiveExperimentManager:
                 Decimal(str(cls.INITIAL_LIVES)) + total_pnl,
             )
             available_lives = max(Decimal("0"), total_capital - open_staked)
+            settled_entries = [e for e in motor_entries if e.status in {"WON", "LOST"}]
+            brier_score = (
+                sum((float(e.model_probability) - (1.0 if e.status == "WON" else 0.0)) ** 2 for e in settled_entries)
+                / len(settled_entries)
+            ) if settled_entries else None
+            log_loss = (
+                sum(
+                    -math.log(max(0.0001, min(0.9999, float(e.model_probability))))
+                    if e.status == "WON"
+                    else -math.log(1 - max(0.0001, min(0.9999, float(e.model_probability))))
+                    for e in settled_entries
+                ) / len(settled_entries)
+            ) if settled_entries else None
             motors[motor] = {
                 "label": cls.LABELS[motor],
                 "decisions": len(motor_entries),
@@ -678,6 +746,8 @@ class LiveExperimentManager:
                 "min_lives": float(min(curve)),
                 "roi": float((total_pnl / total_staked) * 100) if total_staked else 0.0,
                 "hit_rate": float((sum(1 for e in motor_entries if e.status == "WON") / max(1, sum(1 for e in motor_entries if e.status in {"WON", "LOST"}))) * 100),
+                "brier_score": brier_score,
+                "log_loss": log_loss,
                 "best_level": best.level if best else 0,
                 "best_probability": float(best.model_probability) if best else 0,
                 "best_selection": best.selection if best else "",
