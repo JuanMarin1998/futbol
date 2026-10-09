@@ -61,11 +61,37 @@ class LiveExperimentManager:
         para stake/prioridad son una capa externa y no forman parte de sus
         algoritmos de predicción.
         """
-        if motor not in {"V1", "V11", "V2", "V12", "V21", "V22"}:
-            return list(opportunities or [])
-        # V2.2 calcula el nivel al filtrar, pero no lo adjunta al objeto
-        # devuelto. El laboratorio necesita ese nivel para validar y apostar.
-        return [enrich(dict(opportunity)) for opportunity in (opportunities or [])]
+        prepared = []
+        for source in opportunities or []:
+            opportunity = dict(source)
+            try:
+                price = float(str(opportunity.get("price") or 0).replace(",", "."))
+                model_probability = float(opportunity.get("model_probability") or 0)
+            except (TypeError, ValueError):
+                continue
+
+            # V1/V1.1/V1.2/V2/V2.1/V2.2 calculan el edge frente a la
+            # probabilidad implícita de la cuota. Recalcular en una sola capa
+            # impide que edge, edge_pct y la auditoría arrastren datos distintos.
+            if motor != "V3":
+                if price <= 1 or not 0 <= model_probability <= 1:
+                    continue
+                implied = 1.0 / price
+                edge = model_probability - implied
+                opportunity["implied_probability"] = round(implied, 6)
+                opportunity["edge"] = round(edge, 6)
+                opportunity["edge_pct"] = round(edge * 100, 2)
+                opportunity["edge_basis"] = "probabilidad_implícita_de_cuota"
+            else:
+                # V3 compara contra la probabilidad justa sin margen; su edge
+                # conservador no debe confundirse con modelo menos implícita bruta.
+                opportunity["edge_basis"] = "probabilidad_justa_de_mercado"
+                opportunity["edge_pct"] = round(float(opportunity.get("edge") or 0) * 100, 2)
+
+            if motor in {"V1", "V11", "V2", "V12", "V21", "V22"}:
+                opportunity = enrich(opportunity)
+            prepared.append(opportunity)
+        return prepared
 
     @classmethod
     def _motor_limit(cls, motor: str) -> int:
@@ -273,9 +299,9 @@ class LiveExperimentManager:
             market_fair_text = f"{market_fair * 100:.1f}%"
             base = (
                 f"{selection}{line_text} elegido por V3: probabilidad prudente {probability_text}; "
-                f"probabilidad implícita de la cuota {implied_text}, probabilidad justa de mercado {market_fair_text}; "
-                f"edge conservador {edge_text} tras penalización; contexto al momento de apostar: "
-                f"{score} al {minute_text}, Nivel {level} · {level_name}"
+                f"probabilidad implícita bruta de la cuota {implied_text}, probabilidad justa de mercado {market_fair_text}; "
+                f"edge conservador {edge_text} calculado contra la probabilidad justa de mercado, después de penalizar incertidumbre; "
+                f"contexto al momento de apostar: {score} al {minute_text}, Nivel {level} · {level_name}"
             )
             base += "; filtro de cuota 1.40–2.10 y consenso auxiliar"
         else:
@@ -775,6 +801,18 @@ class LiveExperimentManager:
                     if isinstance(e.opportunity_snapshot, dict) else None
                 ),
                 "edge_pct": round(e.edge * 100, 2),
+                "edge_basis": (
+                    e.opportunity_snapshot.get("edge_basis")
+                    if isinstance(e.opportunity_snapshot, dict) else None
+                ),
+                "raw_edge": (
+                    e.opportunity_snapshot.get("raw_edge")
+                    if isinstance(e.opportunity_snapshot, dict) else None
+                ),
+                "uncertainty_penalty": (
+                    e.opportunity_snapshot.get("uncertainty_penalty")
+                    if isinstance(e.opportunity_snapshot, dict) else None
+                ),
                 "level": e.level, "level_name": e.level_name, "stake": float(e.stake),
                 "potential_profit": float(e.potential_profit), "status": e.status, "pnl": float(e.pnl),
                 "reason": e.reason, "supporting_factors": e.supporting_factors,
