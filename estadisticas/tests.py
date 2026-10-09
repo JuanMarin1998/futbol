@@ -40,3 +40,32 @@ class LiveOpportunityEngineV3Tests(SimpleTestCase):
         result = LiveExperimentManager._v3_market_family({"market": "1X2", "selection": "Home"})
         double_chance = LiveExperimentManager._v3_market_family({"market": "Doble oportunidad", "selection": "1X"})
         self.assertEqual(result, double_chance)
+
+
+
+class LiveOpportunityCalculationAuditTests(SimpleTestCase):
+    def test_non_v3_edge_is_recomputed_from_model_and_decimal_odds(self):
+        opportunities = LiveExperimentManager._prepare_opportunities("V2", [{
+            "market": "1X2", "selection": "Home", "price": 1.70,
+            "model_probability": 0.80, "implied_probability": 0.588,
+            "edge": 0.254, "confidence": 0.80,
+        }])
+        self.assertEqual(len(opportunities), 1)
+        item = opportunities[0]
+        self.assertAlmostEqual(item["implied_probability"], 1 / 1.70, places=6)
+        self.assertAlmostEqual(item["edge"], 0.80 - 1 / 1.70, places=6)
+        self.assertAlmostEqual(item["edge_pct"], (0.80 - 1 / 1.70) * 100, places=2)
+        self.assertEqual(item["edge_basis"], "probabilidad_implícita_de_cuota")
+
+    def test_v3_keeps_conservative_edge_against_fair_market_probability(self):
+        opportunities = LiveExperimentManager._prepare_opportunities("V3", [{
+            "market": "1X2", "selection": "Home", "price": 1.70,
+            "model_probability": 0.80, "implied_probability": 1 / 1.70,
+            "market_fair_probability": 0.55, "edge": 0.20,
+            "edge_pct": 20.0, "confidence": 0.80,
+        }])
+        self.assertEqual(len(opportunities), 1)
+        item = opportunities[0]
+        self.assertAlmostEqual(item["implied_probability"], 1 / 1.70, places=6)
+        self.assertAlmostEqual(item["edge"], 0.20, places=6)
+        self.assertEqual(item["edge_basis"], "probabilidad_justa_de_mercado")
