@@ -261,8 +261,9 @@ class LiveOpportunityEngineV3:
                 "mapping_confidence": mapping,
                 "reason": (
                     f"V3: cuota {price:.2f} dentro de 1.40–2.10; probabilidad prudente "
-                    f"{calibrated*100:.1f}%, probabilidad justa de mercado {fair_p*100:.1f}%, "
-                    f"edge conservador {conservative_edge*100:+.1f} puntos; "
+                    f"{calibrated*100:.1f}%, probabilidad implícita bruta {raw_implied*100:.1f}%, "
+                    f"probabilidad justa de mercado {fair_p*100:.1f}%, edge conservador frente al mercado justo "
+                    f"{conservative_edge*100:+.1f} puntos; "
                     f"consenso {consensus_count}/6, "
                     f"dispersión {dispersion*100:.1f} puntos, minuto {elapsed:.0f}'. "
                     + ("Edge extremo: penalización extra y validación reforzada por consenso/calidad. " if extreme else "")

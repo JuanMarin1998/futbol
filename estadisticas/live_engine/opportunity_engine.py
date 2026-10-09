@@ -111,12 +111,22 @@ class LiveOpportunityEngine:
                 else:
                     away_win += hp * ap
 
-        total_current = home_goals + away_goals
-        lam_total = lh + la
-        over_05 = 1 - cls._poisson_cdf(0, lam_total)
-        over_15 = 1 - cls._poisson_cdf(max(0, 1 - total_current), lam_total)
-        over_25 = 1 - cls._poisson_cdf(max(0, 2 - total_current), lam_total)
-        under_25 = 1 - over_25
+        total_current = max(0, int(home_goals)) + max(0, int(away_goals))
+        lam_total = max(0.0, lh) + max(0.0, la)
+
+        # Una línea de goles que ya se ha superado en el marcador tiene
+        # probabilidad 1.0; no debe seguir dependiendo de los goles futuros.
+        # Si aún falta superar la línea, calculamos la cola Poisson necesaria.
+        def probability_over(target_total: int) -> float:
+            if total_current >= target_total:
+                return 1.0
+            goals_needed = target_total - total_current
+            return min(1.0, max(0.0, 1.0 - cls._poisson_cdf(goals_needed - 1, lam_total)))
+
+        over_05 = probability_over(1)
+        over_15 = probability_over(2)
+        over_25 = probability_over(3)
+        under_25 = 1.0 - over_25
 
         home_scores = 1 - cls._poisson_cdf(0, lh)
         away_scores = 1 - cls._poisson_cdf(0, la)
