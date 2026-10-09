@@ -643,6 +643,7 @@ def _experimento_estado_global():
             ],
             "pending_final_count": pending_final_count,
             "processing_errors": processing_errors[:20],
+            "startup_result": cache.get("live_experiment_start_result"),
             "busy": False,
         }
     finally:
@@ -888,6 +889,7 @@ def api_live_experiment_start_all(request):
         })
 
     try:
+        cache.delete("live_experiment_start_result")
         worker = Thread(
             target=_iniciar_laboratorio_live_en_segundo_plano,
             name="live-laboratory-start",
