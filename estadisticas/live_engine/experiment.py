@@ -406,13 +406,6 @@ class LiveExperimentManager:
             temporal = opportunity.get("temporal_factor")
             if temporal is not None:
                 base += f"; control temporal {float(temporal):.2f}"
-        elif motor == "V2U":
-            base += "; filtro exclusivo Nivel 1 · Muy fuerte; stake máximo 20 vidas"
-        elif motor == "V11U":
-            temporal = opportunity.get("temporal_factor")
-            if temporal is not None:
-                base += f"; control temporal Ultra {float(temporal):.2f}"
-            base += "; filtro exclusivo Nivel 2 · Fuerte; stake máximo 15 vidas"
         elif motor == "V22":
             consensus = float(opportunity.get("consensus_score") or 0)
             base += f"; consenso de indicadores {consensus * 100:.1f}%"
