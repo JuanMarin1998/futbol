@@ -239,7 +239,7 @@ class LiveExperimentManager:
         selection = normalize(opportunity.get("selection"))
         line = normalize(opportunity.get("line")).replace(",", ".")
         if not line and any(token in f"{market} {selection}" for token in ("total", "over", "under", "goles", "mas", "menos")):
-            found_line = re.search(r"(\\d+(?:\\.\\d+)?)", f"{market} {selection}")
+            found_line = re.search(r"(\d+(?:\.\d+)?)", f"{market} {selection}".replace(",", "."))
             if found_line:
                 line = found_line.group(1)
         # Unifica nombres habituales del mismo mercado entre feeds.
@@ -804,7 +804,7 @@ class LiveExperimentManager:
         brier = sum((p - y) ** 2 for p, y in observations) / total
         log_loss = sum(
             -math.log(max(0.0001, min(0.9999, p))) if y else
-            -math.log(max(0.0001, min(0.9999, 1.0 - p))
+            -math.log(max(0.0001, min(0.9999, 1.0 - p)))
             for p, y in observations
         ) / total
         bins = []
