@@ -260,6 +260,86 @@ class LiveExperimentManager:
         return ""
 
     @classmethod
+    def _initial_lives(cls, motor: str) -> Decimal:
+        """Capital inicial independiente por motor; el Espía arranca con 50 vidas."""
+        return Decimal(str(cls.INITIAL_LIVES_BY_MOTOR.get(motor, cls.INITIAL_LIVES)))
+
+    @classmethod
+    def _spy_opportunities(cls, opportunities_by_motor):
+        """Agrega señales de los motores visibles, aunque no hayan realizado apuesta.
+
+        V4 reutiliza la fuente de V1.1 y no se cuenta como voto independiente.
+        Cada motor aporta como máximo una señal por mercado/línea.
+        """
+        source_motors = ("V11", "V12", "V21", "V22", "V2U", "V11U")
+        per_family = {}
+        for motor in source_motors:
+            best_by_family = {}
+            for raw in opportunities_by_motor.get(motor, []):
+                opportunity = dict(raw)
+                if opportunity.get("unsupported_market"):
+                    continue
+                key = cls._key(opportunity)
+                if not key or key.count("|") < 2:
+                    continue
+                parts = key.rsplit("|", 2)
+                family_line = parts[0] + "|" + parts[2]
+                try:
+                    edge = float(opportunity.get("edge") or 0)
+                    confidence = float(opportunity.get("confidence") or 0)
+                    price = float(opportunity.get("price") or 0)
+                except (TypeError, ValueError):
+                    continue
+                if price < 1.30:
+                    continue
+                rank = (edge, confidence, -cls._level(opportunity))
+                current = best_by_family.get(family_line)
+                if current is None or rank > current[0]:
+                    best_by_family[family_line] = (rank, key, opportunity)
+            for family_line, (_, key, opportunity) in best_by_family.items():
+                per_family.setdefault(family_line, []).append({"motor": motor, "key": key, "opportunity": opportunity})
+        grouped = {}
+        for family_line, signals in per_family.items():
+            for signal in signals:
+                grouped.setdefault((family_line, signal["key"]), []).append(signal)
+        result = []
+        for (family_line, key), supporters in grouped.items():
+            signal_set = per_family[family_line]
+            supporting_motors = sorted({item["motor"] for item in supporters})
+            opposing_motors = sorted({item["motor"] for item in signal_set if item["key"] != key})
+            total_voters = len({item["motor"] for item in signal_set})
+            support_ratio = len(supporting_motors) / total_voters if total_voters else 0.0
+            base_items = [item["opportunity"] for item in supporters]
+            prices = sorted(float(item.get("price") or 0) for item in base_items if float(item.get("price") or 0) > 1)
+            if not prices:
+                continue
+            price = prices[len(prices) // 2]
+            probabilities = [max(0.0, min(1.0, float(item.get("model_probability") or 0))) for item in base_items]
+            confidences = [max(0.0, min(1.0, float(item.get("confidence") or 0))) for item in base_items]
+            model_probability = sum(probabilities) / len(probabilities)
+            implied_probability = 1.0 / price
+            edge = model_probability - implied_probability
+            levels = [cls._level(item) for item in base_items if cls._level(item) in {1, 2, 3}]
+            candidate = dict(base_items[0])
+            candidate.update({
+                "price": price, "model_probability": round(model_probability, 6),
+                "implied_probability": round(implied_probability, 6), "edge": round(edge, 6),
+                "edge_pct": round(edge * 100, 2),
+                "confidence": round(sum(confidences) / len(confidences), 6),
+                "level": min(levels) if levels else 0,
+                "consensus_votes": len(supporting_motors),
+                "consensus_support_ratio": round(support_ratio, 6),
+                "consensus_total_voters": total_voters,
+                "consensus_motors": supporting_motors, "opposing_motors": opposing_motors,
+                "supporting_factors": ["Respaldo independiente: " + motor for motor in supporting_motors],
+                "contradicting_factors": ["Señal contraria: " + motor for motor in opposing_motors],
+                "reason": "Consenso del Espía: " + ", ".join(supporting_motors),
+                "spy_market_family": family_line,
+            })
+            result.append(candidate)
+        return result
+
+    @classmethod
     def _level(cls, opportunity: Dict[str, Any]) -> int:
         try:
             value = int(opportunity.get("level"))
