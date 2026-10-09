@@ -84,6 +84,15 @@ class LiveExperimentManager:
             Decimal("0"),
         )
 
+    @staticmethod
+    def _v3_market_family(opportunity: Dict[str, Any]) -> str:
+        text = f"{opportunity.get('market', '')} {opportunity.get('selection', '')}".casefold()
+        if any(token in text for token in ("ambos", "btts", "both teams", "total", "over", "under", "más", "mas", "menos", "goles")):
+            return "goles_btts"
+        if any(token in text for token in ("1x2", "resultado", "ganador", "match winner", "doble", "double chance", "sin empate", "draw no bet", "dnb")):
+            return "resultado"
+        return re.sub(r"\\s+", " ", str(opportunity.get("market") or "").casefold().strip())
+
     @classmethod
     def _eligibility_reason(cls, experiment, motor: str, opportunity: Dict[str, Any]) -> str:
         key = cls._key(opportunity)
@@ -102,6 +111,11 @@ class LiveExperimentManager:
                 return "Descartada V3: edge conservador inferior a 4.5 puntos."
             if float(opportunity.get("confidence") or 0) < 0.50:
                 return "Descartada V3: confianza inferior al 50%."
+            if current_bets:
+                family = cls._v3_market_family(opportunity)
+                previous = experiment.entries.filter(motor="V3").exclude(status="CANCELLED")
+                if any(cls._v3_market_family({"market": e.market, "selection": e.selection}) == family for e in previous):
+                    return "Descartada V3: exposición correlacionada con una apuesta previa del mismo partido/mercado."
         level = cls._level(opportunity)
         if level == 0:
             model_p = float(opportunity.get("model_probability") or 0)
