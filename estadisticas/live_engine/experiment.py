@@ -1,4 +1,5 @@
 from decimal import Decimal, ROUND_DOWN
+import math
 import re
 from typing import Any, Dict, Optional
 
@@ -10,7 +11,7 @@ from .opportunity_levels import enrich
 
 
 class LiveExperimentManager:
-    """Laboratorio virtual que ejecuta seis motores sobre el mismo snapshot LIVE."""
+    """Laboratorio virtual que ejecuta siete motores sobre el mismo snapshot LIVE."""
 
     INITIAL_LIVES = Decimal("100")
     MAX_STAKE = Decimal("10")
@@ -684,7 +685,7 @@ class LiveExperimentManager:
             total_pnl = sum((Decimal(str(e.pnl)) for e in motor_entries), Decimal("0"))
             total_staked = sum((Decimal(str(e.stake)) for e in motor_entries), Decimal("0"))
             best = max(motor_entries, key=lambda e: (e.level, e.model_probability, e.edge), default=None)
-            # Reconstruct equity curve from 100 so all six motors are measured identically.
+            # Reconstruct equity curve from 100 so every motor is measured identically.
             curve = [cls.INITIAL_LIVES]
             for e in sorted(motor_entries, key=lambda x: (x.placed_at, x.id)):
                 if e.status == "OPEN" or e.status == "LOST": curve.append(curve[-1] - e.stake)
@@ -706,7 +707,7 @@ class LiveExperimentManager:
             ) if settled_entries else None
             log_loss = (
                 sum(
-                    -((1.0 if e.status == "WON" else 0.0) * __import__("math").log(max(0.0001, min(0.9999, float(e.model_probability))))
+                    -((1.0 if e.status == "WON" else 0.0) * math.log(max(0.0001, min(0.9999, float(e.model_probability))))
                     + (0.0 if e.status == "WON" else 1.0) * __import__("math").log(1 - max(0.0001, min(0.9999, float(e.model_probability)))))
                     for e in settled_entries
                 ) / len(settled_entries)
