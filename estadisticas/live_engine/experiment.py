@@ -1,6 +1,7 @@
 from decimal import Decimal, ROUND_DOWN
 import math
 import re
+import unicodedata
 from typing import Any, Dict, Optional
 
 from django.db import transaction
@@ -122,8 +123,14 @@ class LiveExperimentManager:
     @classmethod
     def _eligibility_reason(cls, experiment, motor: str, opportunity: Dict[str, Any]) -> str:
         key = cls._key(opportunity)
-        if not key:
+        if not key or key.strip("|") == "":
             return "Descartada: oportunidad sin mercado/selección/línea válidos."
+        # Este control va antes de los filtros de nivel: una repetición debe
+        # quedar identificada como tal aunque su señal haya cambiado de nivel.
+        if LiveExperimentEntry.objects.filter(
+            experiment=experiment, motor=motor, opportunity_key=key
+        ).exists():
+            return "Repetida: el motor ya tomó esta misma oportunidad/mercado."
         current_bets = cls._current_bets(experiment, motor)
         if current_bets >= cls._motor_limit(motor):
             return "Descartada: este motor ya alcanzó el máximo de apuestas por partido."
@@ -174,10 +181,6 @@ class LiveExperimentManager:
             consensus = float(opportunity.get("consensus_score") or 0)
             if consensus < 0.30:
                 return "Descartada V2.2: respaldo de indicadores inferior al 30%."
-        if LiveExperimentEntry.objects.filter(
-            experiment=experiment, motor=motor, opportunity_key=key
-        ).exists():
-            return "Repetida: el motor ya tomó esta misma oportunidad/mercado."
         return ""
 
     @classmethod
@@ -226,7 +229,53 @@ class LiveExperimentManager:
 
     @staticmethod
     def _key(opportunity: Dict[str, Any]) -> str:
-        return "|".join(str(opportunity.get(k) or "").strip().lower() for k in ("market", "selection", "line"))
+        """Clave estable para que variaciones de texto no dupliquen una apuesta."""
+        def normalize(value):
+            text = unicodedata.normalize("NFKD", str(value or "").casefold())
+            text = "".join(char for char in text if not unicodedata.combining(char))
+            return re.sub(r"\s+", " ", text).strip()
+
+        market = normalize(opportunity.get("market"))
+        selection = normalize(opportunity.get("selection"))
+        line = normalize(opportunity.get("line")).replace(",", ".")
+        # Unifica nombres habituales del mismo mercado entre feeds.
+        if any(token in market for token in ("1x2", "resultado", "ganador", "match winner")):
+            market = "resultado"
+        elif any(token in market for token in ("doble", "double chance")):
+            market = "doble oportunidad"
+        elif any(token in market for token in ("ambos", "btts", "both teams")):
+            market = "ambos marcan"
+            if selection in {"si", "yes", "ambos si", "both yes"}:
+                selection = "si"
+            elif selection in {"no", "ambos no", "both no"}:
+                selection = "no"
+        elif any(token in market for token in ("total", "over", "under", "goles", "mas", "menos")):
+            market = "total goles"
+        # Normaliza selecciones equivalentes, sin mezclar líneas diferentes.
+        if selection in {"home", "local", "1"}:
+            selection = "1"
+        elif selection in {"away", "visitante", "2"}:
+            selection = "2"
+        elif selection in {"draw", "empate", "x"}:
+            selection = "x"
+        elif any(token in selection for token in ("over", "mas de", "mas")):
+            selection = "over"
+        elif any(token in selection for token in ("under", "menos de", "menos")):
+            selection = "under"
+        elif selection in {"1x", "1 x"}:
+            selection = "1x"
+        elif selection in {"12", "1 2"}:
+            selection = "12"
+        elif selection in {"x2", "x 2"}:
+            selection = "x2"
+        # 2.50 y 2,5 se consideran la misma línea.
+        try:
+            if line:
+                numeric_line = float(line)
+                line = str(int(numeric_line)) if numeric_line.is_integer() else f"{numeric_line:g}"
+        except ValueError:
+            pass
+        return "|".join((market, selection, line))
 
     @staticmethod
     def _level_name(level: int) -> str:
@@ -727,6 +776,59 @@ class LiveExperimentManager:
         )
         return archive
 
+    @staticmethod
+    def _calibration_summary(rows):
+        """Métricas históricas de calibración; no alteran las predicciones."""
+        observations = []
+        for probability, status in rows:
+            try:
+                probability = max(0.0, min(1.0, float(probability)))
+            except (TypeError, ValueError):
+                continue
+            if status not in {"WON", "LOST"}:
+                continue
+            observations.append((probability, 1.0 if status == "WON" else 0.0))
+
+        total = len(observations)
+        if not total:
+            return {
+                "sample_size": 0, "win_rate": None, "mean_probability": None,
+                "brier_score": None, "log_loss": None, "expected_calibration_error": None,
+                "bins": [],
+            }
+
+        brier = sum((p - y) ** 2 for p, y in observations) / total
+        log_loss = sum(
+            -math.log(max(0.0001, min(0.9999, p))) if y else
+            -math.log(max(0.0001, min(0.9999, 1.0 - p))
+            for p, y in observations
+        ) / total
+        bins = []
+        weighted_gap = 0.0
+        for index in range(10):
+            items = [(p, y) for p, y in observations if min(9, int(p * 10)) == index]
+            if not items:
+                continue
+            mean_p = sum(p for p, _ in items) / len(items)
+            actual = sum(y for _, y in items) / len(items)
+            weighted_gap += len(items) / total * abs(mean_p - actual)
+            bins.append({
+                "range": f"{index * 10}–{(index + 1) * 10}%",
+                "count": len(items),
+                "mean_probability": round(mean_p * 100, 2),
+                "observed_win_rate": round(actual * 100, 2),
+                "absolute_gap_points": round(abs(mean_p - actual) * 100, 2),
+            })
+        return {
+            "sample_size": total,
+            "win_rate": round(sum(y for _, y in observations) / total * 100, 2),
+            "mean_probability": round(sum(p for p, _ in observations) / total * 100, 2),
+            "brier_score": round(brier, 6),
+            "log_loss": round(log_loss, 6),
+            "expected_calibration_error": round(weighted_gap * 100, 2),
+            "bins": bins,
+        }
+
     @classmethod
     def serialize(cls, experiment):
         entries = []
@@ -752,6 +854,10 @@ class LiveExperimentManager:
             )
             available_lives = max(Decimal("0"), total_capital - open_staked)
             settled_entries = [e for e in motor_entries if e.status in {"WON", "LOST"}]
+            historical_rows = LiveExperimentEntry.objects.filter(
+                motor=motor, status__in=("WON", "LOST")
+            ).order_by("-placed_at").values_list("model_probability", "status")[:1000]
+            historical_calibration = cls._calibration_summary(historical_rows)
             brier_score = (
                 sum((float(e.model_probability) - (1.0 if e.status == "WON" else 0.0)) ** 2 for e in settled_entries)
                 / len(settled_entries)
@@ -784,6 +890,7 @@ class LiveExperimentManager:
                 "hit_rate": float((sum(1 for e in motor_entries if e.status == "WON") / max(1, sum(1 for e in motor_entries if e.status in {"WON", "LOST"}))) * 100),
                 "brier_score": brier_score,
                 "log_loss": log_loss,
+                "historical_calibration": historical_calibration,
                 "best_level": best.level if best else 0,
                 "best_probability": float(best.model_probability) if best else 0,
                 "best_selection": best.selection if best else "",
