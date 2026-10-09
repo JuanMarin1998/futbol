@@ -14,6 +14,8 @@ from typing import Any, Dict, List
 from django.utils import timezone
 
 from ..models import LiveExperimentEntry
+from .opportunity_engine import LiveOpportunityEngine
+from .opportunity_engine_v12 import LiveOpportunityEngineV12
 
 from .opportunity_levels import enrich
 
@@ -125,10 +127,40 @@ class LiveOpportunityEngineV3:
                 if key:
                     raw_by_key.setdefault(key, []).append((label, item))
 
+        odds = list(getattr(match, "odds", []) or [])
+        # Evaluación base propia para ampliar la cobertura de mercados compatibles,
+        # incluso cuando ningún otro motor publicó una señal positiva.
+        elapsed = LiveOpportunityEngine._elapsed_minutes(match.minute, match.period)
+        lh, la = LiveOpportunityEngine._remaining_lambda(match.performance or {}, elapsed)
+        probabilities = LiveOpportunityEngineV12._probabilities(
+            int(match.home_score or 0), int(match.away_score or 0), lh, la
+        )
+        for odd in odds:
+            price = cls._number(odd.get("price"))
+            if price is None or not cls.MIN_PRICE <= price <= cls.MAX_PRICE:
+                continue
+            market_key = LiveOpportunityEngineV12._market_key(
+                str(odd.get("market_name") or ""), str(odd.get("name") or ""),
+                odd.get("line"), match.home_team, match.away_team
+            )
+            probability = probabilities.get(market_key) if market_key else None
+            if probability is None or not 0 < probability < 1:
+                continue
+            item = {
+                "market": odd.get("market_name", ""),
+                "selection": odd.get("name", ""),
+                "line": odd.get("line"),
+                "price": price,
+                "model_probability": probability,
+                "model": "v3_base_poisson",
+            }
+            key = cls._key(item)
+            if key:
+                raw_by_key.setdefault(key, []).append(("Base V3", item))
+
         if not raw_by_key:
             return []
 
-        odds = list(getattr(match, "odds", []) or [])
         fair_probs = cls._market_fair_probabilities(odds)
         elapsed = cls._elapsed(match)
         temporal_factor = 0.65 if elapsed < 15 else 0.78 if elapsed < 30 else 0.90 if elapsed < 45 else 1.0
@@ -157,7 +189,8 @@ class LiveOpportunityEngineV3:
             edge = calibrated - fair_p
             uncertainty_penalty = min(0.12, 0.02 + dispersion * 0.50)
             conservative_edge = edge - uncertainty_penalty
-            consensus = len({label for label, _ in observations}) / len(cls.SOURCE_ATTRS)
+            consensus_count = len({label for label, _ in observations if label != "Base V3"})
+            consensus = consensus_count / len(cls.SOURCE_ATTRS)
             quality = max(0.0, min(1.0, float(getattr(match, "data_quality", 0) or 0)))
             mapping = max(0.0, min(1.0, float(getattr(match, "mapping_confidence", 0) or 0)))
             confidence = max(0.35, min(0.88,
@@ -189,7 +222,7 @@ class LiveOpportunityEngineV3:
                 "model": "v3_conservative_ensemble",
                 "calibration": "historical_market_calibration" if historical_rate is not None else "market_shrinkage_proxy_pending_20_settled_v3_bets",
                 "calibration_sample": historical_n,
-                "calibration_sources": [label for label, _ in observations],
+                "calibration_sources": [label for label, _ in observations if label != "Base V3"],
                 "consensus_score": round(consensus, 3),
                 "model_dispersion": round(dispersion, 4),
                 "uncertainty_penalty": round(uncertainty_penalty, 4),
@@ -202,7 +235,7 @@ class LiveOpportunityEngineV3:
                     f"V3: cuota {price:.2f} dentro de 1.40–2.10; probabilidad prudente "
                     f"{calibrated*100:.1f}%, probabilidad justa de mercado {fair_p*100:.1f}%, "
                     f"edge conservador {conservative_edge*100:+.1f} puntos; "
-                    f"consenso {len({label for label, _ in observations})}/6, "
+                    f"consenso {consensus_count}/6, "
                     f"dispersión {dispersion*100:.1f} puntos, minuto {elapsed:.0f}'. "
                     + ("Edge extremo sometido a validación adicional. " if extreme else "")
                     + ("Candidata excepcional para una tercera apuesta, sujeta a límites de riesgo. " if exceptional else "")
