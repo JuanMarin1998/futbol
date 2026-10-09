@@ -295,7 +295,7 @@ class LiveExperimentManager:
             best_by_family = {}
             for raw in opportunities_by_motor.get(motor, []):
                 opportunity = dict(raw)
-                if opportunity.get("unsupported_market"):
+                if opportunity.get("unsupported_market") or cls._level(opportunity) not in {1, 2}:
                     continue
                 key = cls._key(opportunity)
                 if not key or key.count("|") < 2:
@@ -1125,7 +1125,7 @@ class LiveExperimentManager:
             total_pnl = sum((Decimal(str(e.pnl)) for e in motor_entries), Decimal("0"))
             total_staked = sum((Decimal(str(e.stake)) for e in motor_entries), Decimal("0"))
             best = max(motor_entries, key=lambda e: (e.level, e.model_probability, e.edge), default=None)
-            # Reconstruct equity curve from 100 so every motor is measured identically.
+            # Reconstruye la curva desde el capital inicial propio de cada motor.
             curve = [cls._initial_lives(motor)]
             for e in sorted(motor_entries, key=lambda x: (x.placed_at, x.id)):
                 if e.status == "OPEN" or e.status == "LOST": curve.append(curve[-1] - e.stake)
