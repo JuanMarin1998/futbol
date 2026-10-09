@@ -339,6 +339,8 @@ class LiveExperimentEntry(models.Model):
         ("V21", "Motor V2.1"),
         ("V22", "Motor V2.2"),
         ("V3", "Motor V3"),
+        ("V2U", "Motor V2.Ultra"),
+        ("V11U", "Motor V1.1 Ultra"),
     ]
 
     experiment = models.ForeignKey(
@@ -346,7 +348,7 @@ class LiveExperimentEntry(models.Model):
         on_delete=models.CASCADE,
         related_name="entries",
     )
-    motor = models.CharField(max_length=3, choices=MOTOR)
+    motor = models.CharField(max_length=4, choices=MOTOR)
     opportunity_key = models.CharField(max_length=255)
     market = models.CharField(max_length=150, blank=True)
     selection = models.CharField(max_length=150)
@@ -394,7 +396,7 @@ class LiveExperimentSnapshot(models.Model):
         on_delete=models.CASCADE,
         related_name="snapshots",
     )
-    motor = models.CharField(max_length=3, choices=LiveExperimentEntry.MOTOR)
+    motor = models.CharField(max_length=4, choices=LiveExperimentEntry.MOTOR)
     minute = models.CharField(max_length=30, blank=True)
     period = models.CharField(max_length=60, blank=True)
     home_score = models.IntegerField(null=True, blank=True)

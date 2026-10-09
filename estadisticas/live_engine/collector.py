@@ -11,6 +11,8 @@ from .opportunity_engine_v12 import LiveOpportunityEngineV12
 from .opportunity_engine_v21 import LiveOpportunityEngineV21
 from .opportunity_engine_v22 import LiveOpportunityEngineV22
 from .opportunity_engine_v3 import LiveOpportunityEngineV3
+from .opportunity_engine_v2_ultra import LiveOpportunityEngineV2Ultra
+from .opportunity_engine_v11_ultra import LiveOpportunityEngineV11Ultra
 
 
 class LiveMatchCollector:
@@ -217,6 +219,8 @@ class LiveMatchCollector:
             match.opportunities_v21 = []
             match.opportunities_v22 = []
             match.opportunities_v3 = []
+            match.opportunities_v2_ultra = []
+            match.opportunities_v11_ultra = []
         else:
             match.opportunities = LiveOpportunityEngine.evaluate(match)
             match.opportunities_v2 = LiveOpportunityEngineV2.evaluate(match)
@@ -225,6 +229,8 @@ class LiveMatchCollector:
             match.opportunities_v21 = LiveOpportunityEngineV21.evaluate(match)
             match.opportunities_v22 = LiveOpportunityEngineV22.evaluate(match)
             match.opportunities_v3 = LiveOpportunityEngineV3.evaluate(match)
+            match.opportunities_v2_ultra = LiveOpportunityEngineV2Ultra.evaluate(match)
+            match.opportunities_v11_ultra = LiveOpportunityEngineV11Ultra.evaluate(match)
         return match
 
     @classmethod
@@ -384,6 +390,8 @@ class LiveMatchCollector:
         match.opportunities_v22 = LiveOpportunityEngineV22.evaluate(match)
         match.opportunities_v21 = LiveOpportunityEngineV21.evaluate(match)
         match.opportunities_v3 = LiveOpportunityEngineV3.evaluate(match)
+        match.opportunities_v2_ultra = LiveOpportunityEngineV2Ultra.evaluate(match)
+        match.opportunities_v11_ultra = LiveOpportunityEngineV11Ultra.evaluate(match)
         return match
 
     def _obtener_ecuabet_evento(self, event_id: int) -> Dict[str, Any]:
