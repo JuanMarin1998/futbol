@@ -246,7 +246,11 @@ class LiveExperimentManager:
             f"{score} al {minute_text}, Nivel {level} · {level_name}"
         )
 
-        if motor == "V11":
+        if motor == "V3":
+            base += "; filtro de cuota 1.40–2.10, edge conservador y consenso auxiliar"
+            if opportunity.get("exceptional_third_bet"):
+                base += "; candidata excepcional para tercera apuesta, sujeta a límites de exposición"
+        elif motor == "V11":
             calibration = opportunity.get("calibration")
             temporal = opportunity.get("temporal_factor")
             if calibration:
@@ -288,6 +292,28 @@ class LiveExperimentManager:
         if not candidates or lives < cls.MIN_STAKE:
             return None, Decimal("0")
 
+        if motor == "V3":
+            candidates.sort(key=lambda o: (
+                bool(o.get("exceptional_third_bet")),
+                float(o.get("edge") or 0),
+                float(o.get("confidence") or 0),
+                float(o.get("consensus_score") or 0),
+            ), reverse=True)
+            daily_open = LiveExperimentEntry.objects.filter(
+                experiment__started_at__date=timezone.localdate(), motor="V3", status="OPEN"
+            )
+            committed_today = sum((Decimal(str(e.stake)) for e in daily_open), Decimal("0"))
+            remaining_daily = max(Decimal("0"), Decimal("10") - committed_today)
+            remaining_match = max(Decimal("0"), Decimal("4") - cls._exposure(experiment, "V3"))
+            for candidate in candidates:
+                edge = Decimal(str(candidate.get("edge") or 0))
+                confidence = Decimal(str(candidate.get("confidence") or 0))
+                stake = min(Decimal("1.00"), Decimal("0.50") + max(Decimal("0"), edge) * Decimal("2") + max(Decimal("0"), confidence - Decimal("0.50")))
+                stake = min(stake, lives, remaining_daily, remaining_match, Decimal("2.00"))
+                stake = stake.quantize(Decimal("0.01"), rounding=ROUND_DOWN)
+                if stake >= Decimal("0.50"):
+                    return candidate, stake
+            return None, Decimal("0")
         if motor == "V22":
             candidates.sort(key=lambda o: (
                 float(o.get("consensus_score") or 0),
