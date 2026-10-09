@@ -470,6 +470,26 @@ def _procesar_experimentos_live(live_events, experiments):
     return errors
 
 
+def _limitar_snapshots_estado(experiments, max_snapshots=80):
+    """Conserva solo los snapshots recientes que la auditoría de la interfaz puede mostrar."""
+    snapshots = [
+        (snapshot.get("created_at") or "", snapshot.get("id"), experiment.get("id"))
+        for experiment in experiments
+        for snapshot in (experiment.get("snapshots") or [])
+    ]
+    keep = {
+        (snapshot_id, experiment_id)
+        for _, snapshot_id, experiment_id in sorted(snapshots, reverse=True)[:max_snapshots]
+    }
+    for experiment in experiments:
+        experiment_id = experiment.get("id")
+        experiment["snapshots"] = [
+            snapshot for snapshot in (experiment.get("snapshots") or [])
+            if (snapshot.get("id"), experiment_id) in keep
+        ]
+    return experiments
+
+
 def _experimento_estado_global():
     """Procesa el laboratorio global sin bloquear el ciclo con consultas repetidas."""
     if cache.get("live_experiment_starting"):
@@ -480,7 +500,7 @@ def _experimento_estado_global():
                 started_at__date=today,
             ).order_by("-updated_at")[:100]
         )
-        serialized = [LiveExperimentManager.serialize(x) for x in experiments]
+        serialized = _limitar_snapshots_estado([LiveExperimentManager.serialize(x, snapshot_limit=3, opportunity_limit=12) for x in experiments])
         return {
             "ok": True, "running": True, "starting": True,
             "experiments": serialized,
@@ -503,7 +523,7 @@ def _experimento_estado_global():
             )
             .order_by("-updated_at")[:100]
         )
-        serialized = [LiveExperimentManager.serialize(x) for x in experiments]
+        serialized = [LiveExperimentManager.serialize(x, snapshot_limit=3, opportunity_limit=12) for x in experiments]
         return {
             "ok": True,
             "running": any(x.get("status") == "RUNNING" for x in serialized),
@@ -645,7 +665,7 @@ def _experimento_estado_global():
             experiment for experiment in all_experiments
             if timezone.localtime(experiment.started_at).date() == today
         ]
-        serialized = [LiveExperimentManager.serialize(x) for x in experiments]
+        serialized = [LiveExperimentManager.serialize(x, snapshot_limit=3, opportunity_limit=12) for x in experiments]
 
         entries = []
         for exp in serialized:
