@@ -1,0 +1,203 @@
+"""Motor V3: agregador conservador e independiente de las seis estrategias existentes.
+
+La probabilidad se aproxima con las estimaciones disponibles de V1/V1.1/V1.2/V2/V2.1/V2.2,
+con contracción hacia la probabilidad de mercado sin margen. No se presenta como una
+calibración estadística aprendida: esa calibración requiere suficientes resultados históricos
+liquidados y separados temporalmente.
+"""
+from __future__ import annotations
+
+import math
+import re
+import statistics
+from typing import Any, Dict, List
+
+from .opportunity_engine import LiveOpportunityEngine
+from .opportunity_engine_v11 import LiveOpportunityEngineV11
+from .opportunity_engine_v12 import LiveOpportunityEngineV12
+from .opportunity_engine_v2 import LiveOpportunityEngineV2
+from .opportunity_engine_v21 import LiveOpportunityEngineV21
+from .opportunity_engine_v22 import LiveOpportunityEngineV22
+from .opportunity_levels import enrich
+
+
+class LiveOpportunityEngineV3:
+    MIN_PRICE = 1.40
+    MAX_PRICE = 2.10
+    MIN_EDGE = 0.045
+    MAX_EXTREME_EDGE = 0.30
+
+    ENGINES = (
+        ("V1", LiveOpportunityEngine),
+        ("V1.1", LiveOpportunityEngineV11),
+        ("V1.2", LiveOpportunityEngineV12),
+        ("V2", LiveOpportunityEngineV2),
+        ("V2.1", LiveOpportunityEngineV21),
+        ("V2.2", LiveOpportunityEngineV22),
+    )
+
+    @staticmethod
+    def _number(value: Any):
+        try:
+            return float(str(value).replace("%", "").replace(",", "."))
+        except (TypeError, ValueError):
+            return None
+
+    @staticmethod
+    def _norm(value: Any) -> str:
+        return re.sub(r"\s+", " ", str(value or "").strip().casefold())
+
+    @classmethod
+    def _key(cls, item: Dict[str, Any]) -> str:
+        return "|".join(cls._norm(item.get(k)) for k in ("market", "selection", "line"))
+
+    @classmethod
+    def _market_group(cls, odd: Dict[str, Any]) -> str:
+        return "|".join((cls._norm(odd.get("market_name")), cls._norm(odd.get("line"))))
+
+    @classmethod
+    def _market_fair_probabilities(cls, odds: List[Dict[str, Any]]) -> Dict[str, float]:
+        groups: Dict[str, list] = {}
+        for odd in odds:
+            price = cls._number(odd.get("price"))
+            if price is None or price <= 1:
+                continue
+            groups.setdefault(cls._market_group(odd), []).append((odd, 1.0 / price))
+        fair = {}
+        for items in groups.values():
+            # Solo quitamos margen cuando el proveedor entrega al menos dos
+            # selecciones del mismo mercado/línea; si no, conservamos la implícita.
+            total = sum(prob for _, prob in items)
+            if total <= 0:
+                continue
+            for odd, raw in items:
+                fair[cls._key({
+                    "market": odd.get("market_name"),
+                    "selection": odd.get("name"),
+                    "line": odd.get("line"),
+                })] = raw / total if len(items) >= 2 else raw
+        return fair
+
+    @staticmethod
+    def _elapsed(match) -> float:
+        text = str(match.minute or "").lower()
+        found = re.search(r"(\d+)", text)
+        minute = float(found.group(1)) if found else 45.0
+        if "half" in text or "descanso" in text or str(match.period or "").lower() in {"2nd half", "segunda parte"}:
+            minute = max(45.0, minute)
+        return min(90.0, max(1.0, minute))
+
+    @classmethod
+    def evaluate(cls, match) -> List[Dict[str, Any]]:
+        if getattr(match, "is_finished", False):
+            return []
+
+        raw_by_key: Dict[str, list] = {}
+        errors = []
+        for label, engine in cls.ENGINES:
+            try:
+                for item in engine.evaluate(match) or []:
+                    item = dict(item)
+                    price = cls._number(item.get("price"))
+                    probability = cls._number(item.get("model_probability"))
+                    if price is None or probability is None or not cls.MIN_PRICE <= price <= cls.MAX_PRICE:
+                        continue
+                    if not 0 < probability < 1:
+                        continue
+                    key = cls._key(item)
+                    if key:
+                        raw_by_key.setdefault(key, []).append((label, item))
+            except Exception as exc:
+                # Un motor que falle no debe detener a V3 ni al resto del laboratorio.
+                errors.append(f"{label}: {type(exc).__name__}")
+
+        if not raw_by_key:
+            return []
+
+        odds = list(getattr(match, "odds", []) or [])
+        fair_probs = cls._market_fair_probabilities(odds)
+        elapsed = cls._elapsed(match)
+        temporal_factor = 0.65 if elapsed < 15 else 0.78 if elapsed < 30 else 0.90 if elapsed < 45 else 1.0
+        result = []
+
+        for key, observations in raw_by_key.items():
+            exemplar = dict(observations[0][1])
+            price = cls._number(exemplar.get("price"))
+            if price is None or not cls.MIN_PRICE <= price <= cls.MAX_PRICE:
+                continue
+            probabilities = [max(0.01, min(0.99, cls._number(o.get("model_probability")))) for _, o in observations]
+            median_p = statistics.median(probabilities)
+            dispersion = statistics.pstdev(probabilities) if len(probabilities) > 1 else 0.12
+            fair_p = fair_probs.get(key, 1.0 / price)
+            # Proxy conservador hasta que exista un conjunto histórico suficiente
+            # y estrictamente anterior al partido para calibración empírica.
+            calibrated = 0.70 * median_p + 0.30 * fair_p
+            calibrated = max(0.02, min(0.98, calibrated))
+            raw_implied = 1.0 / price
+            edge = calibrated - fair_p
+            uncertainty_penalty = min(0.12, 0.02 + dispersion * 0.50)
+            conservative_edge = edge - uncertainty_penalty
+            consensus = len({label for label, _ in observations}) / len(cls.ENGINES)
+            quality = max(0.0, min(1.0, float(getattr(match, "data_quality", 0) or 0)))
+            mapping = max(0.0, min(1.0, float(getattr(match, "mapping_confidence", 0) or 0)))
+            confidence = max(0.35, min(0.88,
+                0.48 + consensus * 0.16 + quality * 0.10 + mapping * 0.08
+                + max(-0.08, min(0.08, edge)) - dispersion * 0.35
+            ))
+            extreme = edge >= cls.MAX_EXTREME_EDGE
+            exceptional = (
+                conservative_edge >= 0.10
+                and confidence >= 0.68
+                and dispersion <= 0.10
+                and (consensus >= 2 / len(cls.ENGINES) or (quality >= 0.75 and mapping >= 0.85))
+            )
+            if conservative_edge < cls.MIN_EDGE or confidence < 0.50:
+                continue
+
+            # Edge conservador gobierna nivel y stake; un edge bruto enorme no
+            # es suficiente si los motores discrepan o la calidad es baja.
+            prepared = dict(exemplar)
+            prepared.update({
+                "raw_model_probability": round(median_p, 4),
+                "model_probability": round(calibrated, 4),
+                "implied_probability": round(raw_implied, 4),
+                "market_fair_probability": round(fair_p, 4),
+                "edge": round(conservative_edge, 4),
+                "raw_edge": round(edge, 4),
+                "edge_pct": round(conservative_edge * 100, 2),
+                "confidence": round(confidence, 3),
+                "model": "v3_conservative_ensemble",
+                "calibration": "market_shrinkage_proxy_pending_historical_validation",
+                "calibration_sources": [label for label, _ in observations],
+                "consensus_score": round(consensus, 3),
+                "model_dispersion": round(dispersion, 4),
+                "uncertainty_penalty": round(uncertainty_penalty, 4),
+                "temporal_factor": temporal_factor,
+                "extreme_edge": extreme,
+                "exceptional_third_bet": bool(exceptional),
+                "data_quality": quality,
+                "mapping_confidence": mapping,
+                "reason": (
+                    f"V3: cuota {price:.2f} dentro de 1.40–2.10; probabilidad prudente "
+                    f"{calibrated*100:.1f}%, probabilidad justa de mercado {fair_p*100:.1f}%, "
+                    f"edge conservador {conservative_edge*100:+.1f} puntos; "
+                    f"consenso {len({label for label, _ in observations})}/6, "
+                    f"dispersión {dispersion*100:.1f} puntos, minuto {elapsed:.0f}'. "
+                    + ("Edge extremo sometido a validación adicional. " if extreme else "")
+                    + ("Candidata excepcional para una tercera apuesta, sujeta a límites de riesgo. " if exceptional else "")
+                    + ("Estimación de calibración provisional; requiere validación histórica fuera de muestra. " if len(observations) < 3 else "")
+                ),
+            })
+            prepared = enrich(prepared)
+            # Exigir un nivel apostable, sin forzar una probabilidad artificialmente alta.
+            if not prepared.get("level"):
+                continue
+            result.append(prepared)
+
+        result.sort(key=lambda o: (
+            bool(o.get("exceptional_third_bet")),
+            float(o.get("edge") or 0),
+            float(o.get("confidence") or 0),
+            float(o.get("consensus_score") or 0),
+        ), reverse=True)
+        return result[:20]
