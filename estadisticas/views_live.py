@@ -6,6 +6,7 @@ from django.utils import timezone
 from django.db import transaction
 import logging
 from concurrent.futures import ThreadPoolExecutor
+from threading import Thread
 
 from .api_football_live import APIFootballLiveClient
 from .ecuabet_client import EcuabetClient
@@ -470,6 +471,26 @@ def _procesar_experimentos_live(live_events, experiments):
 
 def _experimento_estado_global():
     """Procesa el laboratorio global sin bloquear el ciclo con consultas repetidas."""
+    if cache.get("live_experiment_starting"):
+        today = timezone.localdate()
+        experiments = list(
+            LiveExperiment.objects.filter(
+                status__in=["RUNNING", "FINISHED", "STOPPED"],
+                started_at__date=today,
+            ).order_by("-updated_at")[:100]
+        )
+        serialized = [LiveExperimentManager.serialize(x) for x in experiments]
+        return {
+            "ok": True, "running": True, "starting": True,
+            "experiments": serialized,
+            "entries": [
+                {**entry, "experiment_id": exp.get("id"), "match_status": exp.get("status")}
+                for exp in serialized for entry in exp.get("entries", [])
+            ],
+            "live_count": 0, "busy": True, "processing_errors": [],
+            "start_message": "Preparando partidos LIVE en segundo plano.",
+        }
+
     lock_key = "live_experiment_global_state_lock"
     if not cache.add(lock_key, True, 60):
         today = timezone.localdate()
@@ -622,6 +643,7 @@ def _experimento_estado_global():
             ],
             "pending_final_count": pending_final_count,
             "processing_errors": processing_errors[:20],
+            "startup_result": cache.get("live_experiment_start_result"),
             "busy": False,
         }
     finally:
@@ -785,16 +807,18 @@ def _crear_experimento_desde_evento(event):
         close_old_connections()
 
 
-def api_live_experiment_start_all(request):
-    if request.method != "POST":
-        return JsonResponse({"ok": False, "error": "Método no permitido."}, status=405)
-    try:
-        _, live_events = _experimento_live_payload()
-        created = 0
-        skipped = 0
-        errors = []
+def _iniciar_laboratorio_live_en_segundo_plano():
+    """Hace el mapeo y el primer análisis fuera de la petición HTTP."""
+    from django.db import close_old_connections
 
+    try:
+        close_old_connections()
+        _, live_events = _experimento_live_payload()
+        errors = []
         new_events = []
+        skipped = 0
+        created = 0
+
         for event in live_events:
             if event.get("id") is None:
                 continue
@@ -806,12 +830,15 @@ def api_live_experiment_start_all(request):
             else:
                 new_events.append(event)
 
-        # El mapeo inicial es I/O y se ejecuta en paralelo para que 37 LIVE no
-        # conviertan el arranque en una espera de varios minutos.
         max_workers = min(6, len(new_events))
         if max_workers:
-            with ThreadPoolExecutor(max_workers=max_workers, thread_name_prefix="live-start") as executor:
-                futures = [executor.submit(_crear_experimento_desde_evento, event) for event in new_events]
+            with ThreadPoolExecutor(
+                max_workers=max_workers, thread_name_prefix="live-start"
+            ) as executor:
+                futures = [
+                    executor.submit(_crear_experimento_desde_evento, event)
+                    for event in new_events
+                ]
                 for future in futures:
                     result = future.result()
                     if result["created"]:
@@ -823,35 +850,11 @@ def api_live_experiment_start_all(request):
                             "error": result["error"],
                         })
 
-        today = timezone.localdate()
         running = list(
-            LiveExperiment.objects
-            .filter(status="RUNNING")
-            .order_by("-started_at")
+            LiveExperiment.objects.filter(status="RUNNING").order_by("-started_at")
         )
-
-        # Simular ejecuta inmediatamente el primer snapshot.
         processing_errors = _procesar_experimentos_live(live_events, running)
-
-        experiments = list(
-            LiveExperiment.objects
-            .filter(
-                status__in=["RUNNING", "FINISHED", "STOPPED"],
-                started_at__date=today,
-            )
-            .order_by("-updated_at")[:200]
-        )
-        serialized = [LiveExperimentManager.serialize(x) for x in experiments]
-        entries = [
-            {**entry, "experiment_id": exp.get("id"), "match_status": exp.get("status")}
-            for exp in serialized
-            for entry in exp.get("entries", [])
-        ]
-        return JsonResponse({
-            "ok": True,
-            "running": any(x.get("status") == "RUNNING" for x in serialized),
-            "experiments": serialized,
-            "entries": entries,
+        cache.set("live_experiment_start_result", {
             "live_count": len(live_events),
             "created": created,
             "skipped": skipped,
@@ -859,19 +862,54 @@ def api_live_experiment_start_all(request):
             "start_error_count": len(errors),
             "processing_errors": processing_errors[:20],
             "processing_error_count": len(processing_errors),
-            "start_message": (
-                "Experimentos iniciados y primer análisis ejecutado."
-                if created or skipped
-                else (
-                    "No se pudo iniciar ningún experimento."
-                    if live_events
-                    else "Ecuabet no reporta partidos de fútbol LIVE en este momento."
-                )
-            ),
-            "busy": False,
+        }, 300)
+        logger.info(
+            "Arranque LIVE completado: %s eventos, %s experimentos activos, %s errores de mapeo.",
+            len(live_events), len(running), len(errors),
+        )
+    except Exception:
+        logger.exception("Error general iniciando el laboratorio LIVE en segundo plano.")
+        cache.set("live_experiment_start_result", {
+            "error": "Falló el arranque en segundo plano. Revisa la consola/log de Django.",
+        }, 300)
+    finally:
+        cache.delete("live_experiment_starting")
+        close_old_connections()
+
+
+def api_live_experiment_start_all(request):
+    if request.method != "POST":
+        return JsonResponse({"ok": False, "error": "Método no permitido."}, status=405)
+
+    if not cache.add("live_experiment_starting", True, 300):
+        return JsonResponse({
+            "ok": True, "running": True, "starting": True,
+            "experiments": [], "entries": [], "live_count": 0,
+            "created": 0, "skipped": 0, "start_errors": [],
+            "processing_errors": [],
+            "start_message": "El laboratorio ya se está preparando en segundo plano.",
+            "busy": True,
+        })
+
+    try:
+        cache.delete("live_experiment_start_result")
+        worker = Thread(
+            target=_iniciar_laboratorio_live_en_segundo_plano,
+            name="live-laboratory-start",
+            daemon=True,
+        )
+        worker.start()
+        return JsonResponse({
+            "ok": True, "running": True, "starting": True,
+            "experiments": [], "entries": [], "live_count": 0,
+            "created": 0, "skipped": 0, "start_errors": [],
+            "processing_errors": [],
+            "start_message": "Arranque aceptado; preparando eventos LIVE y motores en segundo plano.",
+            "busy": True,
         })
     except Exception as exc:
-        logger.exception("Error general iniciando el laboratorio LIVE.")
+        cache.delete("live_experiment_starting")
+        logger.exception("No se pudo despachar el arranque del laboratorio LIVE.")
         return JsonResponse({"ok": False, "error": str(exc)}, status=502)
 
 def api_live_experiment_stop_all(request):
