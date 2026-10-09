@@ -1038,7 +1038,7 @@ class LiveExperimentManager:
             aggregate = {
                 "label": cls.LABELS[motor],
                 "decisions": 0, "wins": 0, "losses": 0, "open": 0, "cancelled": 0,
-                "total_staked": 0.0, "total_pnl": 0.0, "current_lives": 100.0,
+                "total_staked": 0.0, "total_pnl": 0.0, "current_lives": float(cls._initial_lives(motor)),
             }
             for experiment in serialized_experiments:
                 item = experiment["motors"].get(motor, {})
@@ -1046,7 +1046,7 @@ class LiveExperimentManager:
                     aggregate[key] += int(item.get(key, 0) or 0)
                 for key in ("total_staked", "total_pnl"):
                     aggregate[key] += float(item.get(key, 0) or 0)
-            aggregate["current_lives"] = 100.0 + aggregate["total_pnl"]
+            aggregate["current_lives"] = float(cls._initial_lives(motor)) + aggregate["total_pnl"]
             settled = aggregate["wins"] + aggregate["losses"]
             aggregate["hit_rate"] = (aggregate["wins"] / settled * 100) if settled else 0.0
             aggregate["roi"] = (aggregate["total_pnl"] / aggregate["total_staked"] * 100) if aggregate["total_staked"] else 0.0
