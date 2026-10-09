@@ -536,7 +536,7 @@ class LiveExperimentManager:
                     if any(x in selection for x in ("under", "menos")): return goals < target
 
         if any(x in text for x in ("handicap", "asian handicap", "handicap asiático", "spread")):
-            number_match = re.search(r"([+-]?\\d+(?:[.,]\\d+)?)", f"{line} {selection}")
+            number_match = re.search(r"([+-]?\d+(?:[.,]\d+)?)", f"{line} {selection}")
             if number_match:
                 handicap = float(number_match.group(1).replace(",", "."))
                 home_name = str(experiment.home_team or "").casefold()
