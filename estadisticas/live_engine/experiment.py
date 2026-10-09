@@ -539,7 +539,7 @@ class LiveExperimentManager:
             ratio = float(opportunity.get("consensus_support_ratio") or 0) * 100
             supporters = ", ".join(opportunity.get("consensus_motors") or [])
             return (
-                f"Espía apuesta {selection}{line_text}: consenso independiente {votes}/6 ({ratio:.0f}% de respaldo; {supporters}); "
+                f"Espía apuesta {selection}{line_text}: consenso independiente {votes}/6 fuentes (7 motores observados; V4 es confirmación no independiente; {ratio:.0f}% de respaldo; {supporters}); "
                 f"probabilidad agregada {model_p * 100:.1f}%, edge {edge * 100:+.1f} puntos, confianza media {confidence * 100:.1f}%; "
                 f"stake {stake:.2f} vida. Solo una apuesta por partido y capital independiente de 50 vidas. "
                 f"Contexto LIVE: minuto {minute_text}, marcador {score}."
