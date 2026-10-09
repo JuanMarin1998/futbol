@@ -817,6 +817,7 @@ def _iniciar_laboratorio_live_en_segundo_plano():
         errors = []
         new_events = []
         skipped = 0
+        created = 0
 
         for event in live_events:
             if event.get("id") is None:
@@ -840,7 +841,9 @@ def _iniciar_laboratorio_live_en_segundo_plano():
                 ]
                 for future in futures:
                     result = future.result()
-                    if result["error"]:
+                    if result["created"]:
+                        created += 1
+                    elif result["error"]:
                         errors.append({
                             "event_id": result["event_id"],
                             "match": result["match"],
@@ -853,7 +856,7 @@ def _iniciar_laboratorio_live_en_segundo_plano():
         processing_errors = _procesar_experimentos_live(live_events, running)
         cache.set("live_experiment_start_result", {
             "live_count": len(live_events),
-            "created": max(0, len(running) - skipped),
+            "created": created,
             "skipped": skipped,
             "start_errors": errors[:20],
             "start_error_count": len(errors),
