@@ -490,6 +490,44 @@ def _limitar_snapshots_estado(experiments, max_snapshots=80):
     return experiments
 
 
+def _mapear_eventos_live_en_segundo_plano(events):
+    """Vincula eventos nuevos sin bloquear la actualización de los partidos activos."""
+    from django.db import close_old_connections
+
+    errors = []
+    def map_event(event):
+        event_id = int(event["id"])
+        try:
+            close_old_connections()
+            result = _crear_experimento_desde_evento(event)
+            if result.get("created"):
+                cache.delete(f"live_experiment_map_retry:{event_id}")
+            elif result.get("error"):
+                errors.append({
+                    "event_id": event_id,
+                    "match": result.get("match"),
+                    "error": result.get("error"),
+                })
+            return result
+        except Exception as exc:
+            logger.exception("Error en mapeo asíncrono del evento Ecuabet %s.", event_id)
+            errors.append({"event_id": event_id, "error": str(exc)})
+            return None
+        finally:
+            cache.delete(f"live_experiment_map_in_progress:{event_id}")
+            close_old_connections()
+
+    try:
+        with ThreadPoolExecutor(
+            max_workers=min(6, len(events)),
+            thread_name_prefix="live-map-cycle",
+        ) as executor:
+            list(executor.map(map_event, events))
+    finally:
+        cache.set("live_experiment_async_mapping_errors", errors[:20], 120)
+        close_old_connections()
+
+
 def _experimento_estado_global():
     """Procesa el laboratorio global sin bloquear el ciclo con consultas repetidas."""
     if cache.get("live_experiment_starting"):
@@ -553,55 +591,31 @@ def _experimento_estado_global():
         # en mapearse nunca debe bloquear las apuestas de los partidos que ya corren.
         processing_errors = _procesar_experimentos_live(live_events, running)
 
-        # Descubrir eventos nuevos en paralelo y aplicar backoff a vinculaciones
-        # fallidas para no repetir decenas de llamadas lentas en cada ciclo.
-        mapping_errors = []
+        # Programar el mapeo de eventos nuevos en un hilo independiente.
+        # Así, los partidos ya vinculados pueden actualizar marcador, minuto y apuestas
+        # sin esperar a que terminen las consultas de Flashscore de todos los eventos.
+        mapping_errors = cache.get("live_experiment_async_mapping_errors", [])
         if cache.get("live_experiment_worker_enabled"):
             running_ids = {int(x.ecuabet_event_id) for x in running}
-            candidates = [
-                event for event in live_events
-                if event.get("id") is not None
-                and int(event["id"]) not in running_ids
-                and not cache.get(f"live_experiment_map_retry:{int(event['id'])}")
-            ]
-            def map_event(event):
-                from django.db import close_old_connections
+            candidates = []
+            for event in live_events:
+                if event.get("id") is None:
+                    continue
                 event_id = int(event["id"])
-                try:
-                    close_old_connections()
-                    result = _crear_experimento_desde_evento(event)
-                    if result.get("created"):
-                        cache.delete(f"live_experiment_map_retry:{event_id}")
-                    elif result.get("error"):
-                        cache.set(f"live_experiment_map_retry:{event_id}", True, 45)
-                    return result
-                finally:
-                    close_old_connections()
-
+                if (
+                    event_id in running_ids
+                    or cache.get(f"live_experiment_map_retry:{event_id}")
+                ):
+                    continue
+                if cache.add(f"live_experiment_map_in_progress:{event_id}", True, 120):
+                    candidates.append(event)
             if candidates:
-                with ThreadPoolExecutor(
-                    max_workers=min(6, len(candidates)),
-                    thread_name_prefix="live-map-cycle",
-                ) as executor:
-                    for result in executor.map(map_event, candidates):
-                        if result.get("created") and result.get("experiment"):
-                            running.append(result["experiment"])
-                        elif result.get("error"):
-                            mapping_errors.append({
-                                "event_id": result.get("event_id"),
-                                "match": result.get("match"),
-                                "error": result.get("error"),
-                            })
-            # Ejecutar también el primer análisis de los experimentos recién creados.
-            newly_created = [
-                exp for exp in running
-                if int(exp.ecuabet_event_id) in {
-                    int(event["id"]) for event in candidates
-                    if event.get("id") is not None
-                }
-            ]
-            if newly_created:
-                processing_errors.extend(_procesar_experimentos_live(live_events, newly_created))
+                Thread(
+                    target=_mapear_eventos_live_en_segundo_plano,
+                    args=(candidates,),
+                    name="live-map-background",
+                    daemon=True,
+                ).start()
 
         finalized_matches = []
         pending_final_count = 0
@@ -880,76 +894,35 @@ def _bucle_laboratorio_live():
         close_old_connections()
 
 def _iniciar_laboratorio_live_en_segundo_plano():
-    """Hace el mapeo y el primer análisis fuera de la petición HTTP."""
+    """Libera el arranque rápidamente; el ciclo continuo descubre y vincula partidos."""
     from django.db import close_old_connections
 
     try:
         close_old_connections()
-        _, live_events = _experimento_live_payload()
-        errors = []
-        new_events = []
-        skipped = 0
-        created = 0
-
-        for event in live_events:
-            if event.get("id") is None:
-                continue
-            event_id = int(event["id"])
-            if LiveExperiment.objects.filter(
-                ecuabet_event_id=event_id, status="RUNNING"
-            ).exists():
-                skipped += 1
-            else:
-                new_events.append(event)
-
-        max_workers = min(6, len(new_events))
-        if max_workers:
-            with ThreadPoolExecutor(
-                max_workers=max_workers, thread_name_prefix="live-start"
-            ) as executor:
-                futures = [
-                    executor.submit(_crear_experimento_desde_evento, event)
-                    for event in new_events
-                ]
-                for future in futures:
-                    result = future.result()
-                    if result["created"]:
-                        created += 1
-                    elif result["error"]:
-                        errors.append({
-                            "event_id": result["event_id"],
-                            "match": result["match"],
-                            "error": result["error"],
-                        })
-
-        running = list(
-            LiveExperiment.objects.filter(status="RUNNING").order_by("-started_at")
-        )
-        processing_errors = _procesar_experimentos_live(live_events, running)
+        # No mapear todos los partidos antes de arrancar el ciclo continuo.
+        # _experimento_estado_global procesa primero los partidos ya vinculados
+        # y programa el mapeo de eventos nuevos en segundo plano.
         cache.set("live_experiment_start_result", {
-            "live_count": len(live_events),
-            "created": created,
-            "skipped": skipped,
-            "start_errors": errors[:20],
-            "start_error_count": len(errors),
-            "processing_errors": processing_errors[:20],
-            "processing_error_count": len(processing_errors),
+            "live_count": 0,
+            "created": 0,
+            "skipped": 0,
+            "start_errors": [],
+            "start_error_count": 0,
+            "processing_errors": [],
+            "processing_error_count": 0,
+            "message": "Arranque rápido; los partidos nuevos se vinculan en segundo plano.",
         }, 300)
-        logger.info(
-            "Arranque LIVE completado: %s eventos, %s experimentos activos, %s errores de mapeo.",
-            len(live_events), len(running), len(errors),
-        )
+        logger.info("Arranque rápido del laboratorio LIVE; el mapeo se delega al ciclo continuo.")
     except Exception:
-        logger.exception("Error general iniciando el laboratorio LIVE en segundo plano.")
+        logger.exception("Error preparando el laboratorio LIVE.")
         cache.set("live_experiment_start_result", {
-            "error": "Falló el arranque en segundo plano. Revisa la consola/log de Django.",
+            "error": "Falló la preparación del laboratorio. Revisa la consola/log de Django.",
         }, 300)
     finally:
         cache.delete("live_experiment_starting")
         close_old_connections()
         if cache.get("live_experiment_worker_enabled"):
             Thread(target=_bucle_laboratorio_live, name="live-laboratory-cycle", daemon=True).start()
-
 
 def api_live_experiment_start_all(request):
     if request.method != "POST":
