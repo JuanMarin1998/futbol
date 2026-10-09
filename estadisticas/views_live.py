@@ -884,6 +884,8 @@ def _bucle_laboratorio_live():
                 state = _experimento_estado_global()
                 cache.set("live_experiment_state_payload", state, max(30, intervalo * 6))
                 logger.info("Ciclo LIVE: %s partidos, %s experimentos, %s entradas.", state.get("live_count", 0), len(state.get("experiments", [])), len(state.get("entries", [])))
+                # Mantener vivo el indicador sin reactivarlo si el usuario pulsa Parar.
+                cache.touch("live_experiment_worker_enabled", timeout=3600)
             except Exception:
                 logger.exception("Falló un ciclo continuo del laboratorio LIVE.")
             finally:
