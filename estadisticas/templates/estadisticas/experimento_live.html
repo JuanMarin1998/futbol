@@ -190,7 +190,12 @@ async function simular(){
   const errors=d.start_errors||[];
   const created=Number(d.created||0);
   const live=Number(d.live_count||0);
-  if(created>0 || d.running){
+  if(d.starting){
+   simulacionActiva=true;
+   if(status)status.textContent='🟢 Arranque aceptado; preparando los partidos LIVE en segundo plano...';
+   if(diagnostic)diagnostic.textContent='La pantalla seguirá consultando el estado mientras se vinculan los eventos. No cierres el laboratorio.';
+   programarActualizacion(1000);
+  }else if(created>0 || d.running){
    simulacionActiva=true;
    if(status)status.textContent='🟢 Simulación iniciada: '+created+' partido(s) activo(s).';
    if(diagnostic){const pe=d.processing_errors||[];diagnostic.innerHTML='✅ '+created+' experimento(s) iniciado(s) · '+live+' LIVE detectado(s). Primer análisis ejecutado.'+(pe.length?' &nbsp;·&nbsp; ⚠️ '+pe.length+' partido(s) fallaron en este ciclo; revisa el servidor.':'');}
