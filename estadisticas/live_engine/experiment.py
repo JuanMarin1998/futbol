@@ -12,17 +12,18 @@ from .opportunity_levels import enrich
 
 
 class LiveExperimentManager:
-    """Laboratorio virtual que ejecuta siete motores sobre el mismo snapshot LIVE."""
+    """Laboratorio virtual que ejecuta nueve motores sobre el mismo snapshot LIVE."""
 
     INITIAL_LIVES = Decimal("100")
     MAX_STAKE = Decimal("10")
     MIN_STAKE = Decimal("1")
-    MOTORS = ("V1", "V11", "V12", "V2", "V21", "V22", "V3")
-    LABELS = {"V1": "V1", "V11": "V1.1", "V12": "V1.2", "V2": "V2", "V21": "V2.1", "V22": "V2.2", "V3": "V3"}
+    MOTORS = ("V1", "V11", "V12", "V2", "V21", "V22", "V3", "V2U", "V11U")
+    LABELS = {"V1": "V1", "V11": "V1.1", "V12": "V1.2", "V2": "V2", "V21": "V2.1", "V22": "V2.2", "V3": "V3", "V2U": "V2.Ultra", "V11U": "V1.1 Ultra"}
     OPPORTUNITY_ATTRS = {
         "V1": "opportunities", "V11": "opportunities_v11", "V12": "opportunities_v12",
         "V2": "opportunities_v2", "V21": "opportunities_v21", "V22": "opportunities_v22",
-        "V3": "opportunities_v3",
+        "V3": "opportunities_v3", "V2U": "opportunities_v2_ultra",
+        "V11U": "opportunities_v11_ultra",
     }
 
     LEVEL_RANGES = {
@@ -150,6 +151,10 @@ class LiveExperimentManager:
                 if any(cls._v3_market_family({"market": e.market, "selection": e.selection}) == family for e in previous):
                     return "Descartada V3: exposición correlacionada con una apuesta previa del mismo partido/mercado."
         level = cls._level(opportunity)
+        if motor == "V2U" and level != 1:
+            return "Descartada V2.Ultra: solo apuesta oportunidades de Nivel 1 · Muy fuerte."
+        if motor == "V11U" and level != 2:
+            return "Descartada V1.1 Ultra: solo apuesta oportunidades de Nivel 2 · Fuerte."
         if level == 0:
             model_p = float(opportunity.get("model_probability") or 0)
             implied = float(opportunity.get("implied_probability") or 0)
@@ -217,10 +222,20 @@ class LiveExperimentManager:
         return max(Decimal("0"), lives)
 
     @classmethod
-    def _stake(cls, opportunity: Dict[str, Any], lives: Decimal) -> Decimal:
+    def _stake(cls, opportunity: Dict[str, Any], lives: Decimal, motor: str = "") -> Decimal:
         level = cls._level(opportunity)
         if level == 0 or lives < cls.MIN_STAKE:
             return Decimal("0")
+        if motor in {"V2U", "V11U"}:
+            required_level = 1 if motor == "V2U" else 2
+            if level != required_level:
+                return Decimal("0")
+            max_stake = Decimal("20") if motor == "V2U" else Decimal("15")
+            confidence = Decimal(str(opportunity.get("confidence") or 0))
+            edge = Decimal(str(opportunity.get("edge") or 0))
+            strength = min(Decimal("1"), max(Decimal("0"), confidence + min(edge * 2, Decimal("0.20"))))
+            stake = Decimal("1") + (max_stake - Decimal("1")) * strength
+            return min(max_stake, lives, stake).quantize(Decimal("0.01"), rounding=ROUND_DOWN)
         confidence = Decimal(str(opportunity.get("confidence") or 0))
         edge = Decimal(str(opportunity.get("edge") or 0))
         low, high = cls.LEVEL_RANGES[level]
@@ -369,6 +384,13 @@ class LiveExperimentManager:
                 base += "; candidata excepcional por edge conservador >=10 puntos, confianza >=68% y baja dispersión"
             if cls._current_bets(experiment, motor) >= 2:
                 base += "; tercera apuesta autorizada solo porque aporta una familia de mercado distinta, mantiene el tope de 4 vidas por partido y el máximo de 10 vidas abiertas globales"
+        elif motor == "V11U":
+            temporal = opportunity.get("temporal_factor")
+            if temporal is not None:
+                base += f"; control temporal Ultra {float(temporal):.2f}"
+            base += "; filtro exclusivo Nivel 2 · Fuerte, stake máximo 15 vidas"
+        elif motor == "V2U":
+            base += "; filtro exclusivo Nivel 1 · Muy fuerte, stake máximo 20 vidas"
         elif motor == "V11":
             calibration = opportunity.get("calibration")
             temporal = opportunity.get("temporal_factor")
@@ -445,7 +467,7 @@ class LiveExperimentManager:
             ), reverse=True)
 
         selected = candidates[0]
-        stake = cls._stake(selected, lives)
+        stake = cls._stake(selected, lives, motor)
 
         if motor in {"V12", "V22"}:
             exposure_cap = Decimal("12") if motor == "V12" else Decimal("14")
@@ -489,6 +511,32 @@ class LiveExperimentManager:
         market = entry.market.lower().strip()
         line = entry.line.lower().strip()
         text = market + " " + selection
+        # Ultra score-derived markets: team totals and half-line handicaps.
+        if any(x in text for x in ("team total", "goles del equipo", "goles equipo", "home team goals", "away team goals", "local total", "visitante total")):
+            number_match = re.search(r"([+-]?\\d+(?:[.,]\\d+)?)", f"{line} {text}")
+            if number_match:
+                target = float(number_match.group(1).replace(",", "."))
+                home_name = str(experiment.home_team or "").casefold()
+                away_name = str(experiment.away_team or "").casefold()
+                side = "home" if any(x in text for x in ("home", "local")) or (home_name and (home_name in selection or selection in home_name)) else (
+                    "away" if any(x in text for x in ("away", "visitante")) or (away_name and (away_name in selection or selection in away_name)) else None
+                )
+                if side:
+                    goals = home_score if side == "home" else away_score
+                    if any(x in selection for x in ("over", "más", "mas", "+")): return goals > target
+                    if any(x in selection for x in ("under", "menos")): return goals < target
+
+        if any(x in text for x in ("handicap", "asian handicap", "handicap asiático", "spread")):
+            number_match = re.search(r"([+-]\\d+(?:[.,]\\d+)?)", f"{line} {selection}")
+            if number_match:
+                handicap = float(number_match.group(1).replace(",", "."))
+                home_name = str(experiment.home_team or "").casefold()
+                away_name = str(experiment.away_team or "").casefold()
+                if "home" in selection or "local" in selection or (home_name and (home_name in selection or selection in home_name)):
+                    return (home_score + handicap) > away_score
+                if "away" in selection or "visitante" in selection or (away_name and (away_name in selection or selection in away_name)):
+                    return (away_score + handicap) > home_score
+
         if any(x in text for x in ("total", "over", "under", "más", "menos")):
             number_match = re.search(r"(\d+(?:[.,]\d+)?)", f"{line} {text}")
             if number_match:
