@@ -396,7 +396,8 @@ class LiveExperimentManager:
         if motor == "ESP":
             if level not in {1, 2} or lives < Decimal("1.00"):
                 return Decimal("0")
-            # Stake dinámico entre 1 vida y todo el capital disponible (máximo inicial: 50).
+            # El Espía puede apostar dinámicamente entre 1 y 50 vidas por apuesta.
+            # El capital disponible también limita el stake: nunca apuesta dinero virtual que no tiene.
             votes = Decimal(str(opportunity.get("consensus_votes") or 0))
             ratio = Decimal(str(opportunity.get("consensus_support_ratio") or 0))
             confidence = Decimal(str(opportunity.get("confidence") or 0))
@@ -407,7 +408,7 @@ class LiveExperimentManager:
             edge_score = min(Decimal("1"), max(Decimal("0"), edge / Decimal("0.20")))
             strength = votes_score * Decimal("0.30") + ratio_score * Decimal("0.30") + confidence_score * Decimal("0.20") + edge_score * Decimal("0.20")
             stake = Decimal("1") + (lives - Decimal("1")) * strength
-            return min(lives, max(Decimal("1"), stake)).quantize(Decimal("0.01"), rounding=ROUND_DOWN)
+            return min(Decimal("50"), lives, max(Decimal("1"), stake)).quantize(Decimal("0.01"), rounding=ROUND_DOWN)
         if level == 0 or lives < cls.MIN_STAKE:
             return Decimal("0")
         if motor == "V4":
