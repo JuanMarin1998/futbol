@@ -15,11 +15,12 @@ class LiveExperimentManager:
     INITIAL_LIVES = Decimal("100")
     MAX_STAKE = Decimal("10")
     MIN_STAKE = Decimal("1")
-    MOTORS = ("V1", "V11", "V12", "V2", "V21", "V22")
-    LABELS = {"V1": "V1", "V11": "V1.1", "V12": "V1.2", "V2": "V2", "V21": "V2.1", "V22": "V2.2"}
+    MOTORS = ("V1", "V11", "V12", "V2", "V21", "V22", "V3")
+    LABELS = {"V1": "V1", "V11": "V1.1", "V12": "V1.2", "V2": "V2", "V21": "V2.1", "V22": "V2.2", "V3": "V3"}
     OPPORTUNITY_ATTRS = {
         "V1": "opportunities", "V11": "opportunities_v11", "V12": "opportunities_v12",
         "V2": "opportunities_v2", "V21": "opportunities_v21", "V22": "opportunities_v22",
+        "V3": "opportunities_v3",
     }
 
     LEVEL_RANGES = {
@@ -67,6 +68,8 @@ class LiveExperimentManager:
 
     @classmethod
     def _motor_limit(cls, motor: str) -> int:
+        if motor == "V3":
+            return 3
         return 2 if motor in {"V12", "V22"} else 999999
 
     @classmethod
@@ -85,9 +88,19 @@ class LiveExperimentManager:
         key = cls._key(opportunity)
         if not key:
             return "Descartada: oportunidad sin mercado/selección/línea válidos."
-        if cls._current_bets(experiment, motor) >= cls._motor_limit(motor):
-            return "Descartada: este motor ya alcanzó el máximo de 2 apuestas por partido."
+        current_bets = cls._current_bets(experiment, motor)
+        if current_bets >= cls._motor_limit(motor):
+            return "Descartada: este motor ya alcanzó el máximo de apuestas por partido."
         price = Decimal(str(opportunity.get("price") or 0))
+        if motor == "V3":
+            if current_bets >= 2 and not opportunity.get("exceptional_third_bet"):
+                return "Descartada V3: la tercera apuesta requiere justificación excepcional."
+            if price < Decimal("1.40") or price > Decimal("2.10"):
+                return "Descartada V3: cuota fuera del rango 1.40–2.10."
+            if float(opportunity.get("edge") or 0) < 0.045:
+                return "Descartada V3: edge conservador inferior a 4.5 puntos."
+            if float(opportunity.get("confidence") or 0) < 0.50:
+                return "Descartada V3: confianza inferior al 50%."
         level = cls._level(opportunity)
         if level == 0:
             model_p = float(opportunity.get("model_probability") or 0)
