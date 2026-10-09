@@ -69,3 +69,27 @@ class LiveOpportunityCalculationAuditTests(SimpleTestCase):
         self.assertAlmostEqual(item["implied_probability"], 1 / 1.70, places=6)
         self.assertAlmostEqual(item["edge"], 0.20, places=6)
         self.assertEqual(item["edge_basis"], "probabilidad_justa_de_mercado")
+
+
+
+class LivePoissonTotalsTests(SimpleTestCase):
+    def test_totals_already_reached_are_certain(self):
+        result = LiveOpportunityEngine._probabilities(2, 1, 0.0, 0.0)
+        self.assertEqual(result["over_0_5"], 1.0)
+        self.assertEqual(result["over_1_5"], 1.0)
+        self.assertEqual(result["over_2_5"], 1.0)
+        self.assertEqual(result["under_2_5"], 0.0)
+
+    def test_one_current_goal_only_guarantees_over_half(self):
+        result = LiveOpportunityEngine._probabilities(1, 0, 0.0, 0.0)
+        self.assertEqual(result["over_0_5"], 1.0)
+        self.assertEqual(result["over_1_5"], 0.0)
+        self.assertEqual(result["over_2_5"], 0.0)
+        self.assertEqual(result["under_2_5"], 1.0)
+
+    def test_scoreless_match_with_no_remaining_goals(self):
+        result = LiveOpportunityEngine._probabilities(0, 0, 0.0, 0.0)
+        self.assertEqual(result["over_0_5"], 0.0)
+        self.assertEqual(result["over_1_5"], 0.0)
+        self.assertEqual(result["over_2_5"], 0.0)
+        self.assertEqual(result["under_2_5"], 1.0)
