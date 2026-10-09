@@ -7,17 +7,10 @@ liquidados y separados temporalmente.
 """
 from __future__ import annotations
 
-import math
 import re
 import statistics
 from typing import Any, Dict, List
 
-from .opportunity_engine import LiveOpportunityEngine
-from .opportunity_engine_v11 import LiveOpportunityEngineV11
-from .opportunity_engine_v12 import LiveOpportunityEngineV12
-from .opportunity_engine_v2 import LiveOpportunityEngineV2
-from .opportunity_engine_v21 import LiveOpportunityEngineV21
-from .opportunity_engine_v22 import LiveOpportunityEngineV22
 from .opportunity_levels import enrich
 
 
@@ -27,13 +20,13 @@ class LiveOpportunityEngineV3:
     MIN_EDGE = 0.045
     MAX_EXTREME_EDGE = 0.30
 
-    ENGINES = (
-        ("V1", LiveOpportunityEngine),
-        ("V1.1", LiveOpportunityEngineV11),
-        ("V1.2", LiveOpportunityEngineV12),
-        ("V2", LiveOpportunityEngineV2),
-        ("V2.1", LiveOpportunityEngineV21),
-        ("V2.2", LiveOpportunityEngineV22),
+    SOURCE_ATTRS = (
+        ("V1", "opportunities"),
+        ("V1.1", "opportunities_v11"),
+        ("V1.2", "opportunities_v12"),
+        ("V2", "opportunities_v2"),
+        ("V2.1", "opportunities_v21"),
+        ("V2.2", "opportunities_v22"),
     )
 
     @staticmethod
@@ -93,23 +86,20 @@ class LiveOpportunityEngineV3:
             return []
 
         raw_by_key: Dict[str, list] = {}
-        errors = []
-        for label, engine in cls.ENGINES:
-            try:
-                for item in engine.evaluate(match) or []:
-                    item = dict(item)
-                    price = cls._number(item.get("price"))
-                    probability = cls._number(item.get("model_probability"))
-                    if price is None or probability is None or not cls.MIN_PRICE <= price <= cls.MAX_PRICE:
-                        continue
-                    if not 0 < probability < 1:
-                        continue
-                    key = cls._key(item)
-                    if key:
-                        raw_by_key.setdefault(key, []).append((label, item))
-            except Exception as exc:
-                # Un motor que falle no debe detener a V3 ni al resto del laboratorio.
-                errors.append(f"{label}: {type(exc).__name__}")
+        for label, attr in cls.SOURCE_ATTRS:
+            # Collector ya evaluó cada motor en este mismo snapshot; reutilizamos
+            # esas salidas para no duplicar trabajo en el ciclo LIVE.
+            for source in getattr(match, attr, []) or []:
+                item = dict(source)
+                price = cls._number(item.get("price"))
+                probability = cls._number(item.get("model_probability"))
+                if price is None or probability is None or not cls.MIN_PRICE <= price <= cls.MAX_PRICE:
+                    continue
+                if not 0 < probability < 1:
+                    continue
+                key = cls._key(item)
+                if key:
+                    raw_by_key.setdefault(key, []).append((label, item))
 
         if not raw_by_key:
             return []
@@ -137,7 +127,7 @@ class LiveOpportunityEngineV3:
             edge = calibrated - fair_p
             uncertainty_penalty = min(0.12, 0.02 + dispersion * 0.50)
             conservative_edge = edge - uncertainty_penalty
-            consensus = len({label for label, _ in observations}) / len(cls.ENGINES)
+            consensus = len({label for label, _ in observations}) / len(cls.SOURCE_ATTRS)
             quality = max(0.0, min(1.0, float(getattr(match, "data_quality", 0) or 0)))
             mapping = max(0.0, min(1.0, float(getattr(match, "mapping_confidence", 0) or 0)))
             confidence = max(0.35, min(0.88,
