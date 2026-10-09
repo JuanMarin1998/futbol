@@ -1,248 +1,819 @@
+V2.1
+❌ PERDIDA
+Fortaleza vs Millonarios FC
+Millonarios FC · cuota 21.00 · 7.00 vidas
+Modelo 85.6% · Implícita 4.8% · Edge +80.9%
+⏱ Tiempo de apuesta: 92' · marcador 0-1
+Motivo: Millonarios FC elegido por V2.1: 85.6% de probabilidad frente a 4.8% implícita (+80.9 puntos de edge); 0-1 al 92', Nivel 2 · Fuerte; control temporal 1.00; confianza 76.1%; exposición 7.00 vidas; respaldo: xG: 0.89 vs 1.08, Remates al arco: 2 vs 5, Toques en área: 19 vs 24; cautelas: Posesión: 56 vs 44.
+Resultado: -7.00 vidas
+V2
+❌ PERDIDA
+Fortaleza vs Millonarios FC
+Millonarios FC · cuota 1.08 · 4.00 vidas
+Modelo 100.0% · Implícita 92.3% · Edge +7.7%
+⏱ Tiempo de apuesta: 90' · marcador 0-1
+Motivo: Millonarios FC elegido por V2: 100.0% de probabilidad frente a 92.3% implícita (+7.7 puntos de edge); 0-1 al 90', Nivel 3 · Moderada; confianza 86.2%; exposición 4.00 vidas; respaldo: xG: 0.89 vs 1.01, Remates al arco: 2 vs 5, Toques en área: 19 vs 24; cautelas: Posesión: 56 vs 44.
+Resultado: -4.00 vidas
 V2.2
-⏳ ABIERTA
+✅ GANADA
+Fortaleza vs Millonarios FC
+Empate · cuota 1.68 · 6.83 vidas
+Modelo 67.0% · Implícita 59.5% · Edge +7.4%
+⏱ Tiempo de apuesta: 75' · marcador 0-0
+Motivo: Empate elegido por V2.2: 67.0% de probabilidad frente a 59.5% implícita (+7.4 puntos de edge); 0-0 al 75', Nivel 2 · Fuerte; consenso de indicadores 37.0%; confianza 66.7%; exposición 6.83 vidas; respaldo: Marcador empatado: 0-0, Remates al arco: 2 vs 3; cautelas: xG: 0.89 vs 0.38.
+Resultado: +4.64 vidas
+V2
+❌ PERDIDA
+Alebrijes de Oaxaca vs Correcaminos UAT
+Menos de 2.5 · 2.5 · cuota 1.77 · 7.00 vidas
+Modelo 93.6% · Implícita 56.3% · Edge +37.3%
+⏱ Tiempo de apuesta: 79' · marcador 2-0
+Motivo: Menos de 2.5 elegido por V2: 93.6% de probabilidad frente a 56.3% implícita (+37.3 puntos de edge); 2-0 al 79', Nivel 2 · Fuerte; confianza 80.0%; exposición 7.00 vidas.
+Resultado: -7.00 vidas
+V2.1
+✅ GANADA
+Fortaleza vs Millonarios FC
+Empate · cuota 1.89 · 3.43 vidas
+Modelo 56.8% · Implícita 52.9% · Edge +3.9%
+⏱ Tiempo de apuesta: 63' · marcador 0-0
+Motivo: Empate elegido por V2.1: 56.8% de probabilidad frente a 52.9% implícita (+3.9 puntos de edge); 0-0 al 63', Nivel 3 · Moderada; control temporal 1.00; confianza 65.8%; exposición 3.43 vidas; respaldo: Marcador empatado: 0-0; cautelas: xG: 0.73 vs 0.30, Remates al arco: 2 vs 1.
+Resultado: +3.05 vidas
+V3
+✅ GANADA
+Fortaleza vs Millonarios FC
+Empate · cuota 1.95 · 0.96 vidas
+Modelo 56.1% · Implícita 51.3% · Edge +5.0%
+⏱ Tiempo de apuesta: 61' · marcador 0-0
+Motivo: Empate elegido por V3: probabilidad prudente 56.1%; probabilidad implícita de la cuota 51.3%, probabilidad justa de mercado 48.0%; edge conservador +5.1 puntos tras penalización; contexto al momento de apostar: 0-0 al 61', Nivel 3 · Moderada; filtro de cuota 1.40–2.10 y consenso auxiliar; confianza 86.6%; exposición 0.96 vidas.
+Resultado: +0.91 vidas
+V2.1
+✅ GANADA
+Alebrijes de Oaxaca vs Correcaminos UAT
+Alebrijes de Oaxaca · cuota 1.36 · 6.91 vidas
+Modelo 81.2% · Implícita 73.3% · Edge +7.8%
+⏱ Tiempo de apuesta: 65' · marcador 1-0
+Motivo: Alebrijes de Oaxaca elegido por V2.1: 81.2% de probabilidad frente a 73.3% implícita (+7.8 puntos de edge); 1-0 al 65', Nivel 2 · Fuerte; control temporal 1.00; confianza 70.6%; exposición 6.91 vidas; respaldo: Marcador favorable: 1-0.
+Resultado: +2.51 vidas
+V2
+✅ GANADA
+Fortaleza vs Millonarios FC
+Empate · cuota 2.02 · 3.88 vidas
+Modelo 55.5% · Implícita 49.4% · Edge +6.1%
+⏱ Tiempo de apuesta: 59' · marcador 0-0
+Motivo: Empate elegido por V2: 55.5% de probabilidad frente a 49.4% implícita (+6.1 puntos de edge); 0-0 al 59', Nivel 3 · Moderada; confianza 71.9%; exposición 3.88 vidas; respaldo: Marcador empatado: 0-0; cautelas: xG: 0.64 vs 0.28, Remates al arco: 2 vs 1.
+Resultado: +3.98 vidas
+V2
+✅ GANADA
+Alebrijes de Oaxaca vs Correcaminos UAT
+Alebrijes de Oaxaca · cuota 1.27 · 7.00 vidas
+Modelo 93.0% · Implícita 78.6% · Edge +14.5%
+⏱ Tiempo de apuesta: 64' · marcador 1-0
+Motivo: Alebrijes de Oaxaca elegido por V2: 93.0% de probabilidad frente a 78.6% implícita (+14.5 puntos de edge); 1-0 al 64', Nivel 2 · Fuerte; confianza 78.6%; exposición 7.00 vidas; respaldo: Marcador favorable: 1-0.
+Resultado: +1.91 vidas
+V2
+✅ GANADA
+CD Fas vs Alianza
+CD Fas · cuota 1.18 · 3.68 vidas
+Modelo 91.4% · Implícita 84.6% · Edge +6.8%
+⏱ Tiempo de apuesta: 52' · marcador 2-1
+Motivo: CD Fas elegido por V2: 91.4% de probabilidad frente a 84.6% implícita (+6.8 puntos de edge); 2-1 al 52', Nivel 3 · Moderada; confianza 64.5%; exposición 3.68 vidas; respaldo: Remates al arco: 3 vs 1, Posesión: 56 vs 44, Marcador favorable: 2-1.
+Resultado: +0.67 vidas
+V3
+❌ PERDIDA
+Alebrijes de Oaxaca vs Correcaminos UAT
+Empate · cuota 2.03 · 1.00 vidas
+Modelo 70.1% · Implícita 49.3% · Edge +22.8%
+⏱ Tiempo de apuesta: 63' · marcador 0-0
+Motivo: Empate elegido por V3: probabilidad prudente 70.1%; probabilidad implícita de la cuota 49.2%, probabilidad justa de mercado 43.5%; edge conservador +22.8 puntos tras penalización; contexto al momento de apostar: 0-0 al 63', Nivel 2 · Fuerte; filtro de cuota 1.40–2.10 y consenso auxiliar; candidata excepcional por edge conservador >=10 puntos, confianza >=68% y baja dispersión; confianza 88.0%; exposición 1.00 vidas.
+Resultado: -1.00 vidas
+V2.1
+❌ PERDIDA
+CD Fas vs Alianza
+Empate · cuota 3.10 · 3.52 vidas
+Modelo 67.8% · Implícita 32.3% · Edge +35.5%
+⏱ Tiempo de apuesta: 50' · marcador 1-1
+Motivo: Empate elegido por V2.1: 67.8% de probabilidad frente a 32.3% implícita (+35.5 puntos de edge); 1-1 al 50', Nivel 3 · Moderada; control temporal 0.95; confianza 59.1%; exposición 3.52 vidas; respaldo: Marcador empatado: 1-1; cautelas: Remates al arco: 2 vs 1.
+Resultado: -3.52 vidas
+V2
+❌ PERDIDA
+CD Fas vs Alianza
+Empate · cuota 3.10 · 3.64 vidas
+Modelo 76.0% · Implícita 32.3% · Edge +43.7%
+⏱ Tiempo de apuesta: 50' · marcador 1-1
+Motivo: Empate elegido por V2: 76.0% de probabilidad frente a 32.3% implícita (+43.7 puntos de edge); 1-1 al 50', Nivel 3 · Moderada; confianza 63.3%; exposición 3.64 vidas; respaldo: Marcador empatado: 1-1; cautelas: Remates al arco: 2 vs 1.
+Resultado: -3.64 vidas
+V1.1
+✅ GANADA
+Fortaleza vs Millonarios FC
+Empate · cuota 2.20 · 4.00 vidas
+Modelo 55.3% · Implícita 45.5% · Edge +9.8%
+⏱ Tiempo de apuesta: 56' · marcador 0-0
+Motivo: Empate elegido por V1.1: 55.3% de probabilidad frente a 45.5% implícita (+9.8 puntos de edge); 0-0 al 56', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 1.00; confianza 78.3%; exposición 4.00 vidas.
+Resultado: +4.80 vidas
+V1.1
+❌ PERDIDA
+CD Fas vs Alianza
+Empate · cuota 3.15 · 4.00 vidas
+Modelo 57.7% · Implícita 31.8% · Edge +25.9%
+⏱ Tiempo de apuesta: 49' · marcador 0-1
+Motivo: Empate elegido por V1.1: 57.7% de probabilidad frente a 31.8% implícita (+25.9 puntos de edge); 0-1 al 49', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 0.94; confianza 83.0%; exposición 4.00 vidas.
+Resultado: -4.00 vidas
+V2.1
+❌ PERDIDA
+CD Fas vs Alianza
+Menos de 2.5 · 2.5 · cuota 2.40 · 3.49 vidas
+Modelo 81.7% · Implícita 41.7% · Edge +40.0%
+⏱ Tiempo de apuesta: 40' · marcador 0-1
+Motivo: Menos de 2.5 elegido por V2.1: 81.7% de probabilidad frente a 41.7% implícita (+40.0 puntos de edge); 0-1 al 40', Nivel 3 · Moderada; control temporal 0.95; confianza 58.2%; exposición 3.49 vidas; cautelas: Remates totales: 6 vs 3, Corners: 3 vs 1.
+Resultado: -3.49 vidas
+V2
+❌ PERDIDA
+CD Fas vs Alianza
+Menos de 2.5 · 2.5 · cuota 2.40 · 3.61 vidas
+Modelo 92.1% · Implícita 41.7% · Edge +50.4%
+⏱ Tiempo de apuesta: 29' · marcador 0-1
+Motivo: Menos de 2.5 elegido por V2: 92.1% de probabilidad frente a 41.7% implícita (+50.4 puntos de edge); 0-1 al 29', Nivel 3 · Moderada; confianza 62.0%; exposición 3.61 vidas; cautelas: Remates totales: 6 vs 3, Corners: 3 vs 1.
+Resultado: -3.61 vidas
+V1.1
+❌ PERDIDA
+Palmeiras vs Bahia
+Empate · cuota 6.00 · 4.00 vidas
+Modelo 58.2% · Implícita 16.7% · Edge +41.6%
+⏱ Tiempo de apuesta: 69' · marcador 1-0
+Motivo: Empate elegido por V1.1: 58.2% de probabilidad frente a 16.7% implícita (+41.6 puntos de edge); 1-0 al 69', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 1.00; confianza 85.1%; exposición 4.00 vidas.
+Resultado: -4.00 vidas
+V2
+✅ GANADA
+Fluminense vs Coritiba
+Más de 2.5 · 2.5 · cuota 1.45 · 4.00 vidas
+Modelo 72.4% · Implícita 68.8% · Edge +3.7%
+⏱ Tiempo de apuesta: 54' · marcador 2-0
+Motivo: Más de 2.5 elegido por V2: 72.4% de probabilidad frente a 68.8% implícita (+3.7 puntos de edge); 2-0 al 54', Nivel 3 · Moderada; confianza 88.0%; exposición 4.00 vidas; respaldo: xG: 0.80 vs 0.52, Remates totales: 16 vs 4, Remates al arco: 7 vs 0; cautelas: Grandes ocasiones: 0 vs 1.
+Resultado: +1.82 vidas
+V2.1
+❌ PERDIDA
+CD Fas vs Alianza
+Alianza · cuota 2.35 · 3.40 vidas
+Modelo 58.2% · Implícita 42.5% · Edge +15.6%
+⏱ Tiempo de apuesta: 12' · marcador 0-1
+Motivo: Alianza elegido por V2.1: 58.2% de probabilidad frente a 42.5% implícita (+15.6 puntos de edge); 0-1 al 12', Nivel 3 · Moderada; control temporal 0.60; confianza 55.1%; exposición 3.40 vidas; respaldo: Posesión: 49 vs 51, Marcador favorable: 0-1.
+Resultado: -3.40 vidas
+V2
+❌ PERDIDA
+CD Fas vs Alianza
+Alianza · cuota 2.33 · 3.55 vidas
+Modelo 68.9% · Implícita 42.9% · Edge +26.1%
+⏱ Tiempo de apuesta: 12' · marcador 0-1
+Motivo: Alianza elegido por V2: 68.9% de probabilidad frente a 42.9% implícita (+26.1 puntos de edge); 0-1 al 12', Nivel 3 · Moderada; confianza 60.3%; exposición 3.55 vidas; respaldo: Marcador favorable: 0-1; cautelas: Posesión: 51 vs 49.
+Resultado: -3.55 vidas
+V3
+✅ GANADA
+CD Fas vs Alianza
+CD Fas · cuota 1.70 · 1.00 vidas
+Modelo 80.0% · Implícita 58.8% · Edge +25.4%
+⏱ Tiempo de apuesta: 1' · marcador 0-0
+Motivo: CD Fas elegido por V3: 80.0% de probabilidad frente a 58.8% implícita (+25.4 puntos de edge); 0-0 al 1', Nivel 2 · Fuerte; filtro de cuota 1.40–2.10, edge conservador y consenso auxiliar; confianza 67.3%; exposición 1.00 vidas.
+Resultado: +0.70 vidas
+V1.2
+✅ GANADA
+CD Fas vs Alianza
+CD Fas · cuota 1.70 · 2.00 vidas
+Modelo 91.7% · Implícita 58.8% · Edge +32.9%
+⏱ Tiempo de apuesta: 1' · marcador 0-0
+Motivo: CD Fas elegido por V1.2: 91.7% de probabilidad frente a 58.8% implícita (+32.9 puntos de edge); 0-0 al 1', Nivel 1 · Muy fuerte; mercado LIVE compatible con la evaluación ampliada de V1.2; confianza 95.0%; exposición 2.00 vidas.
+Resultado: +1.40 vidas
+V1.1
+✅ GANADA
+CD Fas vs Alianza
+Más de 2.5 · 2.5 · cuota 1.72 · 3.68 vidas
+Modelo 73.5% · Implícita 58.1% · Edge +15.4%
+⏱ Tiempo de apuesta: 1' · marcador 0-0
+Motivo: Más de 2.5 2.5 elegido por V1.1: 73.5% de probabilidad frente a 58.1% implícita (+15.4 puntos de edge); 0-0 al 1', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 0.64; confianza 64.5%; exposición 3.68 vidas.
+Resultado: +2.65 vidas
+V1
+✅ GANADA
+CD Fas vs Alianza
+Más de 2.5 · 2.5 · cuota 1.72 · 4.00 vidas
+Modelo 97.1% · Implícita 58.1% · Edge +39.0%
+⏱ Tiempo de apuesta: 1' · marcador 0-0
+Motivo: Más de 2.5 2.5 elegido por V1: 97.1% de probabilidad frente a 58.1% implícita (+39.0 puntos de edge); 0-0 al 1', Nivel 3 · Moderada; confianza 95.0%; exposición 4.00 vidas.
+Resultado: +2.88 vidas
+V1
+❌ PERDIDA
+CD Fas vs Alianza
+No · cuota 2.00 · 10.00 vidas
+Modelo 91.0% · Implícita 50.0% · Edge +41.0%
+⏱ Tiempo de apuesta: 1' · marcador 0-0
+Motivo: No elegido por V1: 91.0% de probabilidad frente a 50.0% implícita (+41.0 puntos de edge); 0-0 al 1', Nivel 1 · Muy fuerte; confianza 95.0%; exposición 10.00 vidas.
+Resultado: -10.00 vidas
+V1.1
+❌ PERDIDA
+CD Fas vs Alianza
+No · cuota 2.05 · 3.68 vidas
+Modelo 70.5% · Implícita 48.8% · Edge +21.7%
+⏱ Tiempo de apuesta: 1' · marcador 0-0
+Motivo: No elegido por V1.1: 70.5% de probabilidad frente a 48.8% implícita (+21.7 puntos de edge); 0-0 al 1', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 0.64; confianza 64.5%; exposición 3.68 vidas.
+Resultado: -3.68 vidas
+V1
+❌ PERDIDA
+CD Fas vs Alianza
+Empate · cuota 3.50 · 4.00 vidas
+Modelo 55.5% · Implícita 28.6% · Edge +26.9%
+⏱ Tiempo de apuesta: 1' · marcador 0-0
+Motivo: Empate elegido por V1: 55.5% de probabilidad frente a 28.6% implícita (+26.9 puntos de edge); 0-0 al 1', Nivel 3 · Moderada; confianza 95.0%; exposición 4.00 vidas.
+Resultado: -4.00 vidas
+V3
+❌ PERDIDA
+CD Fas vs Alianza
+Menos de 2.5 · 2.5 · cuota 1.98 · 1.00 vidas
+Modelo 81.5% · Implícita 50.6% · Edge +27.9%
+⏱ Tiempo de apuesta: 1' · marcador 0-0
+Motivo: Menos de 2.5 2.5 elegido por V3: 81.5% de probabilidad frente a 50.6% implícita (+27.9 puntos de edge); 0-0 al 1', Nivel 2 · Fuerte; filtro de cuota 1.40–2.10, edge conservador y consenso auxiliar; confianza 68.5%; exposición 1.00 vidas.
+Resultado: -1.00 vidas
+V1.2
+❌ PERDIDA
+CD Fas vs Alianza
+No · cuota 2.02 · 10.00 vidas
+Modelo 91.0% · Implícita 49.4% · Edge +41.6%
+⏱ Tiempo de apuesta: 1' · marcador 0-0
+Motivo: No elegido por V1.2: 91.0% de probabilidad frente a 49.4% implícita (+41.6 puntos de edge); 0-0 al 1', Nivel 1 · Muy fuerte; mercado LIVE compatible con la evaluación ampliada de V1.2; confianza 95.0%; exposición 10.00 vidas.
+Resultado: -10.00 vidas
+V1.1
+❌ PERDIDA
+CD Fas vs Alianza
+Menos de 2.5 · 2.5 · cuota 1.98 · 3.68 vidas
+Modelo 73.2% · Implícita 50.6% · Edge +22.6%
+⏱ Tiempo de apuesta: 1' · marcador 0-0
+Motivo: Menos de 2.5 2.5 elegido por V1.1: 73.2% de probabilidad frente a 50.6% implícita (+22.6 puntos de edge); 0-0 al 1', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 0.64; confianza 64.5%; exposición 3.68 vidas.
+Resultado: -3.68 vidas
+V1
+❌ PERDIDA
+CD Fas vs Alianza
+Menos de 2.5 · 2.5 · cuota 1.98 · 4.00 vidas
+Modelo 96.4% · Implícita 50.6% · Edge +45.8%
+⏱ Tiempo de apuesta: 1' · marcador 0-0
+Motivo: Menos de 2.5 2.5 elegido por V1: 96.4% de probabilidad frente a 50.6% implícita (+45.8 puntos de edge); 0-0 al 1', Nivel 3 · Moderada; confianza 95.0%; exposición 4.00 vidas.
+Resultado: -4.00 vidas
+V1.2
+❌ PERDIDA
+Alebrijes de Oaxaca vs Correcaminos UAT
+Menos de 1.5 · 1.5 · cuota 2.40 · 5.00 vidas
+Modelo 92.5% · Implícita 41.7% · Edge +50.9%
+⏱ Tiempo de apuesta: 34' · marcador 0-0
+Motivo: Menos de 1.5 1.5 elegido por V1.2: 92.5% de probabilidad frente a 41.7% implícita (+50.8 puntos de edge); 0-0 al 34', Nivel 1 · Muy fuerte; mercado LIVE compatible con la evaluación ampliada de V1.2; confianza 95.0%; exposición 5.00 vidas.
+Resultado: -5.00 vidas
+V3
+✅ GANADA
+Fluminense vs Coritiba
+No · cuota 1.50 · 1.00 vidas
+Modelo 79.4% · Implícita 66.7% · Edge +13.7%
+⏱ Tiempo de apuesta: Descanso · marcador 1-0
+Motivo: No elegido por V3: 79.4% de probabilidad frente a 66.7% implícita (+13.7 puntos de edge); 1-0 al Descanso, Nivel 1 · Muy fuerte; filtro de cuota 1.40–2.10, edge conservador y consenso auxiliar; candidata excepcional por edge conservador >=10 puntos, confianza >=68% y baja dispersión; confianza 88.0%; exposición 1.00 vidas.
+Resultado: +0.50 vidas
+V3
+❌ PERDIDA
+Alebrijes de Oaxaca vs Correcaminos UAT
+Menos de 2.5 · 2.5 · cuota 1.57 · 1.00 vidas
+Modelo 86.4% · Implícita 63.5% · Edge +22.9%
+⏱ Tiempo de apuesta: 30' · marcador 0-0
+Motivo: Menos de 2.5 2.5 elegido por V3: 86.4% de probabilidad frente a 63.5% implícita (+22.9 puntos de edge); 0-0 al 30', Nivel 1 · Muy fuerte; filtro de cuota 1.40–2.10, edge conservador y consenso auxiliar; candidata excepcional por edge conservador >=10 puntos, confianza >=68% y baja dispersión; confianza 83.6%; exposición 1.00 vidas.
+Resultado: -1.00 vidas
+V3
+✅ GANADA
+Palmeiras vs Bahia
+No · cuota 1.60 · 1.00 vidas
+Modelo 79.0% · Implícita 62.5% · Edge +17.5%
+⏱ Tiempo de apuesta: Descanso · marcador 1-0
+Motivo: No elegido por V3: 79.0% de probabilidad frente a 62.5% implícita (+17.5 puntos de edge); 1-0 al Descanso, Nivel 1 · Muy fuerte; filtro de cuota 1.40–2.10, edge conservador y consenso auxiliar; candidata excepcional por edge conservador >=10 puntos, confianza >=68% y baja dispersión; confianza 85.8%; exposición 1.00 vidas.
+Resultado: +0.60 vidas
+V3
+❌ PERDIDA
+Fortaleza vs Millonarios FC
+No · cuota 1.53 · 0.95 vidas
+Modelo 74.9% · Implícita 65.5% · Edge +10.0%
+⏱ Tiempo de apuesta: 20' · marcador 0-0
+Motivo: No elegido por V3: 74.9% de probabilidad frente a 65.5% implícita (+10.0 puntos de edge); 0-0 al 20', Nivel 2 · Fuerte; filtro de cuota 1.40–2.10, edge conservador y consenso auxiliar; confianza 75.8%; exposición 0.95 vidas.
+Resultado: -0.95 vidas
+V1.2
+❌ PERDIDA
+Alebrijes de Oaxaca vs Correcaminos UAT
+Empate · cuota 3.35 · 7.00 vidas
+Modelo 65.5% · Implícita 29.8% · Edge +35.6%
+⏱ Tiempo de apuesta: 30' · marcador 0-0
+Motivo: Empate elegido por V1.2: 65.5% de probabilidad frente a 29.8% implícita (+35.6 puntos de edge); 0-0 al 30', Nivel 2 · Fuerte; mercado LIVE compatible con la evaluación ampliada de V1.2; confianza 95.0%; exposición 7.00 vidas.
+Resultado: -7.00 vidas
+V2
+❌ PERDIDA
+Fortaleza vs Millonarios FC
+Fortaleza · cuota 4.25 · 7.00 vidas
+Modelo 75.0% · Implícita 23.5% · Edge +51.4%
+⏱ Tiempo de apuesta: 19' · marcador 0-0
+Motivo: Fortaleza elegido por V2: 75.0% de probabilidad frente a 23.5% implícita (+51.4 puntos de edge); 0-0 al 19', Nivel 2 · Fuerte; confianza 86.2%; exposición 7.00 vidas; respaldo: xG: 0.27 vs 0.05, Remates al arco: 2 vs 0, Toques en área: 9 vs 5.
+Resultado: -7.00 vidas
+V2.2
+❌ PERDIDA
+Fortaleza vs Millonarios FC
+Fortaleza · cuota 4.50 · 7.00 vidas
+Modelo 70.5% · Implícita 22.2% · Edge +48.3%
+⏱ Tiempo de apuesta: 19' · marcador 0-0
+Motivo: Fortaleza elegido por V2.2: 70.5% de probabilidad frente a 22.2% implícita (+48.2 puntos de edge); 0-0 al 19', Nivel 2 · Fuerte; consenso de indicadores 92.5%; confianza 81.9%; exposición 7.00 vidas; respaldo: xG: 0.27 vs 0.05, Remates al arco: 2 vs 0, Toques en área: 9 vs 5.
+Resultado: -7.00 vidas
+V2.1
+❌ PERDIDA
+Fortaleza vs Millonarios FC
+Fortaleza · cuota 4.50 · 3.82 vidas
+Modelo 63.3% · Implícita 22.2% · Edge +41.1%
+⏱ Tiempo de apuesta: 19' · marcador 0-0
+Motivo: Fortaleza elegido por V2.1: 63.3% de probabilidad frente a 22.2% implícita (+41.1 puntos de edge); 0-0 al 19', Nivel 3 · Moderada; control temporal 0.74; confianza 69.3%; exposición 3.82 vidas; respaldo: xG: 0.27 vs 0.05, Remates al arco: 2 vs 0, Toques en área: 9 vs 5.
+Resultado: -3.82 vidas
+V2
+❌ PERDIDA
+Fortaleza vs Millonarios FC
+No · cuota 1.51 · 3.88 vidas
+Modelo 72.9% · Implícita 66.1% · Edge +6.8%
+⏱ Tiempo de apuesta: 19' · marcador 0-0
+Motivo: No elegido por V2: 72.9% de probabilidad frente a 66.1% implícita (+6.8 puntos de edge); 0-0 al 19', Nivel 3 · Moderada; confianza 71.2%; exposición 3.88 vidas; cautelas: xG: 0.27 vs 0.05, Remates al arco: 2 vs 0.
+Resultado: -3.88 vidas
+V1.1
+❌ PERDIDA
+Alebrijes de Oaxaca vs Correcaminos UAT
+Empate · cuota 3.60 · 4.00 vidas
+Modelo 57.1% · Implícita 27.8% · Edge +29.4%
+⏱ Tiempo de apuesta: 21' · marcador 0-0
+Motivo: Empate elegido por V1.1: 57.1% de probabilidad frente a 27.8% implícita (+29.4 puntos de edge); 0-0 al 21', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 0.76; confianza 76.7%; exposición 4.00 vidas.
+Resultado: -4.00 vidas
+V1.1
+❌ PERDIDA
+Fortaleza vs Millonarios FC
+Más de 2.5 · 2.5 · cuota 2.30 · 3.92 vidas
+Modelo 60.1% · Implícita 43.5% · Edge +16.6%
+⏱ Tiempo de apuesta: 4' · marcador 0-0
+Motivo: Más de 2.5 2.5 elegido por V1.1: 60.1% de probabilidad frente a 43.5% implícita (+16.6 puntos de edge); 0-0 al 4', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 0.64; confianza 72.5%; exposición 3.92 vidas.
+Resultado: -3.92 vidas
+V1
+❌ PERDIDA
+Fortaleza vs Millonarios FC
+Más de 2.5 · 2.5 · cuota 2.30 · 7.00 vidas
+Modelo 70.1% · Implícita 43.5% · Edge +26.6%
+⏱ Tiempo de apuesta: 4' · marcador 0-0
+Motivo: Más de 2.5 2.5 elegido por V1: 70.1% de probabilidad frente a 43.5% implícita (+26.7 puntos de edge); 0-0 al 4', Nivel 2 · Fuerte; confianza 95.0%; exposición 7.00 vidas.
+Resultado: -7.00 vidas
+V1.2
+❌ PERDIDA
+Fortaleza vs Millonarios FC
+Fortaleza · cuota 4.00 · 2.00 vidas
+Modelo 70.6% · Implícita 25.0% · Edge +45.6%
+⏱ Tiempo de apuesta: 4' · marcador 0-0
+Motivo: Fortaleza elegido por V1.2: 70.6% de probabilidad frente a 25.0% implícita (+45.6 puntos de edge); 0-0 al 4', Nivel 2 · Fuerte; mercado LIVE compatible con la evaluación ampliada de V1.2; confianza 95.0%; exposición 2.00 vidas.
+Resultado: -2.00 vidas
+V1.2
+❌ PERDIDA
+Antigua vs Municipal
+Municipal · cuota 2.50 · 5.07 vidas
+Modelo 65.7% · Implícita 40.0% · Edge +25.7%
+⏱ Tiempo de apuesta: 9' · marcador 0-1
+Motivo: Municipal elegido por V1.2: 65.7% de probabilidad frente a 40.0% implícita (+25.7 puntos de edge); 0-1 al 9', Nivel 2 · Fuerte; mercado LIVE compatible con la evaluación ampliada de V1.2; confianza 86.0%; exposición 5.07 vidas.
+Resultado: -5.07 vidas
+V1
+❌ PERDIDA
+Fortaleza vs Millonarios FC
+No · cuota 1.70 · 10.00 vidas
+Modelo 91.5% · Implícita 58.8% · Edge +32.7%
+⏱ Tiempo de apuesta: 4' · marcador 0-0
+Motivo: No elegido por V1: 91.5% de probabilidad frente a 58.8% implícita (+32.7 puntos de edge); 0-0 al 4', Nivel 1 · Muy fuerte; confianza 95.0%; exposición 10.00 vidas.
+Resultado: -10.00 vidas
+V1.1
+✅ GANADA
+Fortaleza vs Millonarios FC
+Menos de 2.5 · 2.5 · cuota 1.57 · 3.68 vidas
+Modelo 73.3% · Implícita 63.5% · Edge +9.8%
+⏱ Tiempo de apuesta: 4' · marcador 0-0
+Motivo: Menos de 2.5 2.5 elegido por V1.1: 73.3% de probabilidad frente a 63.5% implícita (+9.8 puntos de edge); 0-0 al 4', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 0.64; confianza 64.5%; exposición 3.68 vidas.
+Resultado: +2.12 vidas
+V1
+✅ GANADA
+Fortaleza vs Millonarios FC
+Empate · cuota 3.20 · 4.00 vidas
+Modelo 56.4% · Implícita 31.3% · Edge +25.1%
+⏱ Tiempo de apuesta: 4' · marcador 0-0
+Motivo: Empate elegido por V1: 56.4% de probabilidad frente a 31.2% implícita (+25.1 puntos de edge); 0-0 al 4', Nivel 3 · Moderada; confianza 95.0%; exposición 4.00 vidas.
+Resultado: +8.80 vidas
+V1.2
+❌ PERDIDA
+Fortaleza vs Millonarios FC
+No · cuota 1.65 · 10.00 vidas
+Modelo 91.0% · Implícita 60.8% · Edge +30.3%
+⏱ Tiempo de apuesta: 1' · marcador 0-0
+Motivo: No elegido por V1.2: 91.0% de probabilidad frente a 60.8% implícita (+30.2 puntos de edge); 0-0 al 1', Nivel 1 · Muy fuerte; mercado LIVE compatible con la evaluación ampliada de V1.2; confianza 95.0%; exposición 10.00 vidas.
+Resultado: -10.00 vidas
+V1.1
+❌ PERDIDA
+Fortaleza vs Millonarios FC
+No · cuota 1.65 · 3.68 vidas
+Modelo 70.5% · Implícita 60.8% · Edge +9.7%
+⏱ Tiempo de apuesta: 1' · marcador 0-0
+Motivo: No elegido por V1.1: 70.5% de probabilidad frente a 60.8% implícita (+9.7 puntos de edge); 0-0 al 1', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 0.64; confianza 64.5%; exposición 3.68 vidas.
+Resultado: -3.68 vidas
+V1
+✅ GANADA
+Fortaleza vs Millonarios FC
+Menos de 2.5 · 2.5 · cuota 1.52 · 4.00 vidas
+Modelo 96.4% · Implícita 65.6% · Edge +30.9%
+⏱ Tiempo de apuesta: 1' · marcador 0-0
+Motivo: Menos de 2.5 2.5 elegido por V1: 96.4% de probabilidad frente a 65.6% implícita (+30.9 puntos de edge); 0-0 al 1', Nivel 3 · Moderada; confianza 95.0%; exposición 4.00 vidas.
+Resultado: +2.10 vidas
+V1.2
+✅ GANADA
+Antigua vs Municipal
+Menos de 3.5 · 3.5 · cuota 1.67 · 6.93 vidas
+Modelo 68.5% · Implícita 60.0% · Edge +8.5%
+⏱ Tiempo de apuesta: 8' · marcador 0-1
+Motivo: Menos de 3.5 3.5 elegido por V1.2: 68.5% de probabilidad frente a 60.0% implícita (+8.5 puntos de edge); 0-1 al 8', Nivel 2 · Fuerte; mercado LIVE compatible con la evaluación ampliada de V1.2; confianza 71.5%; exposición 6.93 vidas.
+Resultado: +4.62 vidas
+V1.1
+❌ PERDIDA
+Antigua vs Municipal
+No · cuota 2.90 · 3.74 vidas
+Modelo 55.4% · Implícita 34.5% · Edge +20.9%
+⏱ Tiempo de apuesta: 8' · marcador 0-1
+Motivo: No elegido por V1.1: 55.4% de probabilidad frente a 34.5% implícita (+20.9 puntos de edge); 0-1 al 8', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 0.64; confianza 66.5%; exposición 3.74 vidas.
+Resultado: -3.74 vidas
+V1
+❌ PERDIDA
+Antigua vs Municipal
+No · cuota 2.90 · 4.00 vidas
+Modelo 60.8% · Implícita 34.5% · Edge +26.3%
+⏱ Tiempo de apuesta: 8' · marcador 0-1
+Motivo: No elegido por V1: 60.8% de probabilidad frente a 34.5% implícita (+26.3 puntos de edge); 0-1 al 8', Nivel 3 · Moderada; confianza 83.0%; exposición 4.00 vidas.
+Resultado: -4.00 vidas
+V2.1
+❌ PERDIDA
+Alebrijes de Oaxaca vs Correcaminos UAT
+Menos de 2.5 · 2.5 · cuota 2.17 · 3.46 vidas
+Modelo 71.1% · Implícita 46.2% · Edge +24.9%
+⏱ Tiempo de apuesta: 12' · marcador 0-0
+Motivo: Menos de 2.5 2.5 elegido por V2.1: 71.1% de probabilidad frente a 46.2% implícita (+24.9 puntos de edge); 0-0 al 12', Nivel 3 · Moderada; control temporal 0.60; confianza 57.0%; exposición 3.46 vidas.
+Resultado: -3.46 vidas
+V2.1
+❌ PERDIDA
+Alebrijes de Oaxaca vs Correcaminos UAT
+Empate · cuota 4.10 · 3.59 vidas
+Modelo 57.0% · Implícita 24.4% · Edge +32.6%
+⏱ Tiempo de apuesta: 12' · marcador 0-0
+Motivo: Empate elegido por V2.1: 57.0% de probabilidad frente a 24.4% implícita (+32.6 puntos de edge); 0-0 al 12', Nivel 3 · Moderada; control temporal 0.60; confianza 61.4%; exposición 3.59 vidas; respaldo: Marcador empatado: 0-0.
+Resultado: -3.59 vidas
+V2
+❌ PERDIDA
+Alebrijes de Oaxaca vs Correcaminos UAT
+Empate · cuota 4.10 · 7.00 vidas
+Modelo 66.1% · Implícita 24.4% · Edge +41.7%
+⏱ Tiempo de apuesta: 12' · marcador 0-0
+Motivo: Empate elegido por V2: 66.1% de probabilidad frente a 24.4% implícita (+41.7 puntos de edge); 0-0 al 12', Nivel 2 · Fuerte; confianza 76.5%; exposición 7.00 vidas; respaldo: Marcador empatado: 0-0.
+Resultado: -7.00 vidas
+V2.2
+❌ PERDIDA
+Palmeiras vs Bahia
+Más de 2.5 · 2.5 · cuota 1.67 · 4.00 vidas
+Modelo 64.3% · Implícita 60.0% · Edge +4.3%
+⏱ Tiempo de apuesta: 35' · marcador 1-0
+Motivo: Más de 2.5 2.5 elegido por V2.2: 64.3% de probabilidad frente a 60.0% implícita (+4.3 puntos de edge); 1-0 al 35', Nivel 3 · Moderada; consenso de indicadores 95.7%; confianza 91.0%; exposición 4.00 vidas; respaldo: xG: 0.66 vs 0.02, Remates totales: 12 vs 3, Remates al arco: 6 vs 0.
+Resultado: -4.00 vidas
+V2
+❌ PERDIDA
+Palmeiras vs Bahia
+Más de 2.5 · 2.5 · cuota 1.67 · 7.00 vidas
+Modelo 67.5% · Implícita 60.0% · Edge +7.5%
+⏱ Tiempo de apuesta: 35' · marcador 1-0
+Motivo: Más de 2.5 2.5 elegido por V2: 67.5% de probabilidad frente a 60.0% implícita (+7.5 puntos de edge); 1-0 al 35', Nivel 2 · Fuerte; confianza 90.0%; exposición 7.00 vidas; respaldo: xG: 0.66 vs 0.02, Remates totales: 12 vs 3, Remates al arco: 6 vs 0.
+Resultado: -7.00 vidas
+V1.1
+❌ PERDIDA
+Alebrijes de Oaxaca vs Correcaminos UAT
+Menos de 2.5 · 2.5 · cuota 2.25 · 3.68 vidas
+Modelo 73.4% · Implícita 44.4% · Edge +29.0%
+⏱ Tiempo de apuesta: 6' · marcador 0-0
+Motivo: Menos de 2.5 2.5 elegido por V1.1: 73.4% de probabilidad frente a 44.4% implícita (+29.0 puntos de edge); 0-0 al 6', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 0.64; confianza 64.5%; exposición 3.68 vidas.
+Resultado: -3.68 vidas
+V1
+❌ PERDIDA
+Alebrijes de Oaxaca vs Correcaminos UAT
+Menos de 2.5 · 2.5 · cuota 2.25 · 4.00 vidas
+Modelo 96.9% · Implícita 44.4% · Edge +52.5%
+⏱ Tiempo de apuesta: 6' · marcador 0-0
+Motivo: Menos de 2.5 2.5 elegido por V1: 96.9% de probabilidad frente a 44.4% implícita (+52.5 puntos de edge); 0-0 al 6', Nivel 3 · Moderada; confianza 95.0%; exposición 4.00 vidas.
+Resultado: -4.00 vidas
+V1
+❌ PERDIDA
+Alebrijes de Oaxaca vs Correcaminos UAT
+Empate · cuota 4.50 · 4.00 vidas
+Modelo 55.8% · Implícita 22.2% · Edge +33.6%
+⏱ Tiempo de apuesta: 2' · marcador 0-0
+Motivo: Empate elegido por V1: 55.8% de probabilidad frente a 22.2% implícita (+33.6 puntos de edge); 0-0 al 2', Nivel 3 · Moderada; confianza 95.0%; exposición 4.00 vidas.
+Resultado: -4.00 vidas
+V2
+✅ GANADA
+Fluminense vs Coritiba
+Fluminense · cuota 1.14 · 7.00 vidas
+Modelo 95.0% · Implícita 87.5% · Edge +7.5%
+⏱ Tiempo de apuesta: 32' · marcador 1-0
+Motivo: Fluminense elegido por V2: 95.0% de probabilidad frente a 87.5% implícita (+7.5 puntos de edge); 1-0 al 32', Nivel 2 · Fuerte; confianza 86.2%; exposición 7.00 vidas; respaldo: xG: 0.42 vs 0.06, Remates al arco: 3 vs 0, Toques en área: 9 vs 0.
+Resultado: +1.00 vidas
+V2.1
+✅ GANADA
+Fluminense vs Coritiba
+No · cuota 1.51 · 3.29 vidas
+Modelo 71.4% · Implícita 66.1% · Edge +5.3%
+⏱ Tiempo de apuesta: 24' · marcador 0-0
+Motivo: No elegido por V2.1: 71.4% de probabilidad frente a 66.1% implícita (+5.3 puntos de edge); 0-0 al 24', Nivel 3 · Moderada; control temporal 0.74; confianza 55.3%; exposición 3.29 vidas; cautelas: xG: 0.18 vs 0.06, Remates al arco: 1 vs 0.
+Resultado: +1.69 vidas
+V2
+✅ GANADA
+Fluminense vs Coritiba
+No · cuota 1.51 · 3.88 vidas
+Modelo 90.2% · Implícita 66.1% · Edge +24.1%
+⏱ Tiempo de apuesta: 24' · marcador 0-0
+Motivo: No elegido por V2: 90.2% de probabilidad frente a 66.1% implícita (+24.1 puntos de edge); 0-0 al 24', Nivel 3 · Moderada; confianza 71.2%; exposición 3.88 vidas; cautelas: xG: 0.18 vs 0.06, Remates al arco: 1 vs 0.
+Resultado: +1.99 vidas
+V2.2
+✅ GANADA
 Atlético Nacional vs Deportes Tolima
 Empate · cuota 1.52 · 3.70 vidas
 Modelo 72.2% · Implícita 65.8% · Edge +6.4%
-⏱ Tiempo actual: 82' · marcador 0-0
+⏱ Tiempo de apuesta: 82' · marcador 0-0
 Motivo: Empate elegido por V2.2: 72.2% de probabilidad frente a 65.8% implícita (+6.4 puntos de edge); 0-0 al 82', Nivel 3 · Moderada; consenso de indicadores 37.0%; confianza 65.2%; exposición 3.70 vidas; respaldo: Marcador empatado: 0-0, Remates al arco: 6 vs 8; cautelas: xG: 0.92 vs 0.62.
+Resultado: +1.92 vidas
 V2.1
-⏳ ABIERTA
+✅ GANADA
 Atlético Nacional vs Deportes Tolima
 Empate · cuota 1.52 · 3.48 vidas
 Modelo 69.5% · Implícita 65.8% · Edge +3.7%
-⏱ Tiempo actual: 82' · marcador 0-0
+⏱ Tiempo de apuesta: 82' · marcador 0-0
 Motivo: Empate elegido por V2.1: 69.5% de probabilidad frente a 65.8% implícita (+3.7 puntos de edge); 0-0 al 82', Nivel 3 · Moderada; control temporal 1.00; confianza 68.1%; exposición 3.48 vidas; respaldo: Marcador empatado: 0-0, Remates al arco: 6 vs 8; cautelas: xG: 0.92 vs 0.62.
+Resultado: +1.81 vidas
 V2
-⏳ ABIERTA
+✅ GANADA
 Palmeiras vs Bahia
 Palmeiras · cuota 1.21 · 4.00 vidas
 Modelo 98.6% · Implícita 82.6% · Edge +16.0%
-⏱ Tiempo actual: 15' · marcador 1-0
+⏱ Tiempo de apuesta: 13' · marcador 1-0
 Motivo: Palmeiras elegido por V2: 98.6% de probabilidad frente a 82.6% implícita (+16.0 puntos de edge); 1-0 al 13', Nivel 3 · Moderada; confianza 86.2%; exposición 4.00 vidas; respaldo: xG: 0.22 vs 0, Remates al arco: 2 vs 0, Grandes ocasiones: 1 vs 0; cautelas: Posesión: 34 vs 66.
+Resultado: +0.84 vidas
 V2.1
-⏳ ABIERTA
+✅ GANADA
 Athlético Paranaense vs Atlético Mineiro
 Empate · cuota 1.80 · 3.45 vidas
 Modelo 59.6% · Implícita 55.6% · Edge +4.0%
-⏱ Tiempo actual: 81' · marcador 1-1
+⏱ Tiempo de apuesta: 80' · marcador 1-1
 Motivo: Empate elegido por V2.1: 59.6% de probabilidad frente a 55.6% implícita (+4.0 puntos de edge); 1-1 al 80', Nivel 3 · Moderada; control temporal 1.00; confianza 65.8%; exposición 3.45 vidas; respaldo: Marcador empatado: 1-1; cautelas: xG: 1.72 vs 1.32, Remates al arco: 9 vs 7.
+Resultado: +2.76 vidas
 V1.2
-⏳ ABIERTA
+✅ GANADA
 Athlético Paranaense vs Atlético Mineiro
 Empate · cuota 1.80 · 2.00 vidas
 Modelo 68.7% · Implícita 55.6% · Edge +13.1%
-⏱ Tiempo actual: 81' · marcador 1-1
+⏱ Tiempo de apuesta: 80' · marcador 1-1
 Motivo: Empate elegido por V1.2: 68.7% de probabilidad frente a 55.6% implícita (+13.1 puntos de edge); 1-1 al 80', Nivel 2 · Fuerte; mercado LIVE compatible con la evaluación ampliada de V1.2; confianza 88.1%; exposición 2.00 vidas.
+Resultado: +1.60 vidas
 V1.1
-⏳ ABIERTA
+❌ PERDIDA
 Fluminense vs Coritiba
 Sí · cuota 2.02 · 3.68 vidas
 Modelo 70.6% · Implícita 49.4% · Edge +21.2%
-⏱ Tiempo actual: 1' · marcador 0-0
+⏱ Tiempo de apuesta: 1' · marcador 0-0
 Motivo: Sí elegido por V1.1: 70.6% de probabilidad frente a 49.4% implícita (+21.2 puntos de edge); 0-0 al 1', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 0.64; confianza 64.5%; exposición 3.68 vidas.
+Resultado: -3.68 vidas
 V1
-⏳ ABIERTA
+❌ PERDIDA
 Fluminense vs Coritiba
 Sí · cuota 2.02 · 6.98 vidas
 Modelo 91.2% · Implícita 49.4% · Edge +41.9%
-⏱ Tiempo actual: 1' · marcador 0-0
+⏱ Tiempo de apuesta: 1' · marcador 0-0
 Motivo: Sí elegido por V1: 91.2% de probabilidad frente a 49.4% implícita (+41.9 puntos de edge); 0-0 al 1', Nivel 1 · Muy fuerte; confianza 95.0%; exposición 6.98 vidas.
+Resultado: -6.98 vidas
 V1.2
-⏳ ABIERTA
+✅ GANADA
 Palmeiras vs Bahia
 Menos de 3.5 · 3.5 · cuota 2.08 · 2.00 vidas
 Modelo 73.5% · Implícita 48.2% · Edge +25.3%
-⏱ Tiempo actual: 15' · marcador 1-0
+⏱ Tiempo de apuesta: 7' · marcador 1-0
 Motivo: Menos de 3.5 3.5 elegido por V1.2: 73.5% de probabilidad frente a 48.2% implícita (+25.3 puntos de edge); 1-0 al 7', Nivel 2 · Fuerte; mercado LIVE compatible con la evaluación ampliada de V1.2; confianza 95.0%; exposición 2.00 vidas.
+Resultado: +2.15 vidas
 V1
-⏳ ABIERTA
+✅ GANADA
 Fluminense vs Coritiba
 No · cuota 1.80 · 7.00 vidas
 Modelo 70.1% · Implícita 55.6% · Edge +14.5%
-⏱ Tiempo actual: 1' · marcador 0-0
+⏱ Tiempo de apuesta: 1' · marcador 0-0
 Motivo: No elegido por V1: 70.1% de probabilidad frente a 55.6% implícita (+14.5 puntos de edge); 0-0 al 1', Nivel 2 · Fuerte; confianza 89.5%; exposición 7.00 vidas.
+Resultado: +5.60 vidas
 V2
-⏳ ABIERTA
+✅ GANADA
 Atlético Nacional vs Deportes Tolima
 Empate · cuota 1.71 · 3.68 vidas
 Modelo 61.9% · Implícita 58.3% · Edge +3.6%
-⏱ Tiempo actual: 82' · marcador 0-0
+⏱ Tiempo de apuesta: 74' · marcador 0-0
 Motivo: Empate elegido por V2: 61.9% de probabilidad frente a 58.3% implícita (+3.6 puntos de edge); 0-0 al 74', Nivel 3 · Moderada; confianza 75.1%; exposición 3.68 vidas; respaldo: Marcador empatado: 0-0, Remates al arco: 5 vs 8; cautelas: xG: 0.67 vs 0.62.
+Resultado: +2.63 vidas
 V1.2
-⏳ ABIERTA
+✅ GANADA
 Atlético Nacional vs Deportes Tolima
 Menos de 0.5 · 0.5 · cuota 1.85 · 5.00 vidas
 Modelo 65.9% · Implícita 54.0% · Edge +11.9%
-⏱ Tiempo actual: 82' · marcador 0-0
+⏱ Tiempo de apuesta: 74' · marcador 0-0
 Motivo: Menos de 0.5 0.5 elegido por V1.2: 65.9% de probabilidad frente a 54.0% implícita (+11.9 puntos de edge); 0-0 al 74', Nivel 2 · Fuerte; mercado LIVE compatible con la evaluación ampliada de V1.2; confianza 86.9%; exposición 5.00 vidas.
+Resultado: +4.25 vidas
 V1
-⏳ ABIERTA
+✅ GANADA
 Palmeiras vs Bahia
 No · cuota 1.93 · 10.00 vidas
 Modelo 91.9% · Implícita 51.7% · Edge +40.1%
-⏱ Tiempo actual: 15' · marcador 1-0
+⏱ Tiempo de apuesta: 6' · marcador 0-0
 Motivo: No elegido por V1: 91.9% de probabilidad frente a 51.7% implícita (+40.1 puntos de edge); 0-0 al 6', Nivel 1 · Muy fuerte; confianza 95.0%; exposición 10.00 vidas.
+Resultado: +9.33 vidas
 V1
-⏳ ABIERTA
+✅ GANADA
 Fluminense vs Coritiba
 Más de 2.5 · 2.5 · cuota 1.82 · 4.00 vidas
 Modelo 97.1% · Implícita 54.8% · Edge +42.3%
-⏱ Tiempo actual: 1' · marcador 0-0
+⏱ Tiempo de apuesta: 1' · marcador 0-0
 Motivo: Más de 2.5 2.5 elegido por V1: 97.1% de probabilidad frente a 54.8% implícita (+42.3 puntos de edge); 0-0 al 1', Nivel 3 · Moderada; confianza 95.0%; exposición 4.00 vidas.
+Resultado: +3.30 vidas
 V2
-⏳ ABIERTA
+✅ GANADA
 Athlético Paranaense vs Atlético Mineiro
 Empate · cuota 1.91 · 3.62 vidas
 Modelo 55.8% · Implícita 52.4% · Edge +3.5%
-⏱ Tiempo actual: 81' · marcador 1-1
+⏱ Tiempo de apuesta: 76' · marcador 1-1
 Motivo: Empate elegido por V2: 55.8% de probabilidad frente a 52.4% implícita (+3.5 puntos de edge); 1-1 al 76', Nivel 3 · Moderada; confianza 73.5%; exposición 3.62 vidas; respaldo: Marcador empatado: 1-1; cautelas: xG: 1.54 vs 1.32.
+Resultado: +3.29 vidas
 V1
-⏳ ABIERTA
+❌ PERDIDA
 Palmeiras vs Bahia
 Empate · cuota 4.00 · 4.00 vidas
 Modelo 55.5% · Implícita 25.0% · Edge +30.5%
-⏱ Tiempo actual: 15' · marcador 1-0
+⏱ Tiempo de apuesta: 1' · marcador 0-0
 Motivo: Empate elegido por V1: 55.5% de probabilidad frente a 25.0% implícita (+30.5 puntos de edge); 0-0 al 1', Nivel 3 · Moderada; confianza 95.0%; exposición 4.00 vidas.
+Resultado: -4.00 vidas
 V1.1
-⏳ ABIERTA
+✅ GANADA
 Athlético Paranaense vs Atlético Mineiro
 Empate · cuota 1.90 · 3.64 vidas
 Modelo 56.3% · Implícita 52.6% · Edge +3.6%
-⏱ Tiempo actual: 81' · marcador 1-1
+⏱ Tiempo de apuesta: 74' · marcador 1-1
 Motivo: Empate elegido por V1.1: 56.3% de probabilidad frente a 52.6% implícita (+3.6 puntos de edge); 1-1 al 74', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 1.00; confianza 73.7%; exposición 3.64 vidas.
+Resultado: +3.28 vidas
 V1.1
-⏳ ABIERTA
+✅ GANADA
 Fluminense vs Coritiba
 Más de 2.5 · 2.5 · cuota 1.82 · 6.95 vidas
 Modelo 68.8% · Implícita 54.8% · Edge +14.1%
-⏱ Tiempo actual: 1' · marcador 0-0
+⏱ Tiempo de apuesta: 1' · marcador 0-0
 Motivo: Más de 2.5 2.5 elegido por V1.1: 68.8% de probabilidad frente a 54.8% implícita (+14.1 puntos de edge); 0-0 al 1', Nivel 2 · Fuerte; calibración hacia 50% y factor temporal 0.64; confianza 72.5%; exposición 6.95 vidas.
+Resultado: +5.73 vidas
 V1.1
-⏳ ABIERTA
+✅ GANADA
 Palmeiras vs Bahia
 No · cuota 2.07 · 3.68 vidas
 Modelo 70.5% · Implícita 48.3% · Edge +22.2%
-⏱ Tiempo actual: 15' · marcador 1-0
+⏱ Tiempo de apuesta: 1' · marcador 0-0
 Motivo: No elegido por V1.1: 70.5% de probabilidad frente a 48.3% implícita (+22.2 puntos de edge); 0-0 al 1', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 0.64; confianza 64.5%; exposición 3.68 vidas.
+Resultado: +3.94 vidas
 V1.2
-⏳ ABIERTA
+✅ GANADA
 Fluminense vs Coritiba
 Más de 2.5 · 2.5 · cuota 1.82 · 2.00 vidas
 Modelo 87.8% · Implícita 54.8% · Edge +33.0%
-⏱ Tiempo actual: 1' · marcador 0-0
+⏱ Tiempo de apuesta: 1' · marcador 0-0
 Motivo: Más de 2.5 2.5 elegido por V1.2: 87.8% de probabilidad frente a 54.8% implícita (+33.0 puntos de edge); 0-0 al 1', Nivel 1 · Muy fuerte; mercado LIVE compatible con la evaluación ampliada de V1.2; confianza 95.0%; exposición 2.00 vidas.
+Resultado: +1.65 vidas
 V1.1
-⏳ ABIERTA
+✅ GANADA
 Fluminense vs Coritiba
 No · cuota 1.83 · 3.78 vidas
 Modelo 60.2% · Implícita 54.5% · Edge +5.6%
-⏱ Tiempo actual: 1' · marcador 0-0
+⏱ Tiempo de apuesta: 1' · marcador 0-0
 Motivo: No elegido por V1.1: 60.2% de probabilidad frente a 54.5% implícita (+5.6 puntos de edge); 0-0 al 1', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 0.64; confianza 70.4%; exposición 3.78 vidas.
+Resultado: +3.15 vidas
 V1.2
-⏳ ABIERTA
+✅ GANADA
 Palmeiras vs Bahia
 No · cuota 2.02 · 10.00 vidas
 Modelo 91.0% · Implícita 49.4% · Edge +41.6%
-⏱ Tiempo actual: 15' · marcador 1-0
+⏱ Tiempo de apuesta: 1' · marcador 0-0
 Motivo: No elegido por V1.2: 91.0% de probabilidad frente a 49.4% implícita (+41.6 puntos de edge); 0-0 al 1', Nivel 1 · Muy fuerte; mercado LIVE compatible con la evaluación ampliada de V1.2; confianza 95.0%; exposición 10.00 vidas.
+Resultado: +10.25 vidas
 V1.1
-⏳ ABIERTA
+✅ GANADA
 Palmeiras vs Bahia
 Menos de 2.5 · 2.5 · cuota 2.15 · 3.68 vidas
 Modelo 73.2% · Implícita 46.5% · Edge +26.7%
-⏱ Tiempo actual: 15' · marcador 1-0
+⏱ Tiempo de apuesta: 1' · marcador 0-0
 Motivo: Menos de 2.5 2.5 elegido por V1.1: 73.2% de probabilidad frente a 46.5% implícita (+26.7 puntos de edge); 0-0 al 1', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 0.64; confianza 64.5%; exposición 3.68 vidas.
+Resultado: +4.23 vidas
 V1
-⏳ ABIERTA
+✅ GANADA
 Palmeiras vs Bahia
 Menos de 2.5 · 2.5 · cuota 2.15 · 4.00 vidas
 Modelo 96.4% · Implícita 46.5% · Edge +49.9%
-⏱ Tiempo actual: 15' · marcador 1-0
+⏱ Tiempo de apuesta: 1' · marcador 0-0
 Motivo: Menos de 2.5 2.5 elegido por V1: 96.4% de probabilidad frente a 46.5% implícita (+49.9 puntos de edge); 0-0 al 1', Nivel 3 · Moderada; confianza 95.0%; exposición 4.00 vidas.
+Resultado: +4.60 vidas
 V1.2
-⏳ ABIERTA
+✅ GANADA
 Fluminense vs Coritiba
 No · cuota 1.82 · 10.00 vidas
 Modelo 91.0% · Implícita 55.0% · Edge +36.0%
-⏱ Tiempo actual: 1' · marcador 0-0
+⏱ Tiempo de apuesta: 1' · marcador 0-0
 Motivo: No elegido por V1.2: 91.0% de probabilidad frente a 55.0% implícita (+36.0 puntos de edge); 0-0 al 1', Nivel 1 · Muy fuerte; mercado LIVE compatible con la evaluación ampliada de V1.2; confianza 95.0%; exposición 10.00 vidas.
+Resultado: +8.18 vidas
 V1.1
-⏳ ABIERTA
+❌ PERDIDA
 Fluminense vs Coritiba
 Menos de 2.5 · 2.5 · cuota 2.00 · 3.68 vidas
 Modelo 73.2% · Implícita 50.0% · Edge +23.2%
-⏱ Tiempo actual: 1' · marcador 0-0
+⏱ Tiempo de apuesta: 1' · marcador 0-0
 Motivo: Menos de 2.5 2.5 elegido por V1.1: 73.2% de probabilidad frente a 50.0% implícita (+23.2 puntos de edge); 0-0 al 1', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 0.64; confianza 64.5%; exposición 3.68 vidas.
+Resultado: -3.68 vidas
 V1
-⏳ ABIERTA
+❌ PERDIDA
 Fluminense vs Coritiba
 Menos de 2.5 · 2.5 · cuota 2.00 · 4.00 vidas
 Modelo 96.4% · Implícita 50.0% · Edge +46.4%
-⏱ Tiempo actual: 1' · marcador 0-0
+⏱ Tiempo de apuesta: 1' · marcador 0-0
 Motivo: Menos de 2.5 2.5 elegido por V1: 96.4% de probabilidad frente a 50.0% implícita (+46.4 puntos de edge); 0-0 al 1', Nivel 3 · Moderada; confianza 95.0%; exposición 4.00 vidas.
+Resultado: -4.00 vidas
 V1
-⏳ ABIERTA
+✅ GANADA
 Athlético Paranaense vs Atlético Mineiro
 Más de 2.5 · 2.5 · cuota 1.76 · 4.00 vidas
 Modelo 61.9% · Implícita 56.8% · Edge +5.1%
-⏱ Tiempo actual: 81' · marcador 1-1
+⏱ Tiempo de apuesta: 68' · marcador 1-1
 Motivo: Más de 2.5 2.5 elegido por V1: 61.9% de probabilidad frente a 56.8% implícita (+5.1 puntos de edge); 1-1 al 68', Nivel 3 · Moderada; confianza 80.1%; exposición 4.00 vidas.
+Resultado: +3.04 vidas
 V1
-⏳ ABIERTA
+❌ PERDIDA
 Botafogo Sub-20 vs Bahia Sub-20
 Empate · cuota 4.85 · 7.00 vidas
 Modelo 67.7% · Implícita 20.6% · Edge +47.0%
-⏱ Tiempo actual: 86' · marcador 1-0
+⏱ Tiempo de apuesta: 71' · marcador 1-0
 Motivo: Empate elegido por V1: 67.7% de probabilidad frente a 20.6% implícita (+47.0 puntos de edge); 1-0 al 71', Nivel 2 · Fuerte; confianza 95.0%; exposición 7.00 vidas.
+Resultado: -7.00 vidas
 V1
-⏳ ABIERTA
+✅ GANADA
 Atlético Nacional vs Deportes Tolima
 Empate · cuota 1.89 · 4.00 vidas
 Modelo 60.1% · Implícita 52.9% · Edge +7.2%
-⏱ Tiempo actual: 82' · marcador 0-0
+⏱ Tiempo de apuesta: 67' · marcador 0-0
 Motivo: Empate elegido por V1: 60.1% de probabilidad frente a 52.9% implícita (+7.1 puntos de edge); 0-0 al 67', Nivel 3 · Moderada; confianza 82.2%; exposición 4.00 vidas.
+Resultado: +3.56 vidas
 V1.1
-⏳ ABIERTA
+✅ GANADA
 Atlético Nacional vs Deportes Tolima
 Empate · cuota 2.08 · 4.00 vidas
 Modelo 55.5% · Implícita 48.0% · Edge +7.5%
-⏱ Tiempo actual: 82' · marcador 0-0
+⏱ Tiempo de apuesta: 62' · marcador 0-0
 Motivo: Empate elegido por V1.1: 55.5% de probabilidad frente a 48.0% implícita (+7.5 puntos de edge); 0-0 al 62', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 1.00; confianza 76.6%; exposición 4.00 vidas.
+Resultado: +4.33 vidas
 V1.1
-⏳ ABIERTA
+❌ PERDIDA
 Botafogo Sub-20 vs Bahia Sub-20
 Empate · cuota 4.50 · 4.00 vidas
 Modelo 55.3% · Implícita 22.2% · Edge +33.0%
-⏱ Tiempo actual: 86' · marcador 1-0
+⏱ Tiempo de apuesta: 63' · marcador 1-0
 Motivo: Empate elegido por V1.1: 55.3% de probabilidad frente a 22.2% implícita (+33.1 puntos de edge); 1-0 al 63', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 1.00; confianza 85.1%; exposición 4.00 vidas.
+Resultado: -4.00 vidas
 V2.2
-⏳ ABIERTA
+✅ GANADA
 Athlético Paranaense vs Atlético Mineiro
 Más de 2.5 · 2.5 · cuota 1.45 · 10.00 vidas
 Modelo 83.8% · Implícita 68.8% · Edge +15.0%
-⏱ Tiempo actual: 81' · marcador 1-1
+⏱ Tiempo de apuesta: 52' · marcador 1-1
 Motivo: Más de 2.5 2.5 elegido por V2.2: 83.8% de probabilidad frente a 68.8% implícita (+15.0 puntos de edge); 1-1 al 52', Nivel 1 · Muy fuerte; consenso de indicadores 87.7%; confianza 89.3%; exposición 10.00 vidas; respaldo: xG: 1.51 vs 1.15, Remates totales: 17 vs 10, Remates al arco: 6 vs 5; cautelas: Grandes ocasiones: 1 vs 2.
+Resultado: +4.55 vidas
 V2.1
-⏳ ABIERTA
+✅ GANADA
 Athlético Paranaense vs Atlético Mineiro
 Más de 2.5 · 2.5 · cuota 1.45 · 7.00 vidas
 Modelo 78.2% · Implícita 68.8% · Edge +9.4%
-⏱ Tiempo actual: 81' · marcador 1-1
+⏱ Tiempo de apuesta: 52' · marcador 1-1
 Motivo: Más de 2.5 2.5 elegido por V2.1: 78.2% de probabilidad frente a 68.8% implícita (+9.4 puntos de edge); 1-1 al 52', Nivel 2 · Fuerte; control temporal 0.95; confianza 76.0%; exposición 7.00 vidas; respaldo: xG: 1.51 vs 1.15, Remates totales: 17 vs 10, Remates al arco: 6 vs 5; cautelas: Grandes ocasiones: 1 vs 2.
+Resultado: +3.18 vidas
 V2
-⏳ ABIERTA
+✅ GANADA
 Athlético Paranaense vs Atlético Mineiro
 Más de 2.5 · 2.5 · cuota 1.45 · 10.00 vidas
 Modelo 91.2% · Implícita 68.8% · Edge +22.4%
-⏱ Tiempo actual: 81' · marcador 1-1
+⏱ Tiempo de apuesta: 52' · marcador 1-1
 Motivo: Más de 2.5 2.5 elegido por V2: 91.2% de probabilidad frente a 68.8% implícita (+22.4 puntos de edge); 1-1 al 52', Nivel 1 · Muy fuerte; confianza 88.0%; exposición 10.00 vidas; respaldo: xG: 1.51 vs 1.15, Remates totales: 17 vs 10, Remates al arco: 6 vs 5; cautelas: Grandes ocasiones: 1 vs 2.
+Resultado: +4.55 vidas
 V1.1
-⏳ ABIERTA
+✅ GANADA
 Athlético Paranaense vs Atlético Mineiro
 Más de 2.5 · 2.5 · cuota 1.45 · 7.00 vidas
 Modelo 75.9% · Implícita 68.8% · Edge +7.1%
-⏱ Tiempo actual: 81' · marcador 1-1
+⏱ Tiempo de apuesta: 52' · marcador 1-1
 Motivo: Más de 2.5 2.5 elegido por V1.1: 75.9% de probabilidad frente a 68.8% implícita (+7.1 puntos de edge); 1-1 al 52', Nivel 2 · Fuerte; calibración hacia 50% y factor temporal 0.94; confianza 80.4%; exposición 7.00 vidas.
+Resultado: +3.18 vidas
 V2.1
 ✅ GANADA
 Santos vs Flamengo
@@ -308,12 +879,13 @@ Modelo 58.6% · Implícita 8.3% · Edge +50.3%
 Motivo: Empate elegido por V1: 58.6% de probabilidad frente a 8.3% implícita (+50.3 puntos de edge); 0-2 al 59', Nivel 3 · Moderada; confianza 95.0%; exposición 1.09 vidas.
 Resultado: -1.09 vidas
 V1.2
-⏳ ABIERTA
+✅ GANADA
 Atlético Nacional vs Deportes Tolima
 Menos de 1.5 · 1.5 · cuota 1.67 · 7.00 vidas
 Modelo 70.0% · Implícita 60.0% · Edge +10.0%
-⏱ Tiempo actual: 82' · marcador 0-0
+⏱ Tiempo de apuesta: Descanso · marcador 0-0
 Motivo: Menos de 1.5 1.5 elegido por V1.2: 70.0% de probabilidad frente a 60.0% implícita (+10.0 puntos de edge); 0-0 al Descanso, Nivel 2 · Fuerte; mercado LIVE compatible con la evaluación ampliada de V1.2; confianza 85.0%; exposición 7.00 vidas.
+Resultado: +4.67 vidas
 V1.1
 ✅ GANADA
 Santos vs Flamengo
@@ -331,33 +903,37 @@ Modelo 99.2% · Implícita 96.2% · Edge +3.0%
 Motivo: Flamengo elegido por V2: 99.2% de probabilidad frente a 96.2% implícita (+3.0 puntos de edge); 0-2 al 62', Nivel 3 · Moderada; confianza 86.2%; exposición 3.94 vidas; respaldo: xG: 0.38 vs 1.02, Remates al arco: 1 vs 5, Grandes ocasiones: 0 vs 4.
 Resultado: -3.94 vidas
 V2
-⏳ ABIERTA
+✅ GANADA
 Botafogo Sub-20 vs Bahia Sub-20
 Botafogo Sub-20 · cuota 1.17 · 3.59 vidas
 Modelo 91.6% · Implícita 85.7% · Edge +5.9%
-⏱ Tiempo actual: 86' · marcador 1-0
+⏱ Tiempo de apuesta: Descanso · marcador 1-0
 Motivo: Botafogo Sub-20 elegido por V2: 91.6% de probabilidad frente a 85.7% implícita (+5.9 puntos de edge); 1-0 al Descanso, Nivel 3 · Moderada; confianza 62.9%; exposición 3.59 vidas; respaldo: Remates al arco: 4 vs 1, Marcador favorable: 1-0; cautelas: Posesión: 37 vs 63.
+Resultado: +0.60 vidas
 V1.2
-⏳ ABIERTA
+✅ GANADA
 Botafogo Sub-20 vs Bahia Sub-20
 No · cuota 1.72 · 5.00 vidas
 Modelo 85.8% · Implícita 58.1% · Edge +27.7%
-⏱ Tiempo actual: 86' · marcador 1-0
+⏱ Tiempo de apuesta: Descanso · marcador 1-0
 Motivo: No elegido por V1.2: 85.8% de probabilidad frente a 58.1% implícita (+27.7 puntos de edge); 1-0 al Descanso, Nivel 1 · Muy fuerte; mercado LIVE compatible con la evaluación ampliada de V1.2; confianza 95.0%; exposición 5.00 vidas.
+Resultado: +3.60 vidas
 V1.1
-⏳ ABIERTA
+✅ GANADA
 Botafogo Sub-20 vs Bahia Sub-20
 No · cuota 1.72 · 10.00 vidas
 Modelo 76.3% · Implícita 58.1% · Edge +18.1%
-⏱ Tiempo actual: 86' · marcador 1-0
+⏱ Tiempo de apuesta: Descanso · marcador 1-0
 Motivo: No elegido por V1.1: 76.3% de probabilidad frente a 58.1% implícita (+18.1 puntos de edge); 1-0 al Descanso, Nivel 1 · Muy fuerte; calibración hacia 50% y factor temporal 0.94; confianza 83.0%; exposición 10.00 vidas.
+Resultado: +7.20 vidas
 V1
-⏳ ABIERTA
+✅ GANADA
 Botafogo Sub-20 vs Bahia Sub-20
 No · cuota 1.72 · 10.00 vidas
 Modelo 85.8% · Implícita 58.1% · Edge +27.7%
-⏱ Tiempo actual: 86' · marcador 1-0
+⏱ Tiempo de apuesta: Descanso · marcador 1-0
 Motivo: No elegido por V1: 85.8% de probabilidad frente a 58.1% implícita (+27.7 puntos de edge); 1-0 al Descanso, Nivel 1 · Muy fuerte; confianza 95.0%; exposición 10.00 vidas.
+Resultado: +7.20 vidas
 V2.1
 ❌ PERDIDA
 Ceará vs Criciúma
@@ -375,82 +951,93 @@ Modelo 59.6% · Implícita 50.0% · Edge +9.6%
 Motivo: Empate elegido por V1.1: 59.6% de probabilidad frente a 50.0% implícita (+9.6 puntos de edge); 0-0 al 59', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 1.00; confianza 79.1%; exposición 4.00 vidas.
 Resultado: -4.00 vidas
 V2.1
-⏳ ABIERTA
+✅ GANADA
 Botafogo Sub-20 vs Bahia Sub-20
 Menos de 2.5 · 2.5 · cuota 1.98 · 3.46 vidas
 Modelo 76.4% · Implícita 50.6% · Edge +25.8%
-⏱ Tiempo actual: 86' · marcador 1-0
+⏱ Tiempo de apuesta: Descanso · marcador 1-0
 Motivo: Menos de 2.5 2.5 elegido por V2.1: 76.4% de probabilidad frente a 50.6% implícita (+25.8 puntos de edge); 1-0 al Descanso, Nivel 3 · Moderada; control temporal 0.95; confianza 57.0%; exposición 3.46 vidas; cautelas: Remates totales: 6 vs 4, Remates al arco: 4 vs 1.
+Resultado: +3.37 vidas
 V2
-⏳ ABIERTA
+✅ GANADA
 Botafogo Sub-20 vs Bahia Sub-20
 Menos de 2.5 · 2.5 · cuota 1.98 · 3.55 vidas
 Modelo 88.6% · Implícita 50.6% · Edge +38.0%
-⏱ Tiempo actual: 86' · marcador 1-0
+⏱ Tiempo de apuesta: Descanso · marcador 1-0
 Motivo: Menos de 2.5 2.5 elegido por V2: 88.6% de probabilidad frente a 50.6% implícita (+38.0 puntos de edge); 1-0 al Descanso, Nivel 3 · Moderada; confianza 60.2%; exposición 3.55 vidas; cautelas: Remates totales: 6 vs 4, Remates al arco: 4 vs 1.
+Resultado: +3.46 vidas
 V1.2
-⏳ ABIERTA
+✅ GANADA
 Botafogo Sub-20 vs Bahia Sub-20
 Menos de 2.5 · 2.5 · cuota 1.98 · 7.00 vidas
 Modelo 71.7% · Implícita 50.6% · Edge +21.1%
-⏱ Tiempo actual: 86' · marcador 1-0
+⏱ Tiempo de apuesta: Descanso · marcador 1-0
 Motivo: Menos de 2.5 2.5 elegido por V1.2: 71.7% de probabilidad frente a 50.6% implícita (+21.1 puntos de edge); 1-0 al Descanso, Nivel 2 · Fuerte; mercado LIVE compatible con la evaluación ampliada de V1.2; confianza 95.0%; exposición 7.00 vidas.
+Resultado: +6.83 vidas
 V1.1
-⏳ ABIERTA
+✅ GANADA
 Botafogo Sub-20 vs Bahia Sub-20
 Menos de 2.5 · 2.5 · cuota 1.98 · 7.00 vidas
 Modelo 65.9% · Implícita 50.6% · Edge +15.3%
-⏱ Tiempo actual: 86' · marcador 1-0
+⏱ Tiempo de apuesta: Descanso · marcador 1-0
 Motivo: Menos de 2.5 2.5 elegido por V1.1: 65.9% de probabilidad frente a 50.6% implícita (+15.3 puntos de edge); 1-0 al Descanso, Nivel 2 · Fuerte; calibración hacia 50% y factor temporal 0.94; confianza 83.0%; exposición 7.00 vidas.
+Resultado: +6.83 vidas
 V1
-⏳ ABIERTA
+✅ GANADA
 Botafogo Sub-20 vs Bahia Sub-20
 Menos de 2.5 · 2.5 · cuota 1.98 · 7.00 vidas
 Modelo 71.7% · Implícita 50.6% · Edge +21.1%
-⏱ Tiempo actual: 86' · marcador 1-0
+⏱ Tiempo de apuesta: Descanso · marcador 1-0
 Motivo: Menos de 2.5 2.5 elegido por V1: 71.7% de probabilidad frente a 50.6% implícita (+21.1 puntos de edge); 1-0 al Descanso, Nivel 2 · Fuerte; confianza 95.0%; exposición 7.00 vidas.
+Resultado: +6.83 vidas
 V1
-⏳ ABIERTA
+❌ PERDIDA
 Athlético Paranaense vs Atlético Mineiro
 No · cuota 2.02 · 10.00 vidas
 Modelo 91.0% · Implícita 49.4% · Edge +41.6%
-⏱ Tiempo actual: 81' · marcador 1-1
+⏱ Tiempo de apuesta: 1' · marcador 0-0
 Motivo: No elegido por V1: 91.0% de probabilidad frente a 49.4% implícita (+41.6 puntos de edge); 0-0 al 1', Nivel 1 · Muy fuerte; confianza 95.0%; exposición 10.00 vidas.
+Resultado: -10.00 vidas
 V1.1
-⏳ ABIERTA
+❌ PERDIDA
 Athlético Paranaense vs Atlético Mineiro
 No · cuota 2.02 · 3.68 vidas
 Modelo 70.5% · Implícita 49.4% · Edge +21.1%
-⏱ Tiempo actual: 81' · marcador 1-1
+⏱ Tiempo de apuesta: 1' · marcador 0-0
 Motivo: No elegido por V1.1: 70.5% de probabilidad frente a 49.4% implícita (+21.1 puntos de edge); 0-0 al 1', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 0.64; confianza 64.5%; exposición 3.68 vidas.
+Resultado: -3.68 vidas
 V1
-⏳ ABIERTA
+✅ GANADA
 Athlético Paranaense vs Atlético Mineiro
 Empate · cuota 3.45 · 4.00 vidas
 Modelo 55.5% · Implícita 29.0% · Edge +26.5%
-⏱ Tiempo actual: 81' · marcador 1-1
+⏱ Tiempo de apuesta: 1' · marcador 0-0
 Motivo: Empate elegido por V1: 55.5% de probabilidad frente a 29.0% implícita (+26.5 puntos de edge); 0-0 al 1', Nivel 3 · Moderada; confianza 95.0%; exposición 4.00 vidas.
+Resultado: +9.80 vidas
 V1.2
-⏳ ABIERTA
+❌ PERDIDA
 Athlético Paranaense vs Atlético Mineiro
 No · cuota 2.00 · 10.00 vidas
 Modelo 91.0% · Implícita 50.0% · Edge +41.0%
-⏱ Tiempo actual: 81' · marcador 1-1
+⏱ Tiempo de apuesta: 1' · marcador 0-0
 Motivo: No elegido por V1.2: 91.0% de probabilidad frente a 50.0% implícita (+41.0 puntos de edge); 0-0 al 1', Nivel 1 · Muy fuerte; mercado LIVE compatible con la evaluación ampliada de V1.2; confianza 95.0%; exposición 10.00 vidas.
+Resultado: -10.00 vidas
 V1.1
-⏳ ABIERTA
+❌ PERDIDA
 Athlético Paranaense vs Atlético Mineiro
 Menos de 2.5 · 2.5 · cuota 1.90 · 3.68 vidas
 Modelo 73.2% · Implícita 52.6% · Edge +20.6%
-⏱ Tiempo actual: 81' · marcador 1-1
+⏱ Tiempo de apuesta: 1' · marcador 0-0
 Motivo: Menos de 2.5 2.5 elegido por V1.1: 73.2% de probabilidad frente a 52.6% implícita (+20.5 puntos de edge); 0-0 al 1', Nivel 3 · Moderada; calibración hacia 50% y factor temporal 0.64; confianza 64.5%; exposición 3.68 vidas.
+Resultado: -3.68 vidas
 V1
-⏳ ABIERTA
+❌ PERDIDA
 Athlético Paranaense vs Atlético Mineiro
 Menos de 2.5 · 2.5 · cuota 1.90 · 4.00 vidas
 Modelo 96.4% · Implícita 52.6% · Edge +43.8%
-⏱ Tiempo actual: 81' · marcador 1-1
+⏱ Tiempo de apuesta: 1' · marcador 0-0
 Motivo: Menos de 2.5 2.5 elegido por V1: 96.4% de probabilidad frente a 52.6% implícita (+43.8 puntos de edge); 0-0 al 1', Nivel 3 · Moderada; confianza 95.0%; exposición 4.00 vidas.
+Resultado: -4.00 vidas
 V2.1
 ✅ GANADA
 Ceará vs Criciúma
@@ -1408,4 +1995,4 @@ Portmore United vs Waterhouse
 Portmore United · cuota 1.68 · 7.00 vidas
 Modelo 70.5% · Implícita 59.5% · Edge +11.0%
 ⏱ Tiempo de apuesta: 33' · marcador 1-1
-Motivo: V1.2 reutiliza V1 y amplía la evaluación LIVE a mercados compatibles. Cuota 1.68, edge 11.0 puntos.
+Motivo: V1.2 reutiliza V1 y amplía la evaluación LIVE
