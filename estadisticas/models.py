@@ -396,7 +396,7 @@ class LiveExperimentSnapshot(models.Model):
         on_delete=models.CASCADE,
         related_name="snapshots",
     )
-    motor = models.CharField(max_length=3, choices=LiveExperimentEntry.MOTOR)
+    motor = models.CharField(max_length=4, choices=LiveExperimentEntry.MOTOR)
     minute = models.CharField(max_length=30, blank=True)
     period = models.CharField(max_length=60, blank=True)
     home_score = models.IntegerField(null=True, blank=True)
