@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import re
 import statistics
+from time import monotonic
 from typing import Any, Dict, List
 
 from django.utils import timezone
@@ -25,6 +26,7 @@ class LiveOpportunityEngineV3:
     MAX_PRICE = 2.10
     MIN_EDGE = 0.045
     MAX_EXTREME_EDGE = 0.30
+    _CALIBRATION_CACHE = {}
 
     SOURCE_ATTRS = (
         ("V1", "opportunities"),
@@ -95,7 +97,12 @@ class LiveOpportunityEngineV3:
 
     @classmethod
     def _historical_market_rate(cls, market: str, probability: float):
-        """Calibración empírica usando solo apuestas V3 ya liquidadas antes de ahora."""
+        """Calibración empírica con caché corta para no frenar el ciclo LIVE."""
+        cache_key = (str(market or "").casefold(), round(probability, 1))
+        now = monotonic()
+        cached = cls._CALIBRATION_CACHE.get(cache_key)
+        if cached and cached[0] > now:
+            return cached[1]
         lower = max(0.01, probability - 0.10)
         upper = min(0.99, probability + 0.10)
         history = LiveExperimentEntry.objects.filter(
@@ -108,10 +115,13 @@ class LiveOpportunityEngineV3:
         )
         total = history.count()
         if total < 20:
-            return None, total
-        wins = history.filter(status="WON").count()
-        # Suavizado Beta(1,1) evita que muestras finitas creen probabilidades 0/100%.
-        return (wins + 1) / (total + 2), total
+            result = (None, total)
+        else:
+            wins = history.filter(status="WON").count()
+            # Suavizado Beta(1,1) evita probabilidades 0/100% con muestras finitas.
+            result = ((wins + 1) / (total + 2), total)
+        cls._CALIBRATION_CACHE[cache_key] = (now + 30.0, result)
+        return result
 
     @classmethod
     def evaluate(cls, match) -> List[Dict[str, Any]]:
