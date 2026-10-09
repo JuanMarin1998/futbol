@@ -32,6 +32,8 @@ class LiveMatch:
     opportunities_v21: list = field(default_factory=list)
     opportunities_v22: list = field(default_factory=list)
     opportunities_v3: list = field(default_factory=list)
+    opportunities_v2_ultra: list = field(default_factory=list)
+    opportunities_v11_ultra: list = field(default_factory=list)
 
     mapping_confidence: float = 0.0
     data_quality: float = 0.0
@@ -61,6 +63,8 @@ class LiveMatch:
             "opportunities_v21": self.opportunities_v21,
             "opportunities_v22": self.opportunities_v22,
             "opportunities_v3": self.opportunities_v3,
+            "opportunities_v2_ultra": self.opportunities_v2_ultra,
+            "opportunities_v11_ultra": self.opportunities_v11_ultra,
             "mapping_confidence": self.mapping_confidence,
             "data_quality": self.data_quality,
         }
