@@ -126,6 +126,8 @@ class LiveExperimentManager:
         key = cls._key(opportunity)
         if not key or key.strip("|") == "":
             return "Descartada: oportunidad sin mercado/selección/línea válidos."
+        if motor in {"V2U", "V11U"} and opportunity.get("unsupported_market"):
+            return "Mercado auditado, no apostable: falta un modelo de probabilidad fiable o datos finales verificables para liquidarlo."
         # Este control va antes de los filtros de nivel: una repetición debe
         # quedar identificada como tal aunque su señal haya cambiado de nivel.
         if LiveExperimentEntry.objects.filter(
