@@ -177,12 +177,42 @@ class UltraMarketEvaluator:
             if price is None or price <= 1:
                 continue
             key, extra = cls._extended_key(odd, match)
+            implied = 1.0 / price
             if not key:
+                results.append({
+                    "market": odd.get("market_name", ""),
+                    "selection": odd.get("name", ""),
+                    "line": odd.get("line"),
+                    "price": price,
+                    "model_probability": round(implied, 6),
+                    "implied_probability": round(implied, 6),
+                    "edge": 0.0,
+                    "edge_pct": 0.0,
+                    "confidence": 0.0,
+                    "unsupported_market": True,
+                    "signal_strength": "sin modelo compatible",
+                    "model": "ultra_market_scan_only",
+                    "reason": "Mercado detectado y auditado, pero no se calcula una probabilidad fiable con los datos disponibles; no apostar.",
+                })
                 continue
             probability = cls._probability(key, extra, probabilities, hs, aw, lh, la)
             if probability is None or not 0 < probability < 1:
+                results.append({
+                    "market": odd.get("market_name", ""),
+                    "selection": odd.get("name", ""),
+                    "line": odd.get("line"),
+                    "price": price,
+                    "model_probability": round(implied, 6),
+                    "implied_probability": round(implied, 6),
+                    "edge": 0.0,
+                    "edge_pct": 0.0,
+                    "confidence": 0.0,
+                    "unsupported_market": True,
+                    "signal_strength": "sin modelo compatible",
+                    "model": "ultra_market_scan_only",
+                    "reason": "Mercado detectado y auditado, pero la probabilidad calculada no permite una estimación fiable; no apostar.",
+                })
                 continue
-            implied = 1.0 / price
             edge = probability - implied
 
             if variant == "V11U":
@@ -244,4 +274,4 @@ class UltraMarketEvaluator:
 
         results.sort(key=lambda x: (x["edge"], x["confidence"], x["price"]), reverse=True)
         # Keep a broad audit list; the lab independently applies the Ultra level gate.
-        return results[:100]
+        return results
