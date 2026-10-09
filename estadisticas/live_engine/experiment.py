@@ -182,6 +182,22 @@ class LiveExperimentManager:
             return "Descartada: oportunidad sin mercado/selección/línea válidos."
         if motor in {"V2U", "V11U"} and opportunity.get("unsupported_market"):
             return "Mercado auditado, no apostable: falta un modelo de probabilidad fiable o datos finales verificables para liquidarlo."
+        if motor == "ESP":
+            votes = int(opportunity.get("consensus_votes") or 0)
+            support_ratio = float(opportunity.get("consensus_support_ratio") or 0)
+            if votes < 3:
+                return f"Espía rechaza: consenso insuficiente ({votes}/7 motores independientes; mínimo 3)."
+            if support_ratio < 0.60:
+                return f"Espía rechaza: respaldo de {support_ratio * 100:.1f}% inferior al 60%."
+            if cls._level(opportunity) not in {1, 2}:
+                return "Espía rechaza: la señal consensuada no alcanza Nivel 1 o 2."
+            if Decimal(str(opportunity.get("price") or 0)) < Decimal("1.30"):
+                return "Espía rechaza: cuota inferior a 1.30."
+            if float(opportunity.get("edge") or 0) < 0.05:
+                edge_points = float(opportunity.get("edge") or 0) * 100
+                return f"Espía rechaza: edge de {edge_points:.1f} puntos; exige al menos 5."
+            if float(opportunity.get("confidence") or 0) < 0.60:
+                return "Espía rechaza: confianza media inferior al 60%."
         if motor == "V4":
             if opportunity.get("unsupported_market"):
                 return "Descartada V4: mercado sin probabilidad verificable para calibrar y liquidar."
@@ -375,6 +391,8 @@ class LiveExperimentManager:
     @classmethod
     def _stake(cls, opportunity: Dict[str, Any], lives: Decimal, motor: str = "") -> Decimal:
         level = cls._level(opportunity)
+        if motor == "ESP":
+            return Decimal("1.00") if level in {1, 2} and lives >= Decimal("1.00") else Decimal("0")
         if level == 0 or lives < cls.MIN_STAKE:
             return Decimal("0")
         if motor == "V4":
@@ -513,6 +531,16 @@ class LiveExperimentManager:
                 f"tuvo mayor prioridad para proteger las vidas disponibles."
             )
 
+        if motor == "ESP":
+            votes = int(opportunity.get("consensus_votes") or 0)
+            ratio = float(opportunity.get("consensus_support_ratio") or 0) * 100
+            supporters = ", ".join(opportunity.get("consensus_motors") or [])
+            return (
+                f"Espía apuesta {selection}{line_text}: consenso independiente {votes}/7 ({ratio:.0f}% de respaldo; {supporters}); "
+                f"probabilidad agregada {model_p * 100:.1f}%, edge {edge * 100:+.1f} puntos, confianza media {confidence * 100:.1f}%; "
+                f"stake {stake:.2f} vida. Solo una apuesta por partido y capital independiente de 50 vidas. "
+                f"Contexto LIVE: minuto {minute_text}, marcador {score}."
+            )
         probability_text = f"{model_p * 100:.1f}%"
         implied_text = f"{implied * 100:.1f}%"
         edge_text = f"{edge * 100:+.1f} puntos"
@@ -599,6 +627,19 @@ class LiveExperimentManager:
         lives = cls._ledger_lives(experiment, motor)
         candidates = [o for o in opportunities if cls._eligible(experiment, motor, o)]
         if not candidates or lives < cls.MIN_STAKE:
+            return None, Decimal("0")
+
+        if motor == "ESP":
+            candidates.sort(key=lambda o: (
+                int(o.get("consensus_votes") or 0),
+                float(o.get("consensus_support_ratio") or 0),
+                float(o.get("edge") or 0),
+                float(o.get("confidence") or 0),
+            ), reverse=True)
+            for candidate in candidates:
+                stake = cls._stake(candidate, lives, motor)
+                if stake >= Decimal("1.00"):
+                    return candidate, stake
             return None, Decimal("0")
 
         if motor == "V4":
@@ -826,10 +867,15 @@ class LiveExperimentManager:
         # liquidar las abiertas. Nunca se debe crear una apuesta nueva en FINAL.
         match_is_final = cls._valid_final(match)
 
+        opportunities_by_motor = {}
         for motor in cls.MOTORS:
-            opportunities = [] if match_is_final else cls._prepare_opportunities(
-                motor, getattr(match, cls.OPPORTUNITY_ATTRS[motor], []) or []
-            )
+            if motor == "ESP":
+                opportunities = [] if match_is_final else cls._spy_opportunities(opportunities_by_motor)
+            else:
+                opportunities = [] if match_is_final else cls._prepare_opportunities(
+                    motor, getattr(match, cls.OPPORTUNITY_ATTRS[motor], []) or []
+                )
+            opportunities_by_motor[motor] = opportunities
             lives_before = cls._ledger_lives(experiment, motor)
             candidates = [o for o in opportunities if cls._eligible(experiment, motor, o)]
             if motor == "V22":
