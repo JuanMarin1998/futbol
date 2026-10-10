@@ -888,7 +888,8 @@ class LiveExperimentManager:
             level_name=cls._level_name(cls._level(opportunity)),
             stake=stake,
             potential_profit=potential_profit,
-            reason=opportunity.get("reason", ""),
+            # Las entradas reales deben conservar la auditoría de selección, no la razón de descarte de otra candidata.
+            reason=opportunity.get("_audit_reason") or opportunity.get("reason", ""),
             supporting_factors=opportunity.get("supporting_factors") or [],
             contradicting_factors=opportunity.get("contradicting_factors") or [],
             opportunity_snapshot=opportunity,
