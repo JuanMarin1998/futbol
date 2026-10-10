@@ -1189,46 +1189,15 @@ def api_ecuabet_live_detalle(request, ecuabet_event_id):
                 status=404,
             )
 
-        markets = {
-            int(m["id"]): m for m in payload.get("markets", []) or []
-            if m.get("id") is not None
-        }
-        odds = {
-            int(o["id"]): o for o in payload.get("odds", []) or []
-            if o.get("id") is not None
-        }
+        event = EcuabetClient.normalizar_mercados_evento(event, payload)
         competitors = {
             int(x["id"]): x for x in payload.get("competitors", []) or []
-            if x.get("id") is not None
+            if isinstance(x, dict) and x.get("id") is not None
         }
         event["competitors"] = [
             competitors.get(int(cid), {"id": cid, "name": str(cid)})
             for cid in event.get("competitorIds", []) or []
         ]
-        event["markets"] = []
-        for market_id in event.get("marketIds", []) or []:
-            market = markets.get(int(market_id))
-            if not market:
-                continue
-            selections = []
-            for odd_id in market.get("oddIds", []) or []:
-                odd = odds.get(int(odd_id))
-                if odd:
-                    selections.append({
-                        "id": odd.get("id"),
-                        "name": odd.get("name", ""),
-                        "price": odd.get("price"),
-                        "type_id": odd.get("typeId"),
-                        "odd_status": odd.get("oddStatus"),
-                    })
-            if selections:
-                event["markets"].append({
-                    "id": market.get("id"),
-                    "name": market.get("name", ""),
-                    "type_id": market.get("typeId"),
-                    "line": market.get("sv") or market.get("sn"),
-                    "selections": selections,
-                })
 
         # El mapeo se cachea brevemente porque el ID Flashscore no cambia
         # mientras el partido sigue siendo el mismo.
