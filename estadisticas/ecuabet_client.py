@@ -361,18 +361,36 @@ class EcuabetClient:
         }
 
     @classmethod
-    def normalizar_mercados_evento(cls, event, payload):
+    def normalizar_mercados_evento(cls, event, payload, detail_payload=None):
         """
-        Conserva todos los mercados enlazados al evento que aparezcan en el
-        payload, no solo 1X2. Mantiene IDs, estados y campos originales para
-        poder inspeccionar mercados nuevos sin modificar los motores.
+        Combina mercados de GetLivenow/GetEvents con los del detalle específico
+        GetEventDetails. Ecuabet puede exponer los IDs de cuotas en oddIds o
+        desktopOddIds (a veces agrupados en listas anidadas).
         """
         event = dict(event or {})
         payload = payload if isinstance(payload, dict) else {}
+        detail_payload = detail_payload if isinstance(detail_payload, dict) else {}
 
-        def by_id(items):
+        def walk(value):
+            if isinstance(value, dict):
+                yield value
+                for child in value.values():
+                    yield from walk(child)
+            elif isinstance(value, list):
+                for child in value:
+                    yield from walk(child)
+
+        def collect_named_lists(source, field):
+            found = []
+            for node in walk(source):
+                values = node.get(field)
+                if isinstance(values, list):
+                    found.extend(x for x in values if isinstance(x, dict))
+            return found
+
+        def index_by_id(items):
             result = {}
-            for item in items or []:
+            for item in items:
                 if not isinstance(item, dict) or item.get("id") is None:
                     continue
                 try:
@@ -381,23 +399,57 @@ class EcuabetClient:
                     continue
             return result
 
-        odds_by_id = by_id(payload.get("odds"))
-        markets_by_id = by_id(payload.get("markets"))
-        markets = []
-        for raw_market_id in event.get("marketIds", []) or []:
+        # Algunos endpoints devuelven arrays planos y otros los anidan por
+        # evento/categoría. Recolectamos ambos formatos.
+        odds_by_id = index_by_id(
+            collect_named_lists(payload, "odds")
+            + collect_named_lists(detail_payload, "odds")
+        )
+        primary_markets = collect_named_lists(payload, "markets")
+        detail_markets = collect_named_lists(detail_payload, "markets")
+        primary_by_id = index_by_id(primary_markets)
+        detail_by_id = index_by_id(detail_markets)
+
+        ordered_market_ids = []
+        for raw_id in event.get("marketIds", []) or []:
             try:
-                market_id = int(raw_market_id)
+                market_id = int(raw_id)
             except (TypeError, ValueError):
                 continue
-            market = markets_by_id.get(market_id)
+            if market_id not in ordered_market_ids:
+                ordered_market_ids.append(market_id)
+        # Primero respeta los mercados explícitamente vinculados al evento;
+        # después añade el inventario adicional que entrega GetEventDetails.
+        ordered_market_ids.extend(
+            market_id for market_id in detail_by_id
+            if market_id not in ordered_market_ids
+        )
+        market_by_id = {**primary_by_id, **detail_by_id}
+        markets = []
+
+        def flatten_ids(value):
+            if isinstance(value, list):
+                for child in value:
+                    yield from flatten_ids(child)
+            elif value is not None:
+                yield value
+
+        for market_id in ordered_market_ids:
+            market = market_by_id.get(market_id)
             if not market:
                 continue
             selections = []
-            for raw_odd_id in market.get("oddIds", []) or []:
+            linked_ids = list(flatten_ids(market.get("oddIds", [])))
+            linked_ids.extend(flatten_ids(market.get("desktopOddIds", [])))
+            seen_odd_ids = set()
+            for raw_odd_id in linked_ids:
                 try:
                     odd_id = int(raw_odd_id)
                 except (TypeError, ValueError):
                     continue
+                if odd_id in seen_odd_ids:
+                    continue
+                seen_odd_ids.add(odd_id)
                 odd = odds_by_id.get(odd_id)
                 if not odd:
                     continue
