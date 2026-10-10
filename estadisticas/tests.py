@@ -295,3 +295,49 @@ class FinishedExperimentReconciliationTests(TestCase):
         self.assertEqual(settled_loss.pnl, Decimal("-2.00"))
         self.assertEqual(open_entry.status, "WON")
         self.assertEqual(open_entry.pnl, Decimal("2.00"))
+
+
+
+class VProAndV4StartupTests(TestCase):
+    def setUp(self):
+        self.experiment = LiveExperiment.objects.create(
+            ecuabet_event_id=987654322,
+            home_team="Home FC",
+            away_team="Away FC",
+            status="RUNNING",
+        )
+
+    def test_vpro_opportunities_receive_common_level_classification(self):
+        items = LiveExperimentManager._prepare_opportunities("VPRO", [{
+            "market": "1X2",
+            "selection": "Home",
+            "price": 1.80,
+            "model_probability": 0.80,
+            "confidence": 0.85,
+            "data_coverage": 0.80,
+            "supporting_factors": ["xG favorable", "remates a puerta favorables"],
+            "contradicting_factors": [],
+        }])
+        self.assertEqual(len(items), 1)
+        self.assertIn(items[0]["level"], (1, 2, 3))
+
+    def test_v4_can_use_strict_provisional_calibration_at_startup(self):
+        opportunity = {
+            "market": "1X2",
+            "selection": "Home",
+            "line": "",
+            "price": 1.80,
+            "model_probability": 0.80,
+            "market_fair_probability": 0.55,
+            "confidence": 0.70,
+            "data_coverage": 0.80,
+            "supporting_factors": ["respaldo estadístico", "señal coherente"],
+            "contradicting_factors": [],
+        }
+        prepared = LiveExperimentManager._prepare_opportunities("V4", [opportunity])
+        self.assertEqual(len(prepared), 1)
+        self.assertEqual(prepared[0]["calibration_sample_size"], 0)
+        self.assertEqual(prepared[0]["calibration_method"], "provisional_retraida_al_mercado_muestra_insuficiente")
+        self.assertGreaterEqual(prepared[0]["edge"], 0.08)
+        self.assertGreaterEqual(prepared[0]["confidence"], 0.65)
+        self.assertEqual(LiveExperimentManager._eligibility_reason(self.experiment, "V4", prepared[0]), "")
