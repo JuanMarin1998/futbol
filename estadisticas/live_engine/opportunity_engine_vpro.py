@@ -210,12 +210,33 @@ class LiveOpportunityEngineVPro:
             if edge < cls.MIN_EDGE or confidence < cls.MIN_CONFIDENCE:
                 continue
 
+            current_favorite_price = None
+            for live_odd in match.odds or []:
+                live_side = cls._selection_side(str(live_odd.get("name") or ""), match)
+                market_name = str(live_odd.get("market_name") or "").lower()
+                if live_side == baseline_side and any(term in market_name for term in ("1x2", "resultado", "ganador", "match winner")):
+                    candidate_price = cls._num(live_odd.get("price"))
+                    if candidate_price and candidate_price > 1:
+                        current_favorite_price = candidate_price
+                        break
+            quota_change_pct = None
+            if current_favorite_price is not None:
+                baseline_price = float(reference.get("price") or 0)
+                if baseline_price > 0:
+                    quota_change_pct = (current_favorite_price / baseline_price - 1.0) * 100
+                    if quota_change_pct >= 12:
+                        local_support.append(f"Cuota LIVE del favorito subió {quota_change_pct:.1f}% desde la referencia")
+                    elif quota_change_pct <= -8:
+                        local_support.append(f"Cuota LIVE del favorito bajó {abs(quota_change_pct):.1f}% desde la referencia")
+
             opportunity = dict(source)
             opportunity.update({
                 "model": "vpro_live_favorite_tracker",
                 "vpro_reference_team": reference.get("team"),
                 "vpro_reference_price": float(reference.get("price")),
                 "vpro_reference_source": reference.get("source", "cuota_base_guardada"),
+                "vpro_current_favorite_price": current_favorite_price,
+                "vpro_favorite_quota_change_pct": round(quota_change_pct, 2) if quota_change_pct is not None else None,
                 "vpro_possession_gap_points": round(possession_gap, 2) if possession_gap is not None else None,
                 "vpro_statistical_score": round(score, 3),
                 "model_probability": round(model_p, 4),
