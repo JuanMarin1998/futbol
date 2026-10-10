@@ -185,7 +185,15 @@ class LiveOpportunityEngineVPro:
             if not (side in {baseline_side, "home" if baseline_side == "away" else "away"} or is_double or is_btts or is_total):
                 continue
 
-            selected_favorite = side == baseline_side
+            favorite_name = cls._norm(reference.get("team"))
+            selection_norm = cls._norm(selection)
+            covers_favorite = side == baseline_side or (favorite_name and favorite_name in selection_norm)
+            if is_double:
+                if "1x" in selection_norm:
+                    covers_favorite = baseline_side == "home"
+                elif "x2" in selection_norm:
+                    covers_favorite = baseline_side == "away"
+            selected_favorite = bool(covers_favorite)
             local_support = list(source.get("supporting_factors") or []) + supporting
             local_contra = list(source.get("contradicting_factors") or []) + contradicting
             model_p = float(source.get("model_probability") or 0)
