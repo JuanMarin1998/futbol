@@ -236,7 +236,7 @@ class LiveExperimentManager:
                 opportunity["edge_basis"] = "probabilidad_justa_de_mercado"
                 opportunity["edge_pct"] = round(float(opportunity.get("edge") or 0) * 100, 2)
 
-            if motor in {"V1", "V11", "V2", "V12", "V21", "V22", "V2U", "V11U", "V4"}:
+            if motor in {"V1", "V11", "V2", "V12", "V21", "V22", "V2U", "V11U", "V4", "VPRO"}:
                 opportunity = enrich(opportunity)
             prepared.append(opportunity)
         return prepared
@@ -304,20 +304,31 @@ class LiveExperimentManager:
             if Decimal(str(opportunity.get("price") or 0)) < Decimal("1.25"):
                 return "Descartada V4: cuota inferior a 1.25."
             calibration_n = int(opportunity.get("calibration_sample_size") or 0)
-            if calibration_n < 20:
-                return (
-                    "Descartada V4: solo hay "
-                    f"{calibration_n} resultados V1.1 liquidados del mismo mercado y selección; "
-                    "se requieren al menos 20 para estimar una probabilidad calibrada."
-                )
-            if cls._level(opportunity) not in {1, 2}:
-                return "Descartada V4: solo acepta niveles 1 y 2."
             edge_v4 = float(opportunity.get("edge") or 0)
             confidence_v4 = float(opportunity.get("confidence") or 0)
-            if edge_v4 < 0.05:
-                return f"Descartada V4: edge calibrado {edge_v4 * 100:.1f} puntos inferior al mínimo 5.0."
-            if confidence_v4 < 0.60:
-                return "Descartada V4: confianza inferior al 60%."
+            if calibration_n < 20:
+                # Con muestra escasa se permite solo la calibración provisional,
+                # retraída al mercado, pero con umbrales bastante más estrictos.
+                # Bloquear por completo la muestra insuficiente impedía que V4
+                # apostara durante el arranque de un experimento nuevo.
+                if edge_v4 < 0.08:
+                    return (
+                        "Descartada V4: calibración provisional con "
+                        f"{calibration_n} resultados comparables; exige edge mínimo "
+                        f"de 8 puntos y obtuvo {edge_v4 * 100:.1f}."
+                    )
+                if confidence_v4 < 0.65:
+                    return (
+                        "Descartada V4: calibración provisional con muestra insuficiente; "
+                        "exige confianza mínima del 65%."
+                    )
+            else:
+                if edge_v4 < 0.05:
+                    return f"Descartada V4: edge calibrado {edge_v4 * 100:.1f} puntos inferior al mínimo 5.0."
+                if confidence_v4 < 0.60:
+                    return "Descartada V4: confianza inferior al 60%."
+            if cls._level(opportunity) not in {1, 2}:
+                return "Descartada V4: solo acepta niveles 1 y 2."
         # Este control va antes de los filtros de nivel: una repetición debe
         # quedar identificada como tal aunque su señal haya cambiado de nivel.
         if LiveExperimentEntry.objects.filter(
