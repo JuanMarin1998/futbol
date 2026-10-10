@@ -282,6 +282,7 @@ class LiveExperiment(models.Model):
     flashscore_event_id = models.CharField(max_length=80, blank=True)
     home_team = models.CharField(max_length=150)
     away_team = models.CharField(max_length=150)
+    vpro_reference_odds = models.JSONField(default=dict, blank=True)
     status = models.CharField(max_length=12, choices=STATUS, default="RUNNING")
     initial_lives = models.DecimalField(max_digits=12, decimal_places=4, default=100)
     v1_lives = models.DecimalField(max_digits=12, decimal_places=4, default=100)
