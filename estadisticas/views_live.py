@@ -4,6 +4,7 @@ from django.core.cache import cache
 from django.conf import settings
 from django.utils import timezone
 from django.db import transaction
+from django.db.models import Count, Sum
 import logging
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -15,7 +16,7 @@ from .live_engine.collector import LiveMatchCollector
 from .live_engine.match_mapper import MatchMappingError
 from .live_engine.experiment import LiveExperimentManager
 from .live_engine.opportunity_levels import enrich
-from .models import LiveExperiment, LiveExperimentDailyArchive
+from .models import LiveExperiment, LiveExperimentEntry, LiveExperimentDailyArchive
 
 logger = logging.getLogger(__name__)
 
@@ -532,6 +533,48 @@ def _mapear_eventos_live_en_segundo_plano(events):
         close_old_connections()
 
 
+def _resumen_motores_diario(target_date=None):
+    """Resume todas las apuestas del día, aunque la interfaz limite los partidos detallados."""
+    target_date = target_date or timezone.localdate()
+    initial_by_motor = {"ESP": 50.0}
+    rows = (
+        LiveExperimentEntry.objects
+        .filter(experiment__started_at__date=target_date)
+        .values("motor", "status")
+        .annotate(count=Count("id"), staked=Sum("stake"), pnl_sum=Sum("pnl"))
+    )
+    summary = {}
+    for row in rows:
+        motor = row["motor"]
+        item = summary.setdefault(motor, {
+            "decisions": 0, "wins": 0, "losses": 0, "open": 0, "cancelled": 0,
+            "total_staked": 0.0, "total_pnl": 0.0, "open_staked": 0.0,
+        })
+        status = row["status"]
+        count = int(row["count"] or 0)
+        item["decisions"] += count
+        if status == "WON":
+            item["wins"] += count
+        elif status == "LOST":
+            item["losses"] += count
+        elif status == "OPEN":
+            item["open"] += count
+            item["open_staked"] += float(row["staked"] or 0)
+        elif status == "CANCELLED":
+            item["cancelled"] += count
+        item["total_staked"] += float(row["staked"] or 0)
+        item["total_pnl"] += float(row["pnl_sum"] or 0)
+    for motor, item in summary.items():
+        item["starting"] = initial_by_motor.get(motor, 100.0)
+        item["total_capital"] = max(0.0, item["starting"] + item["total_pnl"])
+        item["available_lives"] = max(0.0, item["total_capital"] - item["open_staked"])
+        settled = item["wins"] + item["losses"]
+        item["hit_rate"] = item["wins"] / settled * 100 if settled else 0.0
+        item["roi"] = item["total_pnl"] / item["total_staked"] * 100 if item["total_staked"] else 0.0
+        item["alive"] = item["available_lives"] >= 1.0
+    return summary
+
+
 def _experimento_estado_global():
     """Procesa el laboratorio global sin bloquear el ciclo con consultas repetidas."""
     if cache.get("live_experiment_starting"):
@@ -552,6 +595,7 @@ def _experimento_estado_global():
             ],
             "live_count": 0, "busy": True, "processing_errors": [],
             "start_message": "Preparando partidos LIVE en segundo plano.",
+            "daily_motors": _resumen_motores_diario(today),
         }
 
     lock_key = "live_experiment_global_state_lock"
@@ -577,6 +621,7 @@ def _experimento_estado_global():
             "live_count": 0,
             "busy": True,
             "processing_errors": [],
+            "daily_motors": _resumen_motores_diario(today),
         }
 
     try:
@@ -713,6 +758,7 @@ def _experimento_estado_global():
             "mapping_error_count": len(mapping_errors),
             "startup_result": cache.get("live_experiment_start_result"),
             "busy": False,
+            "daily_motors": _resumen_motores_diario(today),
         }
     finally:
         cache.delete(lock_key)
