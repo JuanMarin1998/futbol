@@ -1189,7 +1189,27 @@ def api_ecuabet_live_detalle(request, ecuabet_event_id):
                 status=404,
             )
 
-        event = EcuabetClient.normalizar_mercados_evento(event, payload)
+        # GetLivenow suele incluir una oferta reducida. Complementamos con
+        # GetEventDetails, cacheado brevemente para no consultar en cada render.
+        detail_cache_key = f"ecuabet_event_markets_detail:{ecuabet_event_id}"
+        detail_payload = cache.get(detail_cache_key)
+        if detail_payload is None:
+            try:
+                detail_payload = EcuabetClient().obtener_detalle_evento(ecuabet_event_id)
+                if isinstance(detail_payload, dict):
+                    cache.set(detail_cache_key, detail_payload, 12)
+                else:
+                    detail_payload = {}
+            except Exception:
+                logger.exception(
+                    "No se pudo ampliar inventario de mercados Ecuabet para evento %s.",
+                    ecuabet_event_id,
+                )
+                detail_payload = {}
+
+        event = EcuabetClient.normalizar_mercados_evento(
+            event, payload, detail_payload=detail_payload
+        )
         competitors = {
             int(x["id"]): x for x in payload.get("competitors", []) or []
             if isinstance(x, dict) and x.get("id") is not None
