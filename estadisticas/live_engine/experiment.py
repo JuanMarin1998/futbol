@@ -241,32 +241,12 @@ class LiveExperimentManager:
 
     @classmethod
     def _motor_limit(cls, motor: str) -> int:
-        if motor == "VPRO":
-            candidates.sort(key=lambda o: (
-                float(o.get("edge") or 0),
-                float(o.get("confidence") or 0),
-                float(o.get("vpro_statistical_score") or 0),
-            ), reverse=True)
-            daily_open = LiveExperimentEntry.objects.filter(
-                experiment__started_at__date=timezone.localdate(), motor="VPRO", status="OPEN"
-            )
-            committed_today = sum((Decimal(str(e.stake)) for e in daily_open), Decimal("0"))
-            remaining_daily = max(Decimal("0"), Decimal("6") - committed_today)
-            remaining_match = max(Decimal("0"), Decimal("2") - cls._exposure(experiment, "VPRO"))
-            for candidate in candidates:
-                edge = Decimal(str(candidate.get("edge") or 0))
-                confidence = Decimal(str(candidate.get("confidence") or 0))
-                stake = Decimal("0.50") + max(Decimal("0"), edge) * Decimal("2") + max(Decimal("0"), confidence - Decimal("0.50"))
-                stake = min(stake, Decimal("1.00"), lives, remaining_daily, remaining_match)
-                stake = stake.quantize(Decimal("0.01"), rounding=ROUND_DOWN)
-                if stake >= Decimal("0.50"):
-                    return candidate, stake
-            return None, Decimal("0")
-
+        # V.Pro admite hasta dos decisiones por partido; su stake/exposición
+        # se calcula en _choose(), donde sí están disponibles candidatos y capital.
         if motor == "V3":
             return 3
-        if motor == "ESP":
-            return 1
+        if motor in {"ESP", "VPRO"}:
+            return 1 if motor == "ESP" else 2
         return 2 if motor in {"V12", "V22", "V4"} else 999999
 
     @classmethod
@@ -766,6 +746,40 @@ class LiveExperimentManager:
         lives = cls._ledger_lives(experiment, motor)
         candidates = [o for o in opportunities if cls._eligible(experiment, motor, o)]
         if not candidates or lives < cls.MIN_STAKE:
+            return None, Decimal("0")
+
+        if motor == "VPRO":
+            candidates.sort(key=lambda o: (
+                float(o.get("edge") or 0),
+                float(o.get("confidence") or 0),
+                float(o.get("vpro_statistical_score") or 0),
+            ), reverse=True)
+            daily_open = LiveExperimentEntry.objects.filter(
+                experiment__started_at__date=timezone.localdate(),
+                motor="VPRO",
+                status="OPEN",
+            )
+            committed_today = sum(
+                (Decimal(str(e.stake)) for e in daily_open), Decimal("0")
+            )
+            remaining_daily = max(Decimal("0"), Decimal("6") - committed_today)
+            remaining_match = max(
+                Decimal("0"), Decimal("2") - cls._exposure(experiment, "VPRO")
+            )
+            for candidate in candidates:
+                edge = Decimal(str(candidate.get("edge") or 0))
+                confidence = Decimal(str(candidate.get("confidence") or 0))
+                stake = (
+                    Decimal("0.50")
+                    + max(Decimal("0"), edge) * Decimal("2")
+                    + max(Decimal("0"), confidence - Decimal("0.50"))
+                )
+                stake = min(
+                    stake, Decimal("1.00"), lives, remaining_daily, remaining_match
+                )
+                stake = stake.quantize(Decimal("0.01"), rounding=ROUND_DOWN)
+                if stake >= Decimal("0.50"):
+                    return candidate, stake
             return None, Decimal("0")
 
         if motor == "ESP":
