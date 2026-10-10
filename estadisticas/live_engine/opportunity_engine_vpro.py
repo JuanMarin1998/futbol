@@ -62,21 +62,60 @@ class LiveOpportunityEngineVPro:
         return None
 
     @classmethod
+    def _estimate_xg(cls, performance: Dict[str, Any], side: str) -> Optional[float]:
+        """Estimación agregada de baja confianza; no equivale al xG por disparo."""
+        shots = cls._stat(performance, side, "goal_attempts", "total_shots", "shots", "remates totales")
+        on_target = cls._stat(performance, side, "shots_on_goal", "shots_on_target", "shots on target", "remates a puerta")
+        off_target = cls._stat(performance, side, "shots_off_goal", "shots_off_target", "shots off target", "remates fuera")
+        blocked = cls._stat(performance, side, "blocked_shots", "blocked", "remates bloqueados")
+        big = cls._stat(performance, side, "big_chances", "big_chances_created", "grandes ocasiones")
+        if shots is None:
+            parts = [v for v in (on_target, off_target, blocked) if v is not None]
+            if not parts:
+                return None
+            shots = sum(parts)
+        if shots <= 0:
+            return 0.0
+        estimate = 0.08 * shots
+        if on_target is not None:
+            estimate += 0.10 * on_target
+        if off_target is not None:
+            estimate -= 0.025 * off_target
+        if blocked is not None:
+            estimate -= 0.01 * blocked
+        if big is not None:
+            estimate += 0.12 * big
+        return round(max(0.0, min(6.0, estimate)), 2)
+
+    @classmethod
     def _xg_check(cls, match) -> Dict[str, Any]:
-        """Informa si hay xG real para ambos equipos; nunca fabrica un xG."""
+        """Prioriza xG oficial; si falta, calcula una estimación agregada etiquetada."""
         performance = match.performance or {}
         home_xg = cls._stat(performance, "home", "expected_goals", "xg", "expected_goals__general", "Expected goals (xG)", "Goles esperados (xG)")
         away_xg = cls._stat(performance, "away", "expected_goals", "xg", "expected_goals__general", "Expected goals (xG)", "Goles esperados (xG)")
-        if home_xg is not None and away_xg is not None:
-            status = "disponible"
-            detail = "xG real recibido para ambos equipos"
-        elif home_xg is not None or away_xg is not None:
-            status = "parcial"
-            detail = "xG recibido solo para un equipo; no se compara como consenso"
-        else:
+        home_estimated = home_xg is None
+        away_estimated = away_xg is None
+        if home_estimated:
+            home_xg = cls._estimate_xg(performance, "home")
+        if away_estimated:
+            away_xg = cls._estimate_xg(performance, "away")
+        if home_xg is None and away_xg is None:
             status = "no_disponible"
-            detail = "la fuente LIVE no entregó xG; no se estima ni se inventa"
-        return {"status": status, "home": home_xg, "away": away_xg, "detail": detail}
+            detail = "faltan estadísticas de remates para estimar xG"
+        elif home_estimated or away_estimated:
+            status = "estimado" if home_xg is not None and away_xg is not None else "parcial"
+            labels = []
+            if home_estimated and home_xg is not None:
+                labels.append("local estimado")
+            if away_estimated and away_xg is not None:
+                labels.append("visitante estimado")
+            detail = "xG aproximado calculado con estadísticas agregadas (" + ", ".join(labels) + "); fiabilidad baja, no es xG oficial"
+        else:
+            status = "disponible"
+            detail = "xG oficial recibido para ambos equipos"
+        return {"status": status, "home": home_xg, "away": away_xg,
+                "home_estimated": home_estimated, "away_estimated": away_estimated,
+                "detail": detail}
 
     @staticmethod
     def _norm(value: Any) -> str:
@@ -152,7 +191,7 @@ class LiveOpportunityEngineVPro:
             "possession": cls._stat(match.performance or {}, "home", "ball_possession", "possession"),
             "shots": cls._stat(match.performance or {}, "home", "total_shots", "goal_attempts"),
             "shots_on": cls._stat(match.performance or {}, "home", "shots_on_target", "shots_on_goal"),
-            "xg": cls._stat(match.performance or {}, "home", "expected_goals", "xg", "expected_goals__general"),
+            "xg": xg_check["home"],
             "big": cls._stat(match.performance or {}, "home", "big_chances", "big_chances_created"),
             "red": cls._stat(match.performance or {}, "home", "red_cards"),
         }
@@ -160,7 +199,7 @@ class LiveOpportunityEngineVPro:
             "possession": cls._stat(match.performance or {}, "away", "ball_possession", "possession"),
             "shots": cls._stat(match.performance or {}, "away", "total_shots", "goal_attempts"),
             "shots_on": cls._stat(match.performance or {}, "away", "shots_on_target", "shots_on_goal"),
-            "xg": cls._stat(match.performance or {}, "away", "expected_goals", "xg", "expected_goals__general"),
+            "xg": xg_check["away"],
             "big": cls._stat(match.performance or {}, "away", "big_chances", "big_chances_created"),
             "red": cls._stat(match.performance or {}, "away", "red_cards"),
         }
@@ -285,6 +324,8 @@ class LiveOpportunityEngineVPro:
                 "vpro_xg_status": xg_check["status"],
                 "vpro_xg_home": xg_check["home"],
                 "vpro_xg_away": xg_check["away"],
+                "vpro_xg_home_estimated": xg_check.get("home_estimated", False),
+                "vpro_xg_away_estimated": xg_check.get("away_estimated", False),
                 "vpro_xg_detail": xg_check["detail"],
                 "vpro_reference_team": reference.get("team"),
                 "vpro_reference_price": float(reference.get("price")),
