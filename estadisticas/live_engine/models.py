@@ -34,6 +34,8 @@ class LiveMatch:
     opportunities_v3: list = field(default_factory=list)
     opportunities_v2_ultra: list = field(default_factory=list)
     opportunities_v11_ultra: list = field(default_factory=list)
+    opportunities_vpro: list = field(default_factory=list)
+    vpro_reference_odds: Dict[str, Any] = field(default_factory=dict)
 
     mapping_confidence: float = 0.0
     data_quality: float = 0.0
@@ -65,6 +67,8 @@ class LiveMatch:
             "opportunities_v3": self.opportunities_v3,
             "opportunities_v2_ultra": self.opportunities_v2_ultra,
             "opportunities_v11_ultra": self.opportunities_v11_ultra,
+            "opportunities_vpro": self.opportunities_vpro,
+            "vpro_reference_odds": self.vpro_reference_odds,
             "mapping_confidence": self.mapping_confidence,
             "data_quality": self.data_quality,
         }
