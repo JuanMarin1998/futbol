@@ -278,6 +278,8 @@ class LiveExperimentManager:
             return "Descartada: oportunidad sin mercado/selección/línea válidos."
         if motor in {"V2U", "V11U"} and opportunity.get("unsupported_market"):
             return "Mercado auditado, no apostable: falta un modelo de probabilidad fiable o datos finales verificables para liquidarlo."
+        line_text = f" {line}" if line and line.casefold() not in selection.casefold() else ""
+
         if motor == "ESP":
             votes = int(opportunity.get("consensus_votes") or 0)
             support_ratio = float(opportunity.get("consensus_support_ratio") or 0)
@@ -663,7 +665,6 @@ class LiveExperimentManager:
         probability_text = f"{model_p * 100:.1f}%"
         implied_text = f"{implied * 100:.1f}%"
         edge_text = f"{edge * 100:+.1f} puntos"
-        line_text = f" {line}" if line and line.casefold() not in selection.casefold() else ""
         level_name = cls._level_name(level)
         if motor == "V3":
             market_fair = float(opportunity.get("market_fair_probability") or implied)
