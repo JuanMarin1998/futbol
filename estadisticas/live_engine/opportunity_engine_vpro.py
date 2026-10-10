@@ -207,8 +207,10 @@ class LiveOpportunityEngineVPro:
             sel = cls._norm(selection)
             home = cls._norm(match.home_team)
             away = cls._norm(match.away_team)
-            has_home = bool(home and home in sel)
-            has_away = bool(away and away in sel)
+            home_tokens = [cls._norm(token) for token in str(match.home_team or "").split() if len(token) >= 4]
+            away_tokens = [cls._norm(token) for token in str(match.away_team or "").split() if len(token) >= 4]
+            has_home = bool(home and home in sel) or any(token in sel for token in home_tokens)
+            has_away = bool(away and away in sel) or any(token in sel for token in away_tokens)
             has_draw = any(term in sel for term in ("empate", "draw"))
             if has_home and has_draw:
                 return "dc_1x"
@@ -471,10 +473,15 @@ class LiveOpportunityEngineVPro:
             selection_norm = cls._norm(selection)
             covers_favorite = side == baseline_side or (favorite_name and favorite_name in selection_norm)
             if is_double:
-                if "1x" in selection_norm:
+                dc_key = cls._extended_market_key(
+                    {"market_name": market, "name": selection, "line": source.get("line")}, match
+                )
+                if "1x" in selection_norm or dc_key == "dc_1x":
                     covers_favorite = baseline_side == "home"
-                elif "x2" in selection_norm:
+                elif "x2" in selection_norm or dc_key == "dc_x2":
                     covers_favorite = baseline_side == "away"
+                elif "12" in selection_norm or dc_key == "dc_12":
+                    covers_favorite = True
             selected_favorite = bool(covers_favorite)
             local_support = list(source.get("supporting_factors") or []) + supporting
             local_contra = list(source.get("contradicting_factors") or []) + contradicting
