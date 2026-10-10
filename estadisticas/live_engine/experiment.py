@@ -775,20 +775,26 @@ class LiveExperimentManager:
             committed_today = sum(
                 (Decimal(str(e.stake)) for e in daily_open), Decimal("0")
             )
-            remaining_daily = max(Decimal("0"), Decimal("6") - committed_today)
+            # V.Pro usa límites de exposición independientes; el stake escala
+            # con edge y confianza, sin alterar la selección de oportunidades.
+            remaining_daily = max(Decimal("0"), Decimal("50") - committed_today)
             remaining_match = max(
-                Decimal("0"), Decimal("2") - cls._exposure(experiment, "VPRO")
+                Decimal("0"), Decimal("12") - cls._exposure(experiment, "VPRO")
             )
             for candidate in candidates:
-                edge = Decimal(str(candidate.get("edge") or 0))
-                confidence = Decimal(str(candidate.get("confidence") or 0))
+                edge = max(Decimal("0"), Decimal(str(candidate.get("edge") or 0)))
+                confidence = max(
+                    Decimal("0"), min(Decimal("1"), Decimal(str(candidate.get("confidence") or 0)))
+                )
+                # Edge es una fracción (0.10 = 10 puntos porcentuales).
+                # Señales más fuertes pueden usar más stake, hasta 10 vidas.
                 stake = (
-                    Decimal("0.50")
-                    + max(Decimal("0"), edge) * Decimal("2")
-                    + max(Decimal("0"), confidence - Decimal("0.50"))
+                    Decimal("1.00")
+                    + min(Decimal("0.30"), edge) * Decimal("20")
+                    + max(Decimal("0"), confidence - Decimal("0.50")) * Decimal("10")
                 )
                 stake = min(
-                    stake, Decimal("1.00"), lives, remaining_daily, remaining_match
+                    stake, Decimal("10.00"), lives, remaining_daily, remaining_match
                 )
                 stake = stake.quantize(Decimal("0.01"), rounding=ROUND_DOWN)
                 if stake >= Decimal("0.50"):
