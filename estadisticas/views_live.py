@@ -456,7 +456,9 @@ def _procesar_experimentos_live(live_events, experiments):
         finally:
             close_old_connections()
 
-    max_workers = min(8, len(tasks))
+    # Limitar conexiones simultáneas: cada worker puede abrir su propia conexión Django.
+    # El ciclo continuo repetido no debe acercarse al límite de PostgreSQL.
+    max_workers = min(3, len(tasks))
     if max_workers <= 1:
         return [error for error in (worker(tasks[0]),) if error]
 
@@ -519,7 +521,9 @@ def _mapear_eventos_live_en_segundo_plano(events):
 
     try:
         with ThreadPoolExecutor(
-            max_workers=min(6, len(events)),
+            # El mapeo consulta Flashscore y la BD; mantener poca concurrencia evita
+            # sumar demasiadas conexiones al procesamiento de partidos ya vinculados.
+            max_workers=min(2, len(events)),
             thread_name_prefix="live-map-cycle",
         ) as executor:
             list(executor.map(map_event, events))
