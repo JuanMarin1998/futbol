@@ -996,6 +996,10 @@ class LiveExperimentManager:
         )
         if not experiment:
             return None
+        if not experiment.vpro_reference_odds:
+            reference = LiveOpportunityEngineVPro._reference(match)
+            if reference:
+                experiment.vpro_reference_odds = reference
         experiment.last_minute = str(match.minute or "")
         experiment.last_period = str(match.period or "")
         experiment.last_home_score = match.home_score
