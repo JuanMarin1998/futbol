@@ -13,6 +13,8 @@ from .opportunity_engine_v22 import LiveOpportunityEngineV22
 from .opportunity_engine_v3 import LiveOpportunityEngineV3
 from .opportunity_engine_v2_ultra import LiveOpportunityEngineV2Ultra
 from .opportunity_engine_v11_ultra import LiveOpportunityEngineV11Ultra
+from .opportunity_engine_vpro import LiveOpportunityEngineVPro
+from ..models import LiveExperiment
 
 
 class LiveMatchCollector:
@@ -221,7 +223,11 @@ class LiveMatchCollector:
             match.opportunities_v3 = []
             match.opportunities_v2_ultra = []
             match.opportunities_v11_ultra = []
+            match.opportunities_vpro = []
         else:
+            experiment = LiveExperiment.objects.filter(ecuabet_event_id=match.ecuabet_event_id, status="RUNNING").first()
+            if experiment and experiment.vpro_reference_odds:
+                match.vpro_reference_odds = experiment.vpro_reference_odds
             match.opportunities = LiveOpportunityEngine.evaluate(match)
             match.opportunities_v2 = LiveOpportunityEngineV2.evaluate(match)
             match.opportunities_v11 = LiveOpportunityEngineV11.evaluate(match)
@@ -231,6 +237,7 @@ class LiveMatchCollector:
             match.opportunities_v3 = LiveOpportunityEngineV3.evaluate(match)
             match.opportunities_v2_ultra = LiveOpportunityEngineV2Ultra.evaluate(match)
             match.opportunities_v11_ultra = LiveOpportunityEngineV11Ultra.evaluate(match)
+            match.opportunities_vpro = LiveOpportunityEngineVPro.evaluate(match)
         return match
 
     @classmethod
