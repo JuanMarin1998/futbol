@@ -672,7 +672,7 @@ class LiveExperimentManager:
                 f"Espía apuesta {selection}{line_text}: consenso de {votes}/7 motores visibles ({ratio:.0f}% de respaldo; {supporters}); "
                 f"probabilidad agregada {model_p * 100:.1f}%, edge {edge * 100:+.1f} puntos, confianza media {confidence * 100:.1f}%; "
                 f"stake dinámico {stake:.2f} vidas según consenso, confianza y edge; puede usar de 1 hasta todo el capital disponible (50 vidas iniciales). Solo una apuesta por partido. "
-                f"Contexto LIVE: minuto {minute_text}, marcador {score}."
+                f"Contexto al apostar: minuto {minute_text}, marcador {score}."
             )
         probability_text = f"{model_p * 100:.1f}%"
         implied_text = f"{implied * 100:.1f}%"
@@ -692,7 +692,7 @@ class LiveExperimentManager:
             base = (
                 f"{selection}{line_text} elegido por {label}: {probability_text} de probabilidad "
                 f"frente a {implied_text} implícita ({edge_text} de edge); "
-                f"{score} al {minute_text}, Nivel {level} · {level_name}"
+                f"contexto al apostar: {score} al minuto {minute_text}, Nivel {level} · {level_name}"
             )
 
         if motor == "V3":
