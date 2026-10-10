@@ -29,13 +29,54 @@ class LiveOpportunityEngineVPro:
 
     @classmethod
     def _stat(cls, performance: Dict[str, Any], side: str, *keys: str) -> Optional[float]:
+        """Lee estadísticas normalizadas o crudas, incluidas etiquetas de xG."""
         values = performance.get(side) or {}
-        for key in keys:
-            if key in values:
-                value = cls._num(values.get(key))
+        if not isinstance(values, dict):
+            return None
+
+        def key_norm(value):
+            return re.sub(r"[^a-z0-9]+", "", str(value or "").lower())
+
+        wanted = {key_norm(key) for key in keys}
+        aliases = {
+            "expectedgoals": {"expectedgoals", "xg", "expectedgoalsgeneral", "golesesperados"},
+            "ballpossession": {"ballpossession", "possession", "posesion", "posesiondelbalon"},
+            "goalattempts": {"goalattempts", "totalshots", "rematestotales"},
+            "shotsongoal": {"shotsongoal", "shotsontarget", "rematesapuerta"},
+            "bigchances": {"bigchances", "bigchancescreated", "grandesocasiones"},
+            "redcards": {"redcards", "tarjetasrojas"},
+        }
+        expanded = set(wanted)
+        for alias_group in aliases.values():
+            if wanted.intersection(alias_group):
+                expanded.update(alias_group)
+
+        for raw_key, raw_value in values.items():
+            candidates = {key_norm(raw_key)}
+            if isinstance(raw_value, dict):
+                candidates.update(key_norm(raw_value.get(k)) for k in ("name", "label", "stat_type", "type"))
+            if candidates.intersection(expanded):
+                value = cls._num(raw_value)
                 if value is not None:
                     return value
         return None
+
+    @classmethod
+    def _xg_check(cls, match) -> Dict[str, Any]:
+        """Informa si hay xG real para ambos equipos; nunca fabrica un xG."""
+        performance = match.performance or {}
+        home_xg = cls._stat(performance, "home", "expected_goals", "xg", "expected_goals__general", "Expected goals (xG)", "Goles esperados (xG)")
+        away_xg = cls._stat(performance, "away", "expected_goals", "xg", "expected_goals__general", "Expected goals (xG)", "Goles esperados (xG)")
+        if home_xg is not None and away_xg is not None:
+            status = "disponible"
+            detail = "xG real recibido para ambos equipos"
+        elif home_xg is not None or away_xg is not None:
+            status = "parcial"
+            detail = "xG recibido solo para un equipo; no se compara como consenso"
+        else:
+            status = "no_disponible"
+            detail = "la fuente LIVE no entregó xG; no se estima ni se inventa"
+        return {"status": status, "home": home_xg, "away": away_xg, "detail": detail}
 
     @staticmethod
     def _norm(value: Any) -> str:
@@ -106,6 +147,7 @@ class LiveOpportunityEngineVPro:
         if not reference:
             return []
 
+        xg_check = cls._xg_check(match)
         home = {
             "possession": cls._stat(match.performance or {}, "home", "ball_possession", "possession"),
             "shots": cls._stat(match.performance or {}, "home", "total_shots", "goal_attempts"),
@@ -240,6 +282,10 @@ class LiveOpportunityEngineVPro:
             opportunity = dict(source)
             opportunity.update({
                 "model": "vpro_live_favorite_tracker",
+                "vpro_xg_status": xg_check["status"],
+                "vpro_xg_home": xg_check["home"],
+                "vpro_xg_away": xg_check["away"],
+                "vpro_xg_detail": xg_check["detail"],
                 "vpro_reference_team": reference.get("team"),
                 "vpro_reference_price": float(reference.get("price")),
                 "vpro_reference_source": reference.get("source", "cuota_base_guardada"),
