@@ -9,6 +9,7 @@ from django.utils import timezone
 
 from ..models import LiveExperiment, LiveExperimentEntry, LiveExperimentSnapshot, LiveExperimentDailyArchive
 from .opportunity_levels import enrich
+from .opportunity_engine_vpro import LiveOpportunityEngineVPro
 
 
 class LiveExperimentManager:
@@ -18,15 +19,15 @@ class LiveExperimentManager:
     INITIAL_LIVES_BY_MOTOR = {"ESP": Decimal("50")}
     MAX_STAKE = Decimal("10")
     MIN_STAKE = Decimal("1")
-    MOTORS = ("V1", "V11", "V12", "V2", "V21", "V22", "V3", "V2U", "V11U", "V4", "ESP")
+    MOTORS = ("V1", "V11", "V12", "V2", "V21", "V22", "V3", "V2U", "V11U", "V4", "ESP", "VPRO")
     # V1/V2/V3 quedan en pausa; su código e historial se conservan.
     PAUSED_MOTORS = frozenset({"V1", "V2", "V3"})
-    LABELS = {"V1": "V1", "V11": "V1.1", "V12": "V1.2", "V2": "V2", "V21": "V2.1", "V22": "V2.2", "V3": "V3", "V2U": "V2.Ultra", "V11U": "V1.1 Ultra", "V4": "V4 · Calibración prudente", "ESP": "🕵️ Espía de Apuestas"}
+    LABELS = {"V1": "V1", "V11": "V1.1", "V12": "V1.2", "V2": "V2", "V21": "V2.1", "V22": "V2.2", "V3": "V3", "V2U": "V2.Ultra", "V11U": "V1.1 Ultra", "V4": "V4 · Calibración prudente", "ESP": "🕵️ Espía de Apuestas", "VPRO": "V.Pro · Favorito estadístico"}
     OPPORTUNITY_ATTRS = {
         "V1": "opportunities", "V11": "opportunities_v11", "V12": "opportunities_v12",
         "V2": "opportunities_v2", "V21": "opportunities_v21", "V22": "opportunities_v22",
         "V3": "opportunities_v3", "V2U": "opportunities_v2_ultra",
-        "V11U": "opportunities_v11_ultra", "V4": "opportunities_v11", "ESP": "opportunities_v11",
+        "V11U": "opportunities_v11_ultra", "V4": "opportunities_v11", "ESP": "opportunities_v11", "VPRO": "opportunities_vpro",
     }
 
     LEVEL_RANGES = {
@@ -55,6 +56,7 @@ class LiveExperimentManager:
             v2_max_lives=cls.INITIAL_LIVES,
             v1_min_lives=cls.INITIAL_LIVES,
             v2_min_lives=cls.INITIAL_LIVES,
+            vpro_reference_odds=LiveOpportunityEngineVPro._reference(match) or {},
             status="RUNNING",
         )
 
@@ -239,6 +241,28 @@ class LiveExperimentManager:
 
     @classmethod
     def _motor_limit(cls, motor: str) -> int:
+        if motor == "VPRO":
+            candidates.sort(key=lambda o: (
+                float(o.get("edge") or 0),
+                float(o.get("confidence") or 0),
+                float(o.get("vpro_statistical_score") or 0),
+            ), reverse=True)
+            daily_open = LiveExperimentEntry.objects.filter(
+                experiment__started_at__date=timezone.localdate(), motor="VPRO", status="OPEN"
+            )
+            committed_today = sum((Decimal(str(e.stake)) for e in daily_open), Decimal("0"))
+            remaining_daily = max(Decimal("0"), Decimal("6") - committed_today)
+            remaining_match = max(Decimal("0"), Decimal("2") - cls._exposure(experiment, "VPRO"))
+            for candidate in candidates:
+                edge = Decimal(str(candidate.get("edge") or 0))
+                confidence = Decimal(str(candidate.get("confidence") or 0))
+                stake = Decimal("0.50") + max(Decimal("0"), edge) * Decimal("2") + max(Decimal("0"), confidence - Decimal("0.50"))
+                stake = min(stake, Decimal("1.00"), lives, remaining_daily, remaining_match)
+                stake = stake.quantize(Decimal("0.01"), rounding=ROUND_DOWN)
+                if stake >= Decimal("0.50"):
+                    return candidate, stake
+            return None, Decimal("0")
+
         if motor == "V3":
             return 3
         if motor == "ESP":
