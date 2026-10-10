@@ -155,12 +155,30 @@ class LiveMatchCollector:
             {},
         )
 
-        score = ecuabet.get("score") or [None, None]
-        if not isinstance(score, list):
-            score = [None, None]
-
         stats = flashscore.get("stats", {})
         raw_event = flashscore.get("raw_event") or {}
+
+        # Flashscore es la fuente prioritaria del marcador/minuto LIVE; Ecuabet
+        # puede retrasar el reloj varios minutos. Si falta un dato, usamos Ecuabet.
+        ecuabet_score = ecuabet.get("score") or [None, None]
+        if not isinstance(ecuabet_score, list):
+            ecuabet_score = []
+        raw_score = raw_event.get("score")
+        fs_home = fs_away = None
+        if isinstance(raw_score, dict):
+            fs_home = raw_score.get("home", raw_score.get("currentHome"))
+            fs_away = raw_score.get("away", raw_score.get("currentAway"))
+        elif isinstance(raw_score, list):
+            fs_home = raw_score[0] if len(raw_score) > 0 else None
+            fs_away = raw_score[1] if len(raw_score) > 1 else None
+        if fs_home is None:
+            fs_home = raw_event.get("homeScore")
+        if fs_away is None:
+            fs_away = raw_event.get("awayScore")
+        score = [
+            fs_home if fs_home is not None else (ecuabet_score[0] if len(ecuabet_score) > 0 else None),
+            fs_away if fs_away is not None else (ecuabet_score[1] if len(ecuabet_score) > 1 else None),
+        ]
         match_status, is_finished = self._extract_match_status(
             raw_event,
             ecuabet.get("status"),
@@ -202,7 +220,7 @@ class LiveMatchCollector:
             league=(ecuabet.get("champ") or {}).get("name", ""),
             country=(ecuabet.get("category") or {}).get("name", ""),
             start_time=ecuabet.get("startDate"),
-            minute=ecuabet.get("liveTime"),
+            minute=raw_event.get("minute") or raw_event.get("time") or ecuabet.get("liveTime"),
             period=ecuabet.get("ls"),
             home_score=score[0] if len(score) > 0 else None,
             away_score=score[1] if len(score) > 1 else None,
