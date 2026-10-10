@@ -40,11 +40,32 @@ class LiveOpportunityEngineVPro:
         wanted = {key_norm(key) for key in keys}
         aliases = {
             "expectedgoals": {"expectedgoals", "xg", "expectedgoalsgeneral", "golesesperados"},
+            "expectedgoalsontarget": {"expectedgoalsontarget", "xgot", "xgontarget", "xgapuerta"},
+            "expectedassists": {"expectedassists", "xa", "asistenciasesperadas"},
             "ballpossession": {"ballpossession", "possession", "posesion", "posesiondelbalon"},
-            "goalattempts": {"goalattempts", "totalshots", "rematestotales"},
+            "goalattempts": {"goalattempts", "totalshots", "rematestotales", "shots"},
             "shotsongoal": {"shotsongoal", "shotsontarget", "rematesapuerta"},
+            "shotsoffgoal": {"shotsoffgoal", "shotsofftarget", "rematesfuera"},
+            "blockedshots": {"blockedshots", "blocked", "rematesbloqueados", "rematesrechazados"},
             "bigchances": {"bigchances", "bigchancescreated", "grandesocasiones"},
+            "bigchancesmissed": {"bigchancesmissed", "grandesocasionesfalladas"},
+            "touchesinoppositionbox": {"touchesinoppositionbox", "touchesoppositionbox", "toquesenelarearival"},
+            "cornerkicks": {"cornerkicks", "corners", "corner", "corners", "tirosdeesquina"},
+            "accuratethroughpasses": {"accuratethroughpasses", "throughpasses", "pasesfiltradosprecisos", "pasesentrelineascompletados"},
+            "finalthirdpasses": {"finalthirdpasses", "passesfinalthird", "pasesenelterciofinal"},
+            "keypasses": {"keypasses", "pasesclave"},
+            "crosses": {"crosses", "centros"},
+            "goalkeepersaves": {"goalkeepersaves", "saves", "paradas", "paradasdelportero"},
+            "goalsprevented": {"goalsprevented", "golesevitados"},
             "redcards": {"redcards", "tarjetasrojas"},
+            "yellowcards": {"yellowcards", "tarjetasamarillas"},
+            "errorsleadingtoshot": {"errorsleadingtoshot", "errorsleadingtogoal", "erroresconducentesa remate", "erroresconducentearemate", "erroresconducentegol"},
+            "offsides": {"offsides", "fuerasdejuego"},
+            "fouls": {"fouls", "faltas"},
+            "tackles": {"tackles", "entradas"},
+            "interceptions": {"interceptions", "intercepciones"},
+            "clearances": {"clearances", "despejes"},
+            "duelswon": {"duelswon", "duelosganados"},
         }
         expanded = set(wanted)
         for alias_group in aliases.values():
@@ -234,6 +255,60 @@ class LiveOpportunityEngineVPro:
                 contradicting.append(f"Rival superior en {label}: {rv:g} vs {fv:g}")
                 score -= weight
 
+        # Señales adicionales del feed LIVE. Se ponderan con cautela para
+        # evitar contar como independientes métricas que describen la misma jugada.
+        extra_specs = (
+            ("xgot", "expected_goals_on_target", "xGOT", 0.14, True),
+            ("xa", "expected_assists", "xA", 0.09, True),
+            ("touches_box", "touches_in_opposition_box", "toques en área rival", 0.07, True),
+            ("corners", "corner_kicks", "córneres", 0.035, True),
+            ("final_third", "final_third_passes", "pases en último tercio", 0.035, True),
+            ("through", "accurate_through_passes", "pases filtrados", 0.045, True),
+            ("key_passes", "key_passes", "pases clave", 0.035, True),
+            ("crosses", "crosses", "centros", 0.015, True),
+            ("shots_off", "shots_off_goal", "remates fuera", 0.01, True),
+            ("blocked", "blocked_shots", "remates bloqueados", 0.01, True),
+        )
+        for key, stat_name, label, weight, higher_is_better in extra_specs:
+            fv = cls._stat(match.performance or {}, "home" if baseline_side == "home" else "away",
+                           stat_name, key, label)
+            rv = cls._stat(match.performance or {}, "away" if baseline_side == "home" else "home",
+                           stat_name, key, label)
+            if fv is None or rv is None:
+                continue
+            coverage += 1
+            if abs(fv - rv) < 0.01:
+                continue
+            if (fv > rv) == higher_is_better:
+                supporting.append(f"Favorito superior en {label}: {fv:g} vs {rv:g}")
+                score += weight
+            else:
+                contradicting.append(f"Rival superior en {label}: {rv:g} vs {fv:g}")
+                score -= weight
+
+        # Algunas métricas se usan como contexto defensivo/disciplina, no como
+        # prueba directa de que un equipo vaya a marcar.
+        contextual_stats = (
+            ("yellow_cards", "tarjetas amarillas"),
+            ("fouls", "faltas"),
+            ("goalkeeper_saves", "paradas"),
+            ("goals_prevented", "goles evitados"),
+            ("tackles", "entradas"),
+            ("interceptions", "intercepciones"),
+            ("clearances", "despejes"),
+            ("offsides", "fueras de juego"),
+            ("errors_leading_to_shot", "errores que provocan remate"),
+            ("errors_leading_to_goal", "errores que provocan gol"),
+        )
+        observed_context = []
+        for stat_name, label in contextual_stats:
+            hv = cls._stat(match.performance or {}, "home", stat_name, label)
+            av = cls._stat(match.performance or {}, "away", stat_name, label)
+            if hv is not None or av is not None:
+                observed_context.append(f"{label}: {hv if hv is not None else 's/d'}-{av if av is not None else 's/d'}")
+        if observed_context:
+            supporting.append("Contexto adicional: " + "; ".join(observed_context[:5]))
+
         if fav["red"] is not None and fav["red"] > 0:
             contradicting.append("El favorito tiene al menos una tarjeta roja")
             score -= 0.35
@@ -334,6 +409,34 @@ class LiveOpportunityEngineVPro:
                 "vpro_favorite_quota_change_pct": round(quota_change_pct, 2) if quota_change_pct is not None else None,
                 "vpro_possession_gap_points": round(possession_gap, 2) if possession_gap is not None else None,
                 "vpro_statistical_score": round(score, 3),
+                "vpro_stats_analyzed": [
+                    key for key in (
+                        "expected_goals", "expected_goals_on_target", "expected_assists",
+                        "ball_possession", "goal_attempts", "shots_on_goal", "shots_off_goal",
+                        "blocked_shots", "big_chances", "big_chances_missed",
+                        "touches_in_opposition_box", "corner_kicks", "accurate_through_passes",
+                        "final_third_passes", "key_passes", "crosses", "goalkeeper_saves",
+                        "goals_prevented", "yellow_cards", "red_cards", "fouls", "tackles",
+                        "interceptions", "clearances", "offsides", "errors_leading_to_shot",
+                        "errors_leading_to_goal", "duels_won"
+                    )
+                    if cls._stat(match.performance or {}, "home", key) is not None
+                    or cls._stat(match.performance or {}, "away", key) is not None
+                ],
+                "vpro_stats_count": len([
+                    key for key in (
+                        "expected_goals", "expected_goals_on_target", "expected_assists",
+                        "ball_possession", "goal_attempts", "shots_on_goal", "shots_off_goal",
+                        "blocked_shots", "big_chances", "big_chances_missed",
+                        "touches_in_opposition_box", "corner_kicks", "accurate_through_passes",
+                        "final_third_passes", "key_passes", "crosses", "goalkeeper_saves",
+                        "goals_prevented", "yellow_cards", "red_cards", "fouls", "tackles",
+                        "interceptions", "clearances", "offsides", "errors_leading_to_shot",
+                        "errors_leading_to_goal", "duels_won"
+                    )
+                    if cls._stat(match.performance or {}, "home", key) is not None
+                    or cls._stat(match.performance or {}, "away", key) is not None
+                ]),
                 "model_probability": round(model_p, 4),
                 "implied_probability": round(implied, 4),
                 "edge": round(edge, 4),
