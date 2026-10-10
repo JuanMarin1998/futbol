@@ -1131,30 +1131,31 @@ class LiveExperimentManager:
     @classmethod
     @transaction.atomic
     def reconcile_finished(cls, experiment_id):
+        """
+        Liquida solo entradas que todavía están OPEN.
+
+        WON/LOST son resultados ya confirmados y deben ser inmutables durante
+        las consultas periódicas del estado global. Recalcularlas en cada
+        refresco podía cambiar una ganada a perdida/cancelada (o viceversa)
+        si el parser encontraba una interpretación distinta del mercado,
+        haciendo fluctuar los contadores y el capital de todos los motores.
+        """
         experiment = LiveExperiment.objects.select_for_update().get(id=experiment_id)
         if experiment.status != "FINISHED" or experiment.final_home_score is None or experiment.final_away_score is None:
             return experiment
+
         final_home, final_away = int(experiment.final_home_score), int(experiment.final_away_score)
-        for motor in cls.MOTORS:
-            current = cls._initial_lives(motor)
-            entries = list(experiment.entries.filter(motor=motor).order_by("placed_at", "id"))
-            for entry in entries:
-                if entry.status == "CANCELLED":
-                    entry.pnl = Decimal("0")
-                    entry.save(update_fields=["pnl"])
-                    continue
-                result = cls._market_result(entry, final_home, final_away, experiment)
-                if result is None:
-                    entry.status, entry.pnl = "CANCELLED", Decimal("0")
-                elif result:
-                    entry.status, entry.pnl = "WON", entry.potential_profit
-                    current += entry.pnl
-                else:
-                    entry.status, entry.pnl = "LOST", -entry.stake
-                    current -= entry.stake
-                entry.settled_at = entry.settled_at or timezone.now()
-                entry.save(update_fields=["status", "pnl", "settled_at"])
-            
+        for entry in experiment.entries.select_for_update().filter(status="OPEN").order_by("placed_at", "id"):
+            result = cls._market_result(entry, final_home, final_away, experiment)
+            if result is None:
+                entry.status, entry.pnl = "CANCELLED", Decimal("0")
+            elif result:
+                entry.status, entry.pnl = "WON", entry.potential_profit
+            else:
+                entry.status, entry.pnl = "LOST", -entry.stake
+            entry.settled_at = timezone.now()
+            entry.save(update_fields=["status", "pnl", "settled_at"])
+
         cls._sync_legacy_fields(experiment)
         experiment.save()
         return experiment
