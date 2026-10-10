@@ -228,3 +228,69 @@ class UltraMotorTests(SimpleTestCase):
         self.assertEqual(LiveExperimentManager.LABELS["V11U"], "V1.1 Ultra")
         self.assertEqual(LiveExperimentManager.OPPORTUNITY_ATTRS["V2U"], "opportunities_v2_ultra")
         self.assertEqual(LiveExperimentManager.OPPORTUNITY_ATTRS["V11U"], "opportunities_v11_ultra")
+
+
+
+from django.test import TestCase
+from django.utils import timezone
+from .models import LiveExperiment, LiveExperimentEntry
+
+
+class FinishedExperimentReconciliationTests(TestCase):
+    def setUp(self):
+        self.experiment = LiveExperiment.objects.create(
+            ecuabet_event_id=987654321,
+            home_team="Home FC",
+            away_team="Away FC",
+            status="FINISHED",
+            final_home_score=0,
+            final_away_score=1,
+        )
+
+    def _entry(self, motor, selection, status, pnl, stake="2.00"):
+        return LiveExperimentEntry.objects.create(
+            experiment=self.experiment,
+            motor=motor,
+            opportunity_key=f"{motor}|{selection}",
+            market="1X2",
+            selection=selection,
+            price="2.00",
+            model_probability=0.70,
+            implied_probability=0.50,
+            edge=0.20,
+            level=1,
+            level_name="Muy fuerte",
+            stake=stake,
+            potential_profit="2.00",
+            reason="Prueba de liquidación",
+            status=status,
+            pnl=pnl,
+            settled_at=timezone.now() if status != "OPEN" else None,
+        )
+
+    def test_reconcile_does_not_rewrite_already_settled_results_for_any_motor(self):
+        # El marcador final favorece Away; una apuesta Home ya registrada como
+        # WON debe permanecer intacta: el refresco no puede reescribir el pasado.
+        for motor in LiveExperimentManager.MOTORS:
+            with self.subTest(motor=motor):
+                entry = self._entry(motor, "Home", "WON", "2.00")
+                LiveExperimentManager.reconcile_finished(self.experiment.id)
+                entry.refresh_from_db()
+                self.assertEqual(entry.status, "WON")
+                self.assertEqual(str(entry.pnl), "2.00")
+                entry.delete()
+
+    def test_reconcile_settles_open_entries_but_preserves_existing_wins_and_losses(self):
+        settled_win = self._entry("ESP", "Home", "WON", "2.00")
+        settled_loss = self._entry("V22", "Home", "LOST", "-2.00")
+        open_entry = self._entry("V11", "Away", "OPEN", "0.00")
+        LiveExperimentManager.reconcile_finished(self.experiment.id)
+        settled_win.refresh_from_db()
+        settled_loss.refresh_from_db()
+        open_entry.refresh_from_db()
+        self.assertEqual(settled_win.status, "WON")
+        self.assertEqual(str(settled_win.pnl), "2.00")
+        self.assertEqual(settled_loss.status, "LOST")
+        self.assertEqual(str(settled_loss.pnl), "-2.00")
+        self.assertEqual(open_entry.status, "WON")
+        self.assertEqual(str(open_entry.pnl), "2.00")
