@@ -231,6 +231,7 @@ class UltraMotorTests(SimpleTestCase):
 
 
 
+from decimal import Decimal
 from django.test import TestCase
 from django.utils import timezone
 from .models import LiveExperiment, LiveExperimentEntry
@@ -277,7 +278,7 @@ class FinishedExperimentReconciliationTests(TestCase):
                 LiveExperimentManager.reconcile_finished(self.experiment.id)
                 entry.refresh_from_db()
                 self.assertEqual(entry.status, "WON")
-                self.assertEqual(str(entry.pnl), "2.00")
+                self.assertEqual(entry.pnl, Decimal("2.00"))
                 entry.delete()
 
     def test_reconcile_settles_open_entries_but_preserves_existing_wins_and_losses(self):
@@ -289,8 +290,8 @@ class FinishedExperimentReconciliationTests(TestCase):
         settled_loss.refresh_from_db()
         open_entry.refresh_from_db()
         self.assertEqual(settled_win.status, "WON")
-        self.assertEqual(str(settled_win.pnl), "2.00")
+        self.assertEqual(settled_win.pnl, Decimal("2.00"))
         self.assertEqual(settled_loss.status, "LOST")
-        self.assertEqual(str(settled_loss.pnl), "-2.00")
+        self.assertEqual(settled_loss.pnl, Decimal("-2.00"))
         self.assertEqual(open_entry.status, "WON")
-        self.assertEqual(str(open_entry.pnl), "2.00")
+        self.assertEqual(open_entry.pnl, Decimal("2.00"))
