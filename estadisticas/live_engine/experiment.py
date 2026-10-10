@@ -94,11 +94,13 @@ class LiveExperimentManager:
         rows = LiveExperimentEntry.objects.filter(
             motor="V11", status__in=("WON", "LOST")
         ).order_by("-placed_at").values_list(
-            "market", "selection", "model_probability", "status"
+            "market", "selection", "line", "model_probability", "status"
         )[:2000]
         matched = []
-        for market, selection, probability, status in rows:
-            if cls._v4_market_selection_key({"market": market, "selection": selection}) != target_key:
+        for market, selection, line, probability, status in rows:
+            if cls._v4_market_selection_key({
+                "market": market, "selection": selection, "line": line
+            }) != target_key:
                 continue
             try:
                 probability = max(0.0, min(1.0, float(probability)))
