@@ -193,6 +193,131 @@ class LiveOpportunityEngineVPro:
         return None
 
     @classmethod
+    def _extended_market_key(cls, odd: Dict[str, Any], match) -> Optional[str]:
+        """Reconoce líneas de total adicionales y doble oportunidad en texto natural."""
+        market = str(odd.get("market_name") or "")
+        selection = str(odd.get("name") or "")
+        text = f"{market} {selection}".lower()
+        normalized = cls._norm(text)
+        # No reinterpretar mercados de "gol del equipo/jugador" como total del partido.
+        if any(term in normalized for term in ("tercergol", "proximogol", "primeranotador", "marcadorcorrecto")):
+            return None
+
+        if any(term in normalized for term in ("dobleoportunidad", "doublechance")):
+            sel = cls._norm(selection)
+            home = cls._norm(match.home_team)
+            away = cls._norm(match.away_team)
+            has_home = bool(home and home in sel)
+            has_away = bool(away and away in sel)
+            has_draw = any(term in sel for term in ("empate", "draw"))
+            if has_home and has_draw:
+                return "dc_1x"
+            if has_home and has_away:
+                return "dc_12"
+            if has_away and has_draw:
+                return "dc_x2"
+
+        if any(term in normalized for term in ("total", "over", "under", "masde", "menosde", "mas", "menos")):
+            line_text = f"{odd.get('line') or ''} {market} {selection}"
+            found = re.search(r"(\d+(?:[\.,]\d+)?)", line_text)
+            if not found:
+                return None
+            try:
+                line = float(found.group(1).replace(",", "."))
+            except ValueError:
+                return None
+            # Las líneas asiáticas enteras tienen posibilidad de push y requieren
+            # una función de liquidación específica; por seguridad solo medias líneas.
+            if abs(line * 2 - round(line * 2)) > 0.01 or abs(line - round(line)) < 0.01:
+                return None
+            is_over = any(term in cls._norm(selection) for term in ("over", "mas", "masde", "masde"))
+            is_under = any(term in cls._norm(selection) for term in ("under", "menos", "menosde"))
+            if not is_over and not is_under:
+                return None
+            return ("over_" if is_over else "under_") + str(line).replace(".", "_")
+        return None
+
+    @classmethod
+    def _extended_market_probability(cls, key: str, match, elapsed: float) -> Optional[float]:
+        performance = match.performance or {}
+        h = LiveOpportunityEngineV2._features(performance, "home")
+        a = LiveOpportunityEngineV2._features(performance, "away")
+        hs, aw = int(match.home_score or 0), int(match.away_score or 0)
+        lh, la = LiveOpportunityEngineV2._lambdas(h, a, elapsed)
+        base = LiveOpportunityEngineV2._probabilities(hs, aw, lh, la)
+        if key in base:
+            return base[key]
+        if key == "dc_1x":
+            return base["home"] + base["draw"]
+        if key == "dc_12":
+            return base["home"] + base["away"]
+        if key == "dc_x2":
+            return base["draw"] + base["away"]
+        found = re.fullmatch(r"(over|under)_(\d+)_([05])", key)
+        if not found:
+            return None
+        line = float(f"{found.group(2)}.{found.group(3)}")
+        goals_now = hs + aw
+        needed = math.floor(line - goals_now) + 1
+        over = 1.0 if needed <= 0 else 1.0 - LiveOpportunityEngineV2._poisson_cdf(needed - 1, lh + la)
+        return over if found.group(1) == "over" else 1.0 - over
+
+    @classmethod
+    def _extended_opportunities(cls, match, elapsed: float) -> List[Dict[str, Any]]:
+        """Crea oportunidades solo para mercados adicionales con liquidación clara."""
+        output = []
+        seen = set()
+        for odd in match.odds or []:
+            price = cls._num(odd.get("price"))
+            if not price or price <= 1:
+                continue
+            # Deja que V2 gestione los mercados que ya conoce.
+            if LiveOpportunityEngineV2._market_key(
+                odd.get("market_name"), odd.get("name"), odd.get("line"),
+                match.home_team, match.away_team
+            ):
+                continue
+            key = cls._extended_market_key(odd, match)
+            if not key:
+                continue
+            identity = (cls._norm(odd.get("market_name")), cls._norm(odd.get("name")), round(price, 4))
+            if identity in seen:
+                continue
+            seen.add(identity)
+            model_p = cls._extended_market_probability(key, match, elapsed)
+            if model_p is None:
+                continue
+            # Para doble oportunidad sí existen señales comparables en V2.
+            signal_key = key if key in {"dc_1x", "dc_12", "dc_x2"} else None
+            if signal_key:
+                h = LiveOpportunityEngineV2._features(match.performance or {}, "home")
+                a = LiveOpportunityEngineV2._features(match.performance or {}, "away")
+                support, contra, coverage, strength = LiveOpportunityEngineV2._signals(
+                    signal_key, h, a, int(match.home_score or 0), int(match.away_score or 0), elapsed
+                )
+            else:
+                support, contra, coverage, strength = [], [], 0.0, 0.5
+            implied = 1.0 / price
+            output.append({
+                "market": odd.get("market_name", ""),
+                "selection": odd.get("name", ""),
+                "line": odd.get("line"),
+                "price": price,
+                "model_probability": round(model_p, 4),
+                "implied_probability": round(implied, 4),
+                "edge": round(model_p - implied, 4),
+                "edge_pct": round((model_p - implied) * 100, 2),
+                "confidence": round(min(.82, .30 + .35 * coverage + .20 * strength), 3),
+                "signal_strength": "moderada" if strength >= .55 else "débil",
+                "supporting_factors": support,
+                "contradicting_factors": contra,
+                "data_coverage": round(coverage, 3),
+                "model": "vpro_extended_live_market",
+                "reason": "V.Pro calculó la probabilidad de este mercado compatible con el modelo de goles LIVE.",
+            })
+        return output
+
+    @classmethod
     def evaluate(cls, match) -> List[Dict[str, Any]]:
         if getattr(match, "is_finished", False):
             return []
@@ -329,6 +454,7 @@ class LiveOpportunityEngineVPro:
             return []
 
         base = LiveOpportunityEngineV2.evaluate(match)
+        base.extend(cls._extended_opportunities(match, elapsed))
         results = []
         for source in base:
             market = str(source.get("market") or "")
