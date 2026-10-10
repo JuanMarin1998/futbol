@@ -182,7 +182,43 @@ class LiveOpportunityEngineVPro:
             if side and price and cls.MIN_FAVORITE_ODDS <= price <= cls.MAX_FAVORITE_ODDS:
                 candidates.append({"side": side, "team": match.home_team if side == "home" else match.away_team,
                                    "price": price, "source": "cuota_live_observada"})
-        return min(candidates, key=lambda item: item["price"]) if candidates else None
+        if candidates:
+            return min(candidates, key=lambda item: item["price"])
+
+        # Si el feed no incluye 1X2, V.Pro aún puede analizar el partido con
+        # un favorito provisional derivado de estadísticas; no inventa cuota.
+        stats = match.performance or {}
+        weighted_score = 0.0
+        coverage = 0
+        for names, weight in (
+            (("expected_goals", "xg"), 0.35),
+            (("expected_goals_on_target", "xgot", "xg_on_target"), 0.20),
+            (("shots_on_goal", "shots_on_target"), 0.15),
+            (("big_chances", "big_chances_created"), 0.12),
+            (("touches_in_opposition_box", "touches_opposition_box"), 0.08),
+            (("expected_assists", "xa"), 0.05),
+            (("ball_possession", "possession"), 0.03),
+            (("corner_kicks", "corners"), 0.02),
+        ):
+            home_value = cls._stat(stats, "home", *names)
+            away_value = cls._stat(stats, "away", *names)
+            if home_value is None or away_value is None:
+                continue
+            coverage += 1
+            if home_value > away_value:
+                weighted_score += weight
+            elif away_value > home_value:
+                weighted_score -= weight
+        if coverage < 3 or abs(weighted_score) < 0.10:
+            return None
+        side = "home" if weighted_score > 0 else "away"
+        return {
+            "side": side,
+            "team": match.home_team if side == "home" else match.away_team,
+            "price": None,
+            "source": "favorito_provisional_por_estadisticas_live",
+            "statistical_score": round(weighted_score, 3),
+        }
 
     @classmethod
     def _current_price(cls, match, market: str, selection: str) -> Optional[float]:
@@ -537,7 +573,7 @@ class LiveOpportunityEngineVPro:
                 "vpro_xg_away_estimated": xg_check.get("away_estimated", False),
                 "vpro_xg_detail": xg_check["detail"],
                 "vpro_reference_team": reference.get("team"),
-                "vpro_reference_price": float(reference.get("price")),
+                "vpro_reference_price": float(reference.get("price")) if reference.get("price") is not None else None,
                 "vpro_reference_source": reference.get("source", "cuota_base_guardada"),
                 "vpro_current_favorite_price": current_favorite_price,
                 "vpro_favorite_quota_change_pct": round(quota_change_pct, 2) if quota_change_pct is not None else None,
@@ -580,7 +616,8 @@ class LiveOpportunityEngineVPro:
                 "contradicting_factors": local_contra[:12],
                 "data_coverage": round(min(1.0, coverage / 15), 3),
                 "reason": (
-                    f"V.Pro: favorito de referencia {reference.get('team')} (cuota base {float(reference.get('price')):.2f}); "
+                    f"V.Pro: favorito de referencia {reference.get('team')} "
+                    f"({('cuota base ' + format(float(reference.get('price')), '.2f')) if reference.get('price') is not None else 'seleccionado por estadísticas LIVE, sin cuota 1X2'}); "
                     f"minuto {match.minute or 'desconocido'}, marcador {hs}-{aw}. "
                     f"Señales a favor: {len(local_support)}; contradicciones: {len(local_contra)}; "
                     f"ventaja estadística estimada {edge*100:.1f} puntos. Umbral de posesión: {cls.MIN_POSSESSION_GAP:.0f} puntos."
