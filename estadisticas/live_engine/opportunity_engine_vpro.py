@@ -577,7 +577,7 @@ class LiveOpportunityEngineVPro:
                 "confidence": round(confidence, 3),
                 "supporting_factors": local_support[:12],
                 "contradicting_factors": local_contra[:12],
-                "data_coverage": round(min(1.0, coverage / 5), 3),
+                "data_coverage": round(min(1.0, coverage / 15), 3),
                 "reason": (
                     f"V.Pro: favorito de referencia {reference.get('team')} (cuota base {float(reference.get('price')):.2f}); "
                     f"minuto {match.minute or 'desconocido'}, marcador {hs}-{aw}. "
