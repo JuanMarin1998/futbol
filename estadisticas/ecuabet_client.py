@@ -360,47 +360,108 @@ class EcuabetClient:
             "selections": selections,
         }
 
+    @classmethod
+    def normalizar_mercados_evento(cls, event, payload):
+        """
+        Conserva todos los mercados enlazados al evento que aparezcan en el
+        payload, no solo 1X2. Mantiene IDs, estados y campos originales para
+        poder inspeccionar mercados nuevos sin modificar los motores.
+        """
+        event = dict(event or {})
+        payload = payload if isinstance(payload, dict) else {}
+
+        def by_id(items):
+            result = {}
+            for item in items or []:
+                if not isinstance(item, dict) or item.get("id") is None:
+                    continue
+                try:
+                    result[int(item["id"])] = item
+                except (TypeError, ValueError):
+                    continue
+            return result
+
+        odds_by_id = by_id(payload.get("odds"))
+        markets_by_id = by_id(payload.get("markets"))
+        markets = []
+        for raw_market_id in event.get("marketIds", []) or []:
+            try:
+                market_id = int(raw_market_id)
+            except (TypeError, ValueError):
+                continue
+            market = markets_by_id.get(market_id)
+            if not market:
+                continue
+            selections = []
+            for raw_odd_id in market.get("oddIds", []) or []:
+                try:
+                    odd_id = int(raw_odd_id)
+                except (TypeError, ValueError):
+                    continue
+                odd = odds_by_id.get(odd_id)
+                if not odd:
+                    continue
+                selections.append({
+                    "id": odd.get("id"),
+                    "odd_id": odd.get("id"),
+                    "type_id": odd.get("typeId"),
+                    "name": odd.get("name") or odd.get("shortName") or "",
+                    "short_name": odd.get("shortName"),
+                    "price": odd.get("price"),
+                    "competitor_id": odd.get("competitorId"),
+                    "odd_status": odd.get("oddStatus"),
+                    "status": odd.get("status"),
+                    "is_suspended": odd.get("isSuspended"),
+                    "special_value": odd.get("specialValue"),
+                    "raw": dict(odd),
+                })
+            line = market.get("sv")
+            if line is None:
+                line = market.get("sn")
+            markets.append({
+                "id": market.get("id"),
+                "market_id": market.get("id"),
+                "type_id": market.get("typeId"),
+                "market_type_id": market.get("typeId"),
+                "name": market.get("name") or market.get("shortName") or "",
+                "short_name": market.get("shortName"),
+                "line": line,
+                "status": market.get("status"),
+                "market_status": market.get("marketStatus"),
+                "is_suspended": market.get("isSuspended"),
+                "selection_count": len(selections),
+                "selections": selections,
+                "raw": dict(market),
+            })
+
+        event["markets"] = markets
+        event["market_inventory"] = {
+            "markets_count": len(markets),
+            "selections_count": sum(len(m["selections"]) for m in markets),
+            "markets_with_selections": sum(bool(m["selections"]) for m in markets),
+            "markets_without_selections": sum(not bool(m["selections"]) for m in markets),
+            "market_type_ids": sorted({
+                str(m["type_id"]) for m in markets if m.get("type_id") is not None
+            }),
+        }
+        return event
+
     def obtener_mercados_evento(self, event_id, sport_id=0, champ_id=0):
-        """Obtiene el evento y relaciona markets -> oddIds -> odds."""
+        """Obtiene todos los mercados y selecciones que Ecuabet entregue."""
         payload = self._request("GET", "GetEvents", {
             "eventCount": 0,
             "sportId": sport_id,
             "champIds": champ_id,
         })
-
-        event = next((e for e in payload.get("events", []) if int(e.get("id", -1)) == int(event_id)), None)
-
+        events = payload.get("events", []) if isinstance(payload, dict) else []
+        event = next(
+            (e for e in events if str(e.get("id")) == str(event_id)),
+            None,
+        )
         if not event:
             raise EcuabetAPIError(f"No se encontró el evento {event_id}")
 
-        odds_by_id = {int(o["id"]): o for o in payload.get("odds", []) if o.get("id") is not None}
-        markets_by_id = {int(m["id"]): m for m in payload.get("markets", []) if m.get("id") is not None}
-
-        markets = []
-        for market_id in event.get("marketIds", []):
-            market = markets_by_id.get(int(market_id))
-            if not market:
-                continue
-            selections = []
-            for odd_id in market.get("oddIds", []):
-                odd = odds_by_id.get(int(odd_id))
-                if not odd:
-                    continue
-                selections.append({
-                    "odd_id": int(odd_id),
-                    "type_id": odd.get("typeId"),
-                    "name": odd.get("name", ""),
-                    "price": odd.get("price"),
-                    "competitor_id": odd.get("competitorId"),
-                })
-            markets.append({
-                "market_id": int(market["id"]),
-                "market_type_id": market.get("typeId"),
-                "name": market.get("name", ""),
-                "line": market.get("sv") or market.get("sn"),
-                "selections": selections,
-            })
-
+        normalized = self.normalizar_mercados_evento(event, payload)
         return {
             "event_id": int(event["id"]),
             "name": event.get("name", ""),
@@ -408,5 +469,6 @@ class EcuabetClient:
             "sport_id": event.get("sportId"),
             "cat_id": event.get("catId"),
             "champ_id": event.get("champId"),
-            "markets": markets,
+            "market_inventory": normalized["market_inventory"],
+            "markets": normalized["markets"],
         }
