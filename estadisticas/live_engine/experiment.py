@@ -165,7 +165,7 @@ class LiveExperimentManager:
         return ""
 
     @classmethod
-    def _calibrate_vpro11_probability(cls, raw_probability: float, opportunity):
+    def _calibrate_vpro11_probability(cls, raw_probability: float, opportunity, historical_rows=None):
         """Calibración empírica conservadora con VP11 liquidado previamente.
 
         Exige 20 resultados comparables. Con menos datos conserva la probabilidad
@@ -173,11 +173,13 @@ class LiveExperimentManager:
         """
         raw_probability = max(0.0, min(1.0, float(raw_probability)))
         target_key = cls._key(opportunity)
-        rows = LiveExperimentEntry.objects.filter(
-            motor="VP11", status__in=("WON", "LOST")
-        ).order_by("-settled_at", "-placed_at").values_list(
-            "market", "selection", "line", "status"
-        )[:2000]
+        rows = historical_rows
+        if rows is None:
+            rows = list(LiveExperimentEntry.objects.filter(
+                motor="VP11", status__in=("WON", "LOST")
+            ).order_by("-settled_at", "-placed_at").values_list(
+                "market", "selection", "line", "status"
+            )[:2000])
         wins = 0
         sample_size = 0
         for market, selection, line, status in rows:
@@ -202,6 +204,14 @@ class LiveExperimentManager:
         algoritmos de predicción.
         """
         prepared = []
+        vpro11_history = None
+        if motor == "VP11":
+            # Una sola lectura histórica por partido/ciclo, no una consulta por candidato.
+            vpro11_history = list(LiveExperimentEntry.objects.filter(
+                motor="VP11", status__in=("WON", "LOST")
+            ).order_by("-settled_at", "-placed_at").values_list(
+                "market", "selection", "line", "status"
+            )[:2000])
         for source in opportunities or []:
             opportunity = dict(source)
             try:
@@ -213,7 +223,7 @@ class LiveExperimentManager:
             if motor == "VP11":
                 raw_probability = model_probability
                 calibrated_probability, calibration_n, calibration_method = cls._calibrate_vpro11_probability(
-                    raw_probability, opportunity
+                    raw_probability, opportunity, historical_rows=vpro11_history
                 )
                 opportunity["raw_model_probability"] = round(raw_probability, 6)
                 opportunity["model_probability"] = calibrated_probability
