@@ -80,25 +80,31 @@ class LiveOpportunityEngineVPro11:
         possession_gap = None
         if home_pos is not None and away_pos is not None:
             possession_gap = (home_pos - away_pos) * (1 if fav_home else -1)
-        if possession_gap is not None and possession_gap >= 11:
+        if possession_gap is not None and abs(possession_gap) >= 11:
+            # possession_gap positif = favorito domina; negativo = rival domina.
+            dominant_stats = fav_stats if possession_gap > 0 else rival_stats
+            other_stats = rival_stats if possession_gap > 0 else fav_stats
             corroborating = []
             contradicting = []
             for key in ("shots_on", "big", "xg"):
-                fv, rv = fav_stats[key], rival_stats[key]
-                if fv is None or rv is None:
+                dv, ov = dominant_stats[key], other_stats[key]
+                if dv is None or ov is None:
                     continue
-                if fv > rv:
+                if dv > ov:
                     corroborating.append(key)
-                elif fv < rv:
+                elif dv < ov:
                     contradicting.append(key)
             fav_score = int(match.home_score or 0) if fav_home else int(match.away_score or 0)
             rival_score = int(match.away_score or 0) if fav_home else int(match.home_score or 0)
-            if fav_score > rival_score:
+            dominant_is_ahead = fav_score > rival_score if possession_gap > 0 else rival_score > fav_score
+            if dominant_is_ahead:
                 corroborating.append("score")
             if not corroborating or len(contradicting) >= 2:
                 return []
 
-        opportunities = LiveOpportunityEngineVPro.evaluate(match)
+        opportunities = getattr(match, "opportunities_vpro", None)
+        if not opportunities:
+            opportunities = LiveOpportunityEngineVPro.evaluate(match)
         results = []
         for source in opportunities:
             item = dict(source)
