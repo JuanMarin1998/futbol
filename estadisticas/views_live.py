@@ -1105,11 +1105,17 @@ def ecuabet_live_detalle(request, ecuabet_event_id):
 
 def api_ecuabet_live_detalle(request, ecuabet_event_id):
     try:
-        payload = EcuabetClient()._request(
-            "GET",
-            "GetLivenow",
-            {"eventCount": 0, "sportId": 66},
-        )
+        # Compartimos brevemente el feed LIVE entre pestañas/detalles para
+        # evitar que cada refresco vuelva a llamar al proveedor externo.
+        live_feed_cache_key = "ecuabet_live_feed_detail_v2"
+        payload = cache.get(live_feed_cache_key)
+        if payload is None:
+            payload = EcuabetClient()._request(
+                "GET",
+                "GetLivenow",
+                {"eventCount": 0, "sportId": 66},
+            )
+            cache.set(live_feed_cache_key, payload, 5)
         event = next(
             (
                 item for item in payload.get("events", []) or []

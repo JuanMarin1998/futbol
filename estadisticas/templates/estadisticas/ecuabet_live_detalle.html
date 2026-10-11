@@ -440,16 +440,31 @@ function render(e, flash){
   '<section id="tab-mercados" class="ld-tab-panel"><div class="ld-card"><div class="ld-title">💰 Mercados y cuotas Ecuabet</div><div class="ld-muted" style="margin-bottom:.65rem">Mercados: '+esc(inventory.markets_count??markets.length)+' · Selecciones: '+esc(inventory.selections_count??markets.reduce((n,m)=>n+(m.selections||[]).length,0))+'</div><div class="ld-filter-row"><input id="market-search" class="ld-search" type="search" placeholder="Buscar mercado o selección..." oninput="filterMarkets()" aria-label="Buscar mercados y selecciones"></div>'+marketHtml+'</div></section>'+
   '<section id="tab-fuente" class="ld-tab-panel"><div class="ld-card"><div class="ld-title">🔗 Fuente estadística</div>'+sourceHtml+'</div></section>';
 }
+let cargandoPartido=false;
 async function cargar(){
+  if(cargandoPartido)return;
+  cargandoPartido=true;
+  const controller=new AbortController();
+  const timeoutId=setTimeout(()=>controller.abort(),25000);
   try{
-    const r=await fetch("{% url 'estadisticas:api_ecuabet_live_detalle' ecuabet_event_id %}",{cache:'no-store'});
-    const d=await r.json(); if(!r.ok||!d.ok)throw new Error(d.error||'No disponible');
+    const r=await fetch("{% url 'estadisticas:api_ecuabet_live_detalle' ecuabet_event_id %}",{cache:'no-store',signal:controller.signal});
+    const d=await r.json(); if(!r.ok||!d.ok)throw new Error(d.error||('No se pudo cargar el partido (HTTP '+r.status+')'));
+    if(!d.event)throw new Error('El proveedor no devolvió los datos de este partido.');
     const flash=d.match || null;
     document.getElementById('match').innerHTML=render(d.event,flash);
     setMatchTab(activeMatchTab);
     paintAnalysisResult();
     renderExperiment(d.experiment || null);
-  }catch(err){document.getElementById('match').innerHTML='<div class="ld-card ld-muted">'+esc(err.message)+'</div>';}
+  }catch(err){
+    const message=err.name==='AbortError'
+      ?'La consulta LIVE tardó más de 25 segundos. Comprueba la conexión con Ecuabet/Flashscore e inténtalo de nuevo.'
+      :(err.message||'No se pudieron cargar los datos del partido.');
+    const matchBox=document.getElementById('match');
+    if(matchBox)matchBox.innerHTML='<div class="ld-card ld-muted">⚠️ '+esc(message)+' <button type="button" class="exp-btn" onclick="cargar()">Reintentar</button></div>';
+  }finally{
+    clearTimeout(timeoutId);
+    cargandoPartido=false;
+  }
 }
 cargar();setInterval(cargar,POLL_MS);
 </script>
