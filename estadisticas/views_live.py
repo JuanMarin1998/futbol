@@ -16,7 +16,7 @@ from .live_engine.collector import LiveMatchCollector
 from .live_engine.match_mapper import MatchMappingError
 from .live_engine.experiment import LiveExperimentManager
 from .live_engine.opportunity_levels import enrich
-from .models import LiveExperiment, LiveExperimentEntry, LiveExperimentDailyArchive
+from .models import LiveExperiment, LiveExperimentEntry, LiveExperimentDailyArchive, MatchBehaviorSnapshot, TeamBehaviorProfile
 
 logger = logging.getLogger(__name__)
 
@@ -1297,3 +1297,21 @@ def api_ecuabet_live_detalle(request, ecuabet_event_id):
         })
     except Exception as exc:
         return JsonResponse({"ok": False, "error": str(exc)}, status=502)
+
+
+
+def laboratorio_patrones(request):
+    """Panel de observación; consulta datos guardados y no inicia ni modifica apuestas."""
+    profiles = list(TeamBehaviorProfile.objects.all()[:100])
+    recent = list(MatchBehaviorSnapshot.objects.all()[:40])
+    matches_count = MatchBehaviorSnapshot.objects.values("ecuabet_event_id").distinct().count()
+    context = {
+        "profiles": profiles,
+        "recent_snapshots": recent,
+        "snapshots_count": MatchBehaviorSnapshot.objects.count(),
+        "matches_count": matches_count,
+        "teams_count": TeamBehaviorProfile.objects.count(),
+        "last_snapshot": MatchBehaviorSnapshot.objects.order_by("-observed_at").first(),
+        "seccion": "patrones",
+    }
+    return render(request, "estadisticas/laboratorio_patrones.html", context)
