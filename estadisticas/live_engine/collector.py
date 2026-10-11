@@ -15,6 +15,7 @@ from .opportunity_engine_v3 import LiveOpportunityEngineV3
 from .opportunity_engine_v2_ultra import LiveOpportunityEngineV2Ultra
 from .opportunity_engine_v11_ultra import LiveOpportunityEngineV11Ultra
 from .opportunity_engine_vpro import LiveOpportunityEngineVPro
+from .opportunity_engine_vpro11 import LiveOpportunityEngineVPro11
 from ..models import LiveExperiment
 
 
@@ -262,6 +263,7 @@ class LiveMatchCollector:
             match.opportunities_v2_ultra = []
             match.opportunities_v11_ultra = []
             match.opportunities_vpro = []
+            match.opportunities_vpro11 = []
         else:
             experiment = LiveExperiment.objects.filter(ecuabet_event_id=match.ecuabet_event_id, status="RUNNING").first()
             if experiment and experiment.vpro_reference_odds:
@@ -276,6 +278,7 @@ class LiveMatchCollector:
             match.opportunities_v2_ultra = LiveOpportunityEngineV2Ultra.evaluate(match)
             match.opportunities_v11_ultra = LiveOpportunityEngineV11Ultra.evaluate(match)
             match.opportunities_vpro = LiveOpportunityEngineVPro.evaluate(match)
+            match.opportunities_vpro11 = LiveOpportunityEngineVPro11.evaluate(match)
         return match
 
     @classmethod
@@ -376,6 +379,8 @@ class LiveMatchCollector:
             match.opportunities_v2 = []
             match.opportunities_v11 = []
             match.opportunities_v22 = []
+            match.opportunities_vpro = []
+            match.opportunities_vpro11 = []
             return match
 
         # Si AB no es 3, el partido puede seguir LIVE. Intentamos GraphQL para
@@ -437,6 +442,8 @@ class LiveMatchCollector:
         match.opportunities_v3 = LiveOpportunityEngineV3.evaluate(match)
         match.opportunities_v2_ultra = LiveOpportunityEngineV2Ultra.evaluate(match)
         match.opportunities_v11_ultra = LiveOpportunityEngineV11Ultra.evaluate(match)
+        match.opportunities_vpro = LiveOpportunityEngineVPro.evaluate(match)
+        match.opportunities_vpro11 = LiveOpportunityEngineVPro11.evaluate(match)
         return match
 
     def _obtener_ecuabet_evento(self, event_id: int) -> Dict[str, Any]:
