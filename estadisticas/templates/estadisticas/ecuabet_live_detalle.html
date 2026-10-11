@@ -31,6 +31,14 @@
 .ld-filter-row{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-bottom:.7rem}
 .ld-search{flex:1;min-width:180px;background:#0f172a;border:1px solid #475569;color:#e2e8f0;border-radius:8px;padding:.65rem}
 .ld-market-group{margin-bottom:.7rem}
+.analysis-box{margin-top:.8rem;background:#0f172a;border:1px solid #334155;border-radius:10px;padding:.85rem}
+.analysis-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:.55rem;margin:.7rem 0}
+.analysis-metric{background:#1e293b;border:1px solid #334155;border-radius:8px;padding:.65rem}
+.analysis-metric strong{display:block;font-size:1rem;margin-top:.2rem}
+.analysis-factor-list{margin:.35rem 0 .7rem 1.15rem;color:#cbd5e1;font-size:.86rem}
+.analysis-verdict{border-left:4px solid #64748b;padding:.65rem .8rem;background:#1e293b;border-radius:6px;margin-top:.7rem}
+.analysis-opportunity{border:1px solid #334155;border-radius:8px;padding:.7rem;margin-top:.55rem}
+
 
 </style>
 
@@ -268,6 +276,106 @@ function renderLineups(context, homeName, awayName){
     '</div><div class="ld-muted" style="margin-top:.6rem">Fuente: proveedor de contexto Flashscore · estado: disponible</div>';
 }
 
+let selectedAnalysisMotor='vpro11';
+let analysisResultHtml='';
+let latestAnalysisEvent=null;
+let latestAnalysisMatch=null;
+let analysisUpdatedAt='';
+const ANALYSIS_MOTORS={
+  v1:{label:'V1 original',key:'opportunities'},
+  v11:{label:'V1.1',key:'opportunities_v11'},
+  v12:{label:'V1.2',key:'opportunities_v12'},
+  v2:{label:'V2 original',key:'opportunities_v2'},
+  v21:{label:'V2.1',key:'opportunities_v21'},
+  v22:{label:'V2.2',key:'opportunities_v22'},
+  v3:{label:'V3',key:'opportunities_v3'},
+  v2ultra:{label:'V2 Ultra',key:'opportunities_v2_ultra'},
+  v11ultra:{label:'V1.1 Ultra',key:'opportunities_v11_ultra'},
+  vpro:{label:'V.Pro',key:'opportunities_vpro'},
+  vpro11:{label:'V.Pro 1.1',key:'opportunities_vpro11'}
+};
+function analysisNumber(value){
+  if(value===null||value===undefined||value==='')return null;
+  const n=Number(String(value).replace('%','').replace(',','.'));
+  return Number.isFinite(n)?n:null;
+}
+function analysisStat(performance,side,aliases){
+  const data=performance?.[side]||{};
+  for(const key of aliases){
+    const item=data[key];
+    const raw=item&&typeof item==='object'?(item.value??item.raw_value):item;
+    const n=analysisNumber(raw);
+    if(n!==null)return n;
+  }
+  return null;
+}
+function analysisPct(value,digits=1){
+  return value===null||value===undefined||!Number.isFinite(Number(value))?'—':(Number(value)*100).toFixed(digits)+'%';
+}
+function analizarPartido(){
+  const select=document.getElementById('analysis-motor');
+  if(select)selectedAnalysisMotor=select.value;
+  const cfg=ANALYSIS_MOTORS[selectedAnalysisMotor]||ANALYSIS_MOTORS.vpro11;
+  const match=latestAnalysisMatch;
+  const event=latestAnalysisEvent;
+  if(!event||!match){
+    analysisResultHtml='<div class="analysis-box">⚠️ Todavía no hay datos suficientes del partido. Espera a que se vincule con Flashscore y vuelve a intentarlo.</div>';
+    paintAnalysisResult();return;
+  }
+  const opportunities=Array.isArray(match[cfg.key])?match[cfg.key]:[];
+  const score=event.score||[];
+  const home=(event.competitors||[])[0]?.name||String(event.name||'Partido').split(/\\s+vs\\.?\\s+/i)[0];
+  const away=(event.competitors||[])[1]?.name||String(event.name||'').split(/\\s+vs\\.?\\s+/i)[1]||'Rival';
+  const minute=event.liveTime||event.live_time||event.live_status||match.minute||'LIVE';
+  const stats=match.performance||{};
+  const hxg=analysisStat(stats,'home',['expected_goals','xg']);
+  const axg=analysisStat(stats,'away',['expected_goals','xg']);
+  const hshots=analysisStat(stats,'home',['total_shots','goal_attempts']);
+  const ashots=analysisStat(stats,'away',['total_shots','goal_attempts']);
+  const hon=analysisStat(stats,'home',['shots_on_target','shots_on_goal']);
+  const aon=analysisStat(stats,'away',['shots_on_target','shots_on_goal']);
+  const hpos=analysisStat(stats,'home',['ball_possession','possession']);
+  const apos=analysisStat(stats,'away',['ball_possession','possession']);
+  const dataItems=[
+    ['xG',hxg,axg],['Remates',hshots,ashots],['Al arco',hon,aon],['Posesión',hpos,apos]
+  ];
+  const known=dataItems.filter(x=>x[1]!==null&&x[2]!==null);
+  const statCards=known.map(x=>'<div class="analysis-metric"><span class="ld-muted">'+esc(x[0])+'</span><strong>'+esc(x[1])+' – '+esc(x[2])+(x[0]==='Posesión'?'%':'')+'</strong></div>').join('');
+  const top=opportunities.slice().sort((a,b)=>(Number(b.edge_pct)||0)-(Number(a.edge_pct)||0)).slice(0,5);
+  const valid=opportunities.filter(o=>analysisNumber(o.price)>1);
+  const topValid=valid.slice().sort((a,b)=>(Number(b.edge_pct)||0)-(Number(a.edge_pct)||0))[0];
+  const allSupport=[...new Set(top.flatMap(o=>o.supporting_factors||[]))].slice(0,5);
+  const allContra=[...new Set(top.flatMap(o=>o.contradicting_factors||[]))].slice(0,5);
+  const avgCoverage=top.length?top.reduce((sum,o)=>sum+(Number(o.data_coverage)||0),0)/top.length:0;
+  const minuteText=String(minute);
+  let verdict='',verdictColor='#64748b';
+  if(!opportunities.length){
+    verdict='Este motor no presenta oportunidades modeladas en el snapshot actual. No se debe interpretar como una señal para apostar.';
+  }else if(avgCoverage<.35){
+    verdict='Hay señales calculadas, pero la cobertura estadística es baja. La conclusión prudente es esperar o descartar hasta disponer de mejores datos.';
+    verdictColor='#f59e0b';
+  }else if(topValid&&Number(topValid.edge_pct)>0&&avgCoverage>=.6){
+    verdict='El motor encuentra una oportunidad candidata con ventaja matemática positiva y cobertura razonable. Debe validarse frente a las contradicciones y no constituye una garantía de resultado.';
+    verdictColor='#22c55e';
+  }else{
+    verdict='No aparece una ventaja suficientemente respaldada en este snapshot. Conviene esperar o descartar antes que forzar una selección.';
+  }
+  const opportunityHtml=top.map(o=>{
+    const support=(o.supporting_factors||[]).slice(0,3).map(v=>'<li>'+esc(v)+'</li>').join('');
+    const contra=(o.contradicting_factors||[]).slice(0,3).map(v=>'<li>'+esc(v)+'</li>').join('');
+    const edge=analysisNumber(o.edge_pct);
+    return '<div class="analysis-opportunity"><div style="display:flex;justify-content:space-between;gap:.5rem;flex-wrap:wrap"><strong>'+esc(o.market||'Mercado')+' · '+esc(o.selection||'Selección')+(o.line?' · '+esc(o.line):'')+'</strong><strong>'+price(o.price)+'</strong></div><div class="ld-muted" style="margin-top:.35rem">Modelo '+analysisPct(o.model_probability)+' · Implícita '+analysisPct(o.implied_probability)+' · Ventaja '+(edge!==null&&edge>=0?'+':'')+(edge===null?'—':edge.toFixed(1)+' pp')+' · Confianza '+analysisPct(o.confidence,0)+' · Cobertura '+analysisPct(o.data_coverage,0)+'</div>'+(support?'<div style="margin-top:.4rem"><strong>Apoyan</strong><ul class="analysis-factor-list">'+support+'</ul></div>':'')+(contra?'<div><strong>Contradicen</strong><ul class="analysis-factor-list">'+contra+'</ul></div>':'')+'<div class="ld-muted">'+esc(o.audit_reason||o.reason||'Sin explicación adicional del motor.')+'</div></div>';
+  }).join('');
+  analysisUpdatedAt=new Date().toLocaleTimeString();
+  analysisResultHtml='<div class="analysis-box"><div style="display:flex;justify-content:space-between;gap:.5rem;flex-wrap:wrap"><strong>'+esc(cfg.label)+' · '+esc(home)+' '+esc(score[0]??match.home_score??0)+' – '+esc(score[1]??match.away_score??0)+' '+esc(away)+'</strong><span class="ld-muted">'+esc(minuteText)+' · analizado '+esc(analysisUpdatedAt)+'</span></div><div class="analysis-grid"><div class="analysis-metric"><span class="ld-muted">Oportunidades del motor</span><strong>'+opportunities.length+'</strong></div><div class="analysis-metric"><span class="ld-muted">Cobertura media (5 primeras)</span><strong>'+analysisPct(avgCoverage,0)+'</strong></div><div class="analysis-metric"><span class="ld-muted">Datos estadísticos</span><strong>'+known.length+'/4</strong></div><div class="analysis-metric"><span class="ld-muted">Mejor candidata por ventaja</span><strong>'+(topValid?esc(topValid.selection||topValid.market||'Disponible'):'Ninguna')+'</strong></div></div>'+(statCards?'<div class="analysis-grid">'+statCards+'</div>':'<div class="ld-muted">El proveedor no entregó suficientes estadísticas comparables para xG, remates y posesión.</div>')+'<div class="analysis-verdict" style="border-left-color:'+verdictColor+'"><strong>Conclusión del análisis</strong><div style="margin-top:.35rem">'+esc(verdict)+'</div></div>'+(allSupport.length?'<div style="margin-top:.7rem"><strong>Indicadores a favor detectados</strong><ul class="analysis-factor-list">'+allSupport.map(v=>'<li>'+esc(v)+'</li>').join('')+'</ul></div>':'')+(allContra.length?'<div><strong>Contradicciones / riesgos</strong><ul class="analysis-factor-list">'+allContra.map(v=>'<li>'+esc(v)+'</li>').join('')+'</ul></div>':'')+'<div style="margin-top:.75rem"><strong>Oportunidades principales</strong>'+(opportunityHtml||'<div class="ld-muted" style="margin-top:.4rem">Este motor no devolvió oportunidades para el estado actual.</div>')+'</div><div class="ld-muted" style="margin-top:.75rem">Informe descriptivo del snapshot LIVE actual. Las probabilidades y ventajas son estimaciones del motor seleccionado; no son garantías. Este análisis no registra apuestas ni altera el experimento.</div></div>';
+  paintAnalysisResult();
+}
+function paintAnalysisResult(){
+  const box=document.getElementById('analysis-result');
+  if(box)box.innerHTML=analysisResultHtml||'<div class="ld-muted">Selecciona un motor y pulsa «Analizar partido».</div>';
+  const select=document.getElementById('analysis-motor');
+  if(select&&select.value!==selectedAnalysisMotor)select.value=selectedAnalysisMotor;
+}
 let activeMatchTab='resumen';
 function setMatchTab(tab){
   activeMatchTab=tab;
@@ -285,6 +393,8 @@ function filterMarkets(){
   });
 }
 function render(e, flash){
+  latestAnalysisEvent=e;
+  latestAnalysisMatch=flash;
   const teams=e.competitors||[], parts=(e.name||'').split(/\s+vs\.?\s+/i);
   const home=teams[0]?.name||parts[0]||'Local', away=teams[1]?.name||parts[1]||'Visitante', score=e.score||[];
   const markets=e.markets||[];
@@ -315,7 +425,29 @@ function render(e, flash){
     '</div></div></section>'+
   '<section id="tab-estadisticas" class="ld-tab-panel"><div class="ld-card"><div class="ld-title">📊 Estadísticas en línea</div>'+renderStats(stats)+'</div></section>'+
   '<section id="tab-alineaciones" class="ld-tab-panel"><div class="ld-card"><div class="ld-title">👥 Alineaciones</div>'+renderLineups(flash?.pre_match_context,home,away)+'</div></section>'+
-  '<section id="tab-motores" class="ld-tab-panel"><div class="ld-card"><div class="ld-title">🎯 Comparación de motores</div>'+renderOpportunities(flash?.opportunities||[],flash?.opportunities_v2||[])+'</div></section>'+
+  '<section id="tab-motores" class="ld-tab-panel"><div class="ld-card">
+    <div class="ld-title">🔎 Analizar este partido con un motor</div>
+    <div class="ld-muted" style="margin-bottom:.75rem">Selecciona el motor y genera un informe del estado LIVE actual. El análisis no crea apuestas ni modifica las decisiones, estrategias o capitales.</div>
+    <div class="ld-filter-row">
+      <label for="analysis-motor" style="font-weight:800">Motor:</label>
+      <select id="analysis-motor" class="ld-search" style="max-width:300px;flex:1" onchange="selectedAnalysisMotor=this.value">
+        <option value="vpro11">V.Pro 1.1</option>
+        <option value="vpro">V.Pro</option>
+        <option value="v11">V1.1</option>
+        <option value="v12">V1.2</option>
+        <option value="v21">V2.1</option>
+        <option value="v22">V2.2</option>
+        <option value="v2ultra">V2 Ultra</option>
+        <option value="v11ultra">V1.1 Ultra</option>
+        <option value="v1">V1 original</option>
+        <option value="v2">V2 original</option>
+        <option value="v3">V3</option>
+      </select>
+      <button type="button" class="exp-btn exp-start" onclick="analizarPartido()">🔎 Analizar partido</button>
+    </div>
+    <div id="analysis-result" aria-live="polite">${analysisResultHtml || '<div class="ld-muted">Selecciona un motor y pulsa «Analizar partido» para ver el diagnóstico debajo.</div>'}</div>
+  </div>
+  <div class="ld-card ld-section"><div class="ld-title">🎯 Comparación de motores</div>${renderOpportunities(flash?.opportunities||[],flash?.opportunities_v2||[])}</div></section>'+
   '<section id="tab-mercados" class="ld-tab-panel"><div class="ld-card"><div class="ld-title">💰 Mercados y cuotas Ecuabet</div><div class="ld-muted" style="margin-bottom:.65rem">Mercados: '+esc(inventory.markets_count??markets.length)+' · Selecciones: '+esc(inventory.selections_count??markets.reduce((n,m)=>n+(m.selections||[]).length,0))+'</div><div class="ld-filter-row"><input id="market-search" class="ld-search" type="search" placeholder="Buscar mercado o selección..." oninput="filterMarkets()" aria-label="Buscar mercados y selecciones"></div>'+marketHtml+'</div></section>'+
   '<section id="tab-fuente" class="ld-tab-panel"><div class="ld-card"><div class="ld-title">🔗 Fuente estadística</div>'+sourceHtml+'</div></section>';
 }
