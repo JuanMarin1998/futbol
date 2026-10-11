@@ -91,8 +91,11 @@ class FlashscoreContextProvider:
         data = payload.get("data", payload)
         if not isinstance(data, dict):
             return {"raw": data}
-        home = data.get("home") or data.get("homeTeam") or data.get("home_lineup")
-        away = data.get("away") or data.get("awayTeam") or data.get("away_lineup")
+        nested = data.get("lineups") or data.get("lineup")
+        if isinstance(nested, dict):
+            data = nested
+        home = data.get("home") or data.get("homeTeam") or data.get("home_lineup") or data.get("homeLineup")
+        away = data.get("away") or data.get("awayTeam") or data.get("away_lineup") or data.get("awayLineup")
         if home is None and away is None:
             # Diferentes versiones del scraper pueden devolver la ficha bajo match.
             match = data.get("match")
@@ -121,8 +124,12 @@ class FlashscoreContextProvider:
                 if isinstance(data.get(key), list):
                     rows = data[key]
                     break
-        home_form = data.get("home_form") or data.get("homeForm") or []
-        away_form = data.get("away_form") or data.get("awayForm") or []
+        nested_h2h = data.get("h2h") or data.get("head_to_head")
+        if isinstance(nested_h2h, dict):
+            rows = rows or cls._as_list(nested_h2h)
+            data = {**data, **nested_h2h}
+        home_form = data.get("home_form") or data.get("homeForm") or data.get("home_recent_matches") or []
+        away_form = data.get("away_form") or data.get("awayForm") or data.get("away_recent_matches") or []
         if not home_form and not away_form and not rows:
             # Mantener datos sin interpretar; no inferir forma a partir de campos desconocidos.
             return {"raw": data} if data else {}
