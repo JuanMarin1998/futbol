@@ -75,6 +75,21 @@ class VPro11MarketScanTests(SimpleTestCase):
         self.assertIn("Menos de 3.5", selections)
         self.assertIn("Más de 2.5", selections)
 
+    def test_combined_market_is_not_given_simple_double_chance_probability(self):
+        self.match.odds.append({
+            "market_name": "Doble oportunidad y multigoles",
+            "name": "1X & Multigoles 4-5",
+            "line": None,
+            "price": 31.0,
+        })
+
+        candidates = LiveOpportunityEngineVPro11._all_market_candidates(
+            self.match, elapsed=38
+        )
+        selections = {item["selection"] for item in candidates}
+
+        self.assertNotIn("1X & Multigoles 4-5", selections)
+
     def test_each_candidate_has_market_specific_probability(self):
         candidates = LiveOpportunityEngineVPro11._all_market_candidates(
             self.match, elapsed=38
