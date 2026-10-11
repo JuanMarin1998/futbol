@@ -18,7 +18,7 @@
 .stat-grid{display:grid;gap:.55rem}.ld-stat-group{margin-bottom:1rem}.ld-stat-group:last-child{margin-bottom:0}.ld-stat-group-title{font-size:.88rem;font-weight:900;color:#e2e8f0;padding:.55rem .65rem;background:#0f172a;border-radius:8px;margin-bottom:.45rem}.stat-row{display:grid;grid-template-columns:1fr 55px 1fr;gap:.5rem;align-items:center}
 .stat-val{text-align:center;font-weight:800}.stat-label{text-align:center;color:#94a3b8;font-size:.78rem}
 .bar{height:5px;background:#0f172a;border-radius:5px;overflow:hidden}.bar>i{display:block;height:100%;background:#64748b}
-.ld-muted{color:#94a3b8;font-size:.85rem}.exp-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}.exp-box{background:#0f172a;border:1px solid #334155;border-radius:10px;padding:.75rem}.exp-life{font-size:1.65rem;font-weight:900}.exp-positive{color:#4ade80}.exp-negative{color:#f87171}.exp-actions{display:flex;gap:.6rem;flex-wrap:wrap}.exp-btn{border:0;border-radius:8px;padding:.65rem .9rem;font-weight:800;cursor:pointer}.exp-start{background:#16a34a;color:#fff}.exp-stop{background:#dc2626;color:#fff}.exp-badge{display:inline-block;border-radius:999px;padding:.2rem .5rem;font-size:.72rem;font-weight:900;background:#334155}.exp-entry{border:1px solid #334155;border-radius:9px;padding:.65rem;margin-top:.55rem}.exp-level-1{color:#4ade80}.exp-level-2{color:#facc15}.exp-level-3{color:#fb923c}.exp-level-0{color:#f87171}.ld-muted{color:#94a3b8;font-size:.85rem}.ld-back{color:#60a5fa;text-decoration:none}
+.ld-muted{color:#94a3b8;font-size:.85rem}.exp-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}.exp-box{background:#0f172a;border:1px solid #334155;border-radius:10px;padding:.75rem}.exp-life{font-size:1.65rem;font-weight:900}.exp-positive{color:#4ade80}.exp-negative{color:#f87171}.exp-actions{display:flex;gap:.6rem;flex-wrap:wrap}.exp-btn{border:0;border-radius:8px;padding:.65rem .9rem;font-weight:800;cursor:pointer}.exp-start{background:#16a34a;color:#fff}.exp-stop{background:#dc2626;color:#fff}.exp-badge{display:inline-block;border-radius:999px;padding:.2rem .5rem;font-size:.72rem;font-weight:900;background:#334155}.exp-entry{border:1px solid #334155;border-radius:9px;padding:.65rem;margin-top:.55rem}.exp-level-1{color:#4ade80}.exp-level-2{color:#facc15}.exp-level-3{color:#fb923c}.exp-level-0{color:#f87171}.ld-muted{color:#94a3b8;font-size:.85rem}.ld-back{color:#60a5fa;text-decoration:none}.lineup-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}.lineup-team{background:#0f172a;border:1px solid #334155;border-radius:10px;padding:.8rem;min-width:0}.lineup-team h4{margin:0 0 .5rem}.lineup-formation{font-size:.8rem;color:#93c5fd;margin-bottom:.55rem}.lineup-list{list-style:none;padding:0;margin:.25rem 0 .75rem}.lineup-list li{padding:.25rem 0;border-bottom:1px solid #1e293b;font-size:.86rem}.lineup-number{display:inline-block;min-width:1.7rem;color:#94a3b8;font-variant-numeric:tabular-nums}.lineup-subtitle{font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;color:#94a3b8;margin:.65rem 0 .25rem}.lineup-status{padding:.65rem;background:#0f172a;border-radius:8px;color:#cbd5e1;font-size:.88rem}@media(max-width:600px){.lineup-grid{grid-template-columns:1fr}}
 @media(max-width:800px){.ld-layout{grid-template-columns:1fr}}
 </style>
 
@@ -163,6 +163,74 @@ async function pararExperimento(){
   }catch(err){alert(err.message);}
 }
 
+
+function lineupArray(team, keys){
+  if(Array.isArray(team)) return team;
+  if(!team || typeof team!=='object') return [];
+  for(const key of keys){
+    if(Array.isArray(team[key])) return team[key];
+    if(team[key] && typeof team[key]==='object'){
+      const nested=lineupArray(team[key],keys);
+      if(nested.length)return nested;
+    }
+  }
+  return [];
+}
+function playerName(player){
+  if(typeof player==='string'||typeof player==='number')return String(player);
+  if(!player||typeof player!=='object')return '';
+  const person=player.player||player.athlete||player.participant||{};
+  return player.name||player.playerName||player.player_name||player.fullName||player.full_name||
+    person.name||person.fullName||person.full_name||player.shortName||player.short_name||'';
+}
+function playerNumber(player){
+  if(!player||typeof player!=='object')return '';
+  return player.number??player.shirtNumber??player.shirt_number??player.jerseyNumber??player.jersey_number??'';
+}
+function renderPlayerList(players){
+  if(!players.length)return '<div class="ld-muted">No disponible en la respuesta del proveedor.</div>';
+  return '<ul class="lineup-list">'+players.map((p,i)=>{
+    const name=playerName(p)||'Jugador sin nombre reconocido';
+    const number=playerNumber(p);
+    return '<li><span class="lineup-number">'+esc(number!==''?number:(i+1))+'</span>'+esc(name)+'</li>';
+  }).join('')+'</ul>';
+}
+function renderLineupTeam(team, side, formation){
+  const starters=lineupArray(team,['starters','startingXI','starting_xi','starting','firstEleven','first_eleven','lineup','players','startingPlayers','starting_players']);
+  const substitutes=lineupArray(team,['substitutes','substitutePlayers','substitute_players','bench','reserves','benchPlayers','bench_players']);
+  const label=side==='home'?'Local':'Visitante';
+  return '<section class="lineup-team"><h4>'+label+'</h4>'+
+    (formation?'<div class="lineup-formation">Formación: '+esc(formation)+'</div>':'')+
+    '<div class="lineup-subtitle">Titulares</div>'+renderPlayerList(starters)+
+    '<div class="lineup-subtitle">Suplentes</div>'+renderPlayerList(substitutes)+'</section>';
+}
+function renderLineups(context, homeName, awayName){
+  const source=context?.lineups;
+  if(!source || source.status!=='available'){
+    const reason=source?.error||'No hay datos de alineación disponibles. Comprueba FLASHSCORE_CONTEXT_API_URL y que el servicio proveedor esté activo.';
+    return '<div class="lineup-status">⏳ Alineaciones no disponibles: '+esc(reason)+'</div>';
+  }
+  const data=source.data||{};
+  const home=data.home||data.homeTeam||data.home_team||{};
+  const away=data.away||data.awayTeam||data.away_team||{};
+  const homeFormation=data.formation_home||data.homeFormation||home.formation||home.formationName||'';
+  const awayFormation=data.formation_away||data.awayFormation||away.formation||away.formationName||'';
+  const homePlayers=lineupArray(home,['starters','startingXI','starting_xi','starting','firstEleven','first_eleven','lineup','players','startingPlayers','starting_players']);
+  const awayPlayers=lineupArray(away,['starters','startingXI','starting_xi','starting','firstEleven','first_eleven','lineup','players','startingPlayers','starting_players']);
+  if(!homePlayers.length&&!awayPlayers.length){
+    return '<div class="lineup-status">⚠️ El proveedor respondió, pero no se reconoció una lista de titulares. Revisa la estructura recibida. Estado: '+esc(source.status)+' · '+esc(source.error||'sin detalle')+'</div>'+
+      '<details style="margin-top:.6rem"><summary class="ld-muted">Diagnóstico de la respuesta</summary><pre style="white-space:pre-wrap;overflow-wrap:anywhere;font-size:.75rem">'+esc(JSON.stringify(data,null,2).slice(0,5000))+'</pre></details>';
+  }
+  return '<div class="lineup-grid">'+
+    '<section class="lineup-team"><h4>'+esc(homeName)+'</h4>'+(homeFormation?'<div class="lineup-formation">Formación: '+esc(homeFormation)+'</div>':'')+
+    '<div class="lineup-subtitle">Titulares</div>'+renderPlayerList(homePlayers)+
+    '<div class="lineup-subtitle">Suplentes</div>'+renderPlayerList(lineupArray(home,['substitutes','substitutePlayers','substitute_players','bench','reserves','benchPlayers','bench_players']))+'</section>'+
+    '<section class="lineup-team"><h4>'+esc(awayName)+'</h4>'+(awayFormation?'<div class="lineup-formation">Formación: '+esc(awayFormation)+'</div>':'')+
+    '<div class="lineup-subtitle">Titulares</div>'+renderPlayerList(awayPlayers)+
+    '<div class="lineup-subtitle">Suplentes</div>'+renderPlayerList(lineupArray(away,['substitutes','substitutePlayers','substitute_players','bench','reserves','benchPlayers','bench_players']))+'</section>'+
+    '</div><div class="ld-muted" style="margin-top:.5rem">Fuente: proveedor de contexto Flashscore · estado: disponible</div>';
+}
+
 function render(e, flash){
   const teams=e.competitors||[], parts=(e.name||'').split(/\s+vs\.?\s+/i);
   const home=teams[0]?.name||parts[0]||'Local', away=teams[1]?.name||parts[1]||'Visitante', score=e.score||[];
@@ -172,6 +240,7 @@ function render(e, flash){
   return '<div class="ld-layout">'+
     '<main><div class="ld-card"><div class="ld-teams"><div class="ld-team">'+esc(home)+'</div><div><div class="ld-score">'+(score[0]??0)+' - '+(score[1]??0)+'</div><div class="ld-minute">'+esc(e.liveTime||e.live_time||e.live_status||'LIVE') + (e.ls ? '<div class="ld-muted" style="font-size:.78rem">'+esc(e.ls)+'</div>' : '')+'</div></div><div class="ld-team ld-away">'+esc(away)+'</div></div><div class="ld-muted" style="text-align:center;margin-top:.7rem">'+esc(e.champ?.name||'')+'</div></div>'+
     '<div class="ld-card ld-section"><div class="ld-title">📊 Estadísticas en línea</div>'+renderStats(stats)+'</div>'+
+    '<div class="ld-card ld-section"><div class="ld-title">👥 Alineaciones</div>'+renderLineups(flash?.pre_match_context,home,away)+'</div>'+
     '<div class="ld-card ld-section"><div class="ld-title">🎯 Comparación de motores</div>'+renderOpportunities(flash?.opportunities||[],flash?.opportunities_v2||[])+'</div></main>'+
     '<aside><div class="ld-card"><div class="ld-title">💰 Mercados y cuotas Ecuabet</div><div class="ld-muted" style="margin-bottom:.65rem">Mercados: '+esc(inventory.markets_count??markets.length)+' · Selecciones: '+esc(inventory.selections_count??markets.reduce((n,m)=>n+(m.selections||[]).length,0))+'</div>'+ (markets.length?markets.map(m=>'<div class="ld-market"><h4>'+esc(m.name||('Mercado '+(m.type_id??'')))+(m.line!==null&&m.line!==undefined&&m.line!==''?' · '+esc(m.line):'')+(m.status||m.market_status?' <span class="exp-badge">'+esc(m.market_status||m.status)+'</span>':'')+(m.is_suspended?' <span class="exp-badge">Suspendido</span>':'')+'</h4>'+((m.selections||[]).length?m.selections.map(o=>'<div style="display:flex;justify-content:space-between;padding:.55rem .7rem;border-bottom:1px solid #334155"><span>'+esc(o.name||o.short_name||('Selección '+(o.id??'')))+(o.odd_status?' <span class="ld-muted">('+esc(o.odd_status)+')</span>':'')+'</span><span class="ld-price">'+price(o.price)+'</span></div>').join(''):'<div class="ld-muted" style="padding:.55rem .7rem">Mercado recibido sin selecciones enlazadas.</div>')+'</div>').join(''):'<div class="ld-muted">Ecuabet no devolvió mercados para este evento en esta actualización.</div>')+'</div>'+
     '<div class="ld-card ld-section"><div class="ld-title">🔗 Fuente estadística</div>'+ (flash?.flashscore_event_id?'<div class="ld-muted">Flashscore conectado · ID '+esc(flash.flashscore_event_id)+'</div><a class="ld-back" style="display:inline-block;margin-top:.55rem" href="'+esc(flash.flashscore_url||('https://www.flashscore.com/match/'+flash.flashscore_event_id+'/'))+'" target="_blank" rel="noopener noreferrer">↗ Abrir partido en Flashscore</a>':'<div class="ld-muted">El partido está seleccionado, pero aún falta vincular su ID de Flashscore.</div>')+(flash?.feed_error?'<div class="ld-muted" style="margin-top:.5rem;color:#fbbf24">⚠️ Estadísticas detalladas: '+esc(flash.feed_error)+'</div>':'')+'</div></aside></div>';
