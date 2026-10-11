@@ -1254,6 +1254,11 @@ def api_ecuabet_live_detalle(request, ecuabet_event_id):
                     "opportunities_v2",
                     "opportunities_v21",
                     "opportunities_v22",
+                    "opportunities_v3",
+                    "opportunities_v2_ultra",
+                    "opportunities_v11_ultra",
+                    "opportunities_vpro",
+                    "opportunities_vpro11",
                 ):
                     match_dict[opportunity_key] = [
                         enrich(dict(opportunity))
