@@ -23,6 +23,90 @@ class LiveOpportunityEngineVPro11:
     MIN_CONFIDENCE = 0.58
 
     @classmethod
+    def _all_market_candidates(cls, match, elapsed: float) -> List[Dict[str, Any]]:
+        """Evalúa todas las cuotas LIVE compatibles, sin heredar el top-10 de V2.
+
+        Cada selección recibe una probabilidad específica del modelo de goles.
+        Si el motor no puede estimar un mercado, lo omite en lugar de asignarle
+        una probabilidad genérica.
+        """
+        performance = match.performance or {}
+        home = LiveOpportunityEngineV2._features(performance, "home")
+        away = LiveOpportunityEngineV2._features(performance, "away")
+        hs, aw = int(match.home_score or 0), int(match.away_score or 0)
+        lh, la = LiveOpportunityEngineV2._lambdas(home, away, elapsed)
+        probabilities = LiveOpportunityEngineV2._probabilities(hs, aw, lh, la)
+        candidates = []
+        seen = set()
+
+        def identity(item):
+            return (
+                LiveOpportunityEngineVPro._norm(item.get("market")),
+                LiveOpportunityEngineVPro._norm(item.get("selection")),
+                LiveOpportunityEngineVPro._norm(item.get("line")),
+            )
+
+        # Recorre cada cuota, no solo las oportunidades que V.Pro/V2 dejaron
+        # entre sus cinco/diez mejores. Así 1X, empate, BTTS y O/U 2.5 también
+        # llegan al filtro prudente de V.Pro 1.1.
+        for odd in match.odds or []:
+            price = LiveOpportunityEngineVPro._num(odd.get("price"))
+            if price is None or price <= 1:
+                continue
+            key = LiveOpportunityEngineV2._market_key(
+                odd.get("market_name"), odd.get("name"), odd.get("line"),
+                match.home_team, match.away_team,
+            )
+            if not key:
+                continue
+            model_probability = probabilities.get(key)
+            if model_probability is None:
+                model_probability = {
+                    "dc_1x": probabilities["home"] + probabilities["draw"],
+                    "dc_12": probabilities["home"] + probabilities["away"],
+                    "dc_x2": probabilities["draw"] + probabilities["away"],
+                }.get(key)
+            if model_probability is None:
+                continue
+            support, contra, coverage, strength = LiveOpportunityEngineV2._signals(
+                key, home, away, hs, aw, elapsed
+            )
+            item = {
+                "market": odd.get("market_name", ""),
+                "selection": odd.get("name", ""),
+                "line": odd.get("line"),
+                "price": price,
+                "model_probability": round(max(0.0, min(1.0, model_probability)), 4),
+                "implied_probability": round(1.0 / price, 4),
+                "edge": round(model_probability - 1.0 / price, 4),
+                "edge_pct": round((model_probability - 1.0 / price) * 100, 2),
+                "confidence": round(min(.95, .30 + .35 * coverage + .20 * strength + .10 * float(match.mapping_confidence or 0)), 3),
+                "signal_strength": "fuerte" if strength >= .72 else ("moderada" if strength >= .55 else "débil"),
+                "supporting_factors": support,
+                "contradicting_factors": contra,
+                "data_coverage": round(coverage, 3),
+                "model": "vpro11_market_scan_v2_probability",
+            }
+            ident = identity(item)
+            if ident not in seen:
+                seen.add(ident)
+                candidates.append(item)
+
+        # Añade líneas de totales y dobles oportunidades que el parser básico
+        # de V2 no contempla (por ejemplo, menos de 3.5 goles o selección por nombre).
+        try:
+            extended = LiveOpportunityEngineVPro._extended_opportunities(match, elapsed)
+        except (AttributeError, TypeError, ValueError):
+            extended = []
+        for item in extended:
+            ident = identity(item)
+            if ident not in seen:
+                seen.add(ident)
+                candidates.append(dict(item))
+
+        return candidates
+
+    @classmethod
     def evaluate(cls, match) -> List[Dict[str, Any]]:
         if getattr(match, "is_finished", False):
             return []
@@ -102,9 +186,9 @@ class LiveOpportunityEngineVPro11:
             if not corroborating or len(contradicting) >= 2:
                 return []
 
-        opportunities = getattr(match, "opportunities_vpro", None)
-        if not opportunities:
-            opportunities = LiveOpportunityEngineVPro.evaluate(match)
+        # V.Pro original conserva su lista corta; VP11 explora por separado
+        # el inventario LIVE completo de mercados que sabe modelar.
+        opportunities = cls._all_market_candidates(match, elapsed)
         results = []
         for source in opportunities:
             item = dict(source)
@@ -169,4 +253,4 @@ class LiveOpportunityEngineVPro11:
             ),
             reverse=True,
         )
-        return results[:5]
+        return results[:12]
