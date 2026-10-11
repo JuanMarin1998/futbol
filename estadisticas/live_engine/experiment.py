@@ -860,7 +860,7 @@ class LiveExperimentManager:
                     Decimal("0"), min(Decimal("1"), Decimal(str(candidate.get("confidence") or 0)))
                 )
                 # Edge es una fracción (0.10 = 10 puntos porcentuales).
-                # Señales más fuertes pueden usar más stake, hasta 10 vidas.
+                # El stake máximo depende de la variante: VP11 es más prudente.
                 stake = (
                     Decimal("1.00")
                     + min(Decimal("0.30"), edge) * Decimal("20")
