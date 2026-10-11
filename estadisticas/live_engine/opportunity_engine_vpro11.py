@@ -81,7 +81,7 @@ class LiveOpportunityEngineVPro11:
         if home_pos is not None and away_pos is not None:
             possession_gap = (home_pos - away_pos) * (1 if fav_home else -1)
         if possession_gap is not None and abs(possession_gap) >= 11:
-            # possession_gap positif = favorito domina; negativo = rival domina.
+            # possession_gap positivo = favorito domina; negativo = rival domina.
             dominant_stats = fav_stats if possession_gap > 0 else rival_stats
             other_stats = rival_stats if possession_gap > 0 else fav_stats
             corroborating = []
