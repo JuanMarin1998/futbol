@@ -17,6 +17,7 @@ import requests
 class FlashscoreContextProvider:
     """Proveedor opcional de contexto con caché TTL y errores aislados por fuente."""
 
+    _shared_cache = {}
     DEFAULT_TTL = {
         "lineups": 300,
         "history": 6 * 60 * 60,
@@ -28,7 +29,7 @@ class FlashscoreContextProvider:
                          os.getenv("FLASHSCORE_CONTEXT_API_URL", "")).strip().rstrip("/")
         self.timeout = int(timeout or os.getenv("FLASHSCORE_CONTEXT_TIMEOUT", "6"))
         self.session = session or requests.Session()
-        self._cache = {}
+        self._cache = self._shared_cache
 
     @staticmethod
     def _as_list(payload):
