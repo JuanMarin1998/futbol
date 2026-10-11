@@ -1,4 +1,5 @@
-from django.db import models\nfrom django.utils import timezone
+from django.db import models
+from django.utils import timezone
 
 
 class Liga(models.Model):
