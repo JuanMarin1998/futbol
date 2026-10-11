@@ -332,6 +332,12 @@ class LiveExperimentManager:
         if motor in {"V2U", "V11U"} and opportunity.get("unsupported_market"):
             return "Mercado auditado, no apostable: falta un modelo de probabilidad fiable o datos finales verificables para liquidarlo."
         if motor == "VP11":
+            # VP11 puede mostrar mercados analizados aunque no sean apostables.
+            # Este diagnóstico es un veto explícito para que una candidata
+            # informativa nunca llegue a _place() como apuesta.
+            rejection = str(opportunity.get("vpro11_rejection_reason") or "").strip()
+            if rejection:
+                return f"Descartada V.Pro 1.1: {rejection}."
             if float(opportunity.get("edge") or 0) < 0.055:
                 return "Descartada V.Pro 1.1: edge inferior a 5.5 puntos tras calibración."
             if float(opportunity.get("confidence") or 0) < 0.58:
