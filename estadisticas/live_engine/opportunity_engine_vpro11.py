@@ -22,6 +22,22 @@ class LiveOpportunityEngineVPro11:
     MIN_EDGE = 0.055
     MIN_CONFIDENCE = 0.58
 
+    @staticmethod
+    def _is_combination_market(market: Any, selection: Any) -> bool:
+        """No puntúa combinadas como si fueran una selección simple."""
+        raw = f"{market or ''} {selection or ''}".lower()
+        normalized = LiveOpportunityEngineVPro._norm(raw)
+        if any(token in normalized for token in ("multigoles", "combinada", "combinado", "combo")):
+            return True
+        has_double_chance = any(token in normalized for token in (
+            "dobleoportunidad", "doublechance", "1x", "x2", "12",
+        ))
+        has_total = any(token in normalized for token in (
+            "totalgoles", "over", "under", "masde", "menosde", "goles",
+        ))
+        has_joiner = "&" in raw or "+" in raw or " y " in raw or " and " in raw
+        return has_double_chance and has_total and has_joiner
+
     @classmethod
     def _all_market_candidates(cls, match, elapsed: float) -> List[Dict[str, Any]]:
         """Evalúa todas las cuotas LIVE compatibles, sin heredar el top-10 de V2.
@@ -50,6 +66,9 @@ class LiveOpportunityEngineVPro11:
         # entre sus cinco/diez mejores. Así 1X, empate, BTTS y O/U 2.5 también
         # llegan al filtro prudente de V.Pro 1.1.
         for odd in match.odds or []:
+            # Una combinada necesita una probabilidad conjunta; no reutilizar P(1X), P(over), etc.
+            if cls._is_combination_market(odd.get("market_name"), odd.get("name")):
+                continue
             price = LiveOpportunityEngineVPro._num(odd.get("price"))
             if price is None or price <= 1:
                 continue
@@ -99,6 +118,8 @@ class LiveOpportunityEngineVPro11:
         except (AttributeError, TypeError, ValueError):
             extended = []
         for item in extended:
+            if cls._is_combination_market(item.get("market"), item.get("selection")):
+                continue
             ident = identity(item)
             if ident not in seen:
                 seen.add(ident)
