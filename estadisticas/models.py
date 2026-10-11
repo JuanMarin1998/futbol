@@ -345,6 +345,7 @@ class LiveExperimentEntry(models.Model):
         ("V4", "Motor V4 · Calibración prudente"),
         ("ESP", "Espía de Apuestas · Consenso estricto"),
         ("VPRO", "V.Pro · Favorito estadístico"),
+        ("VP11", "V.Pro 1.1 · Calibrado y prudente"),
     ]
 
     experiment = models.ForeignKey(
