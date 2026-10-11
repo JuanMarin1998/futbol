@@ -447,6 +447,7 @@ async function cargar(){
     const flash=d.match || null;
     document.getElementById('match').innerHTML=render(d.event,flash);
     setMatchTab(activeMatchTab);
+    paintAnalysisResult();
     renderExperiment(d.experiment || null);
   }catch(err){document.getElementById('match').innerHTML='<div class="ld-card ld-muted">'+esc(err.message)+'</div>';}
 }
