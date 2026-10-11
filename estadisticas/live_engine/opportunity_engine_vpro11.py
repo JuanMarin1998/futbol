@@ -159,8 +159,9 @@ class LiveOpportunityEngineVPro11:
             "xg": xg.get("away") if fav_home else xg.get("home"),
         }
 
-        # Una ventaja de posesión >=11 puntos no basta: debe ir acompañada de
-        # producción ofensiva, y no puede contradecirse en dos indicadores clave.
+        # La contradicción del favorito no debe bloquear todo el partido:
+        # VP11 también debe poder evaluar mercados que cubren al rival/empate.
+        coherence_conflict = False
         possession_gap = None
         if home_pos is not None and away_pos is not None:
             possession_gap = (home_pos - away_pos) * (1 if fav_home else -1)
@@ -183,8 +184,7 @@ class LiveOpportunityEngineVPro11:
             dominant_is_ahead = fav_score > rival_score if possession_gap > 0 else rival_score > fav_score
             if dominant_is_ahead:
                 corroborating.append("score")
-            if not corroborating or len(contradicting) >= 2:
-                return []
+            coherence_conflict = not corroborating or len(contradicting) >= 2
 
         # V.Pro original conserva su lista corta; VP11 explora por separado
         # el inventario LIVE completo de mercados que sabe modelar.
@@ -202,10 +202,11 @@ class LiveOpportunityEngineVPro11:
                 continue
 
             contradictions = list(item.get("contradicting_factors") or [])
+            rejection_reasons = []
             if len(contradictions) >= 3:
-                continue
+                rejection_reasons.append("mercado con tres o más contradicciones estadísticas")
             if xg.get("status") in {"estimado", "parcial"} and edge < 0.08:
-                continue
+                rejection_reasons.append("xG estimado/parcial y edge inferior a 8 puntos")
 
             confidence = float(item.get("confidence") or 0)
             if xg.get("status") in {"estimado", "parcial"}:
@@ -236,12 +237,21 @@ class LiveOpportunityEngineVPro11:
                     "favorito 1X2 entre 1.05 y 1.70", "coherencia posesión/ataque",
                 ],
             })
-            if edge < cls.MIN_EDGE or confidence < cls.MIN_CONFIDENCE:
-                continue
+            if coherence_conflict:
+                item["vpro11_coherence_warning"] = (
+                    "La posesión del favorito contradice los indicadores de producción ofensiva; "
+                    "se evalúa cada mercado por separado y no se descarta todo el partido."
+                )
+            if edge < cls.MIN_EDGE:
+                rejection_reasons.append(f"edge {edge * 100:.1f} puntos inferior al mínimo {cls.MIN_EDGE * 100:.1f}")
+            if confidence < cls.MIN_CONFIDENCE:
+                rejection_reasons.append(f"confianza {confidence * 100:.1f}% inferior al mínimo {cls.MIN_CONFIDENCE * 100:.0f}%")
+            item["vpro11_rejection_reason"] = "; ".join(rejection_reasons)
+            item["vpro11_eligible"] = not rejection_reasons
             item["reason"] = (
-                "V.Pro 1.1: señal LIVE filtrada por calidad de datos, cuota de referencia, "
-                "coherencia entre posesión y producción ofensiva; la probabilidad se calibrará "
-                "solo si existe muestra histórica comparable suficiente."
+                "V.Pro 1.1 exploró esta cuota LIVE con probabilidad específica del mercado. "
+                + ("No apostar: " + item["vpro11_rejection_reason"] + "." if rejection_reasons else
+                   "Supera los filtros iniciales; se verificará de nuevo tras calibración histórica.")
             )
             results.append(item)
 
