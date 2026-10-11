@@ -1,4 +1,5 @@
 from typing import Any, Dict
+import logging
 
 from ..ecuabet_client import EcuabetClient
 from ..flashscore_client import FlashscoreClient
@@ -17,6 +18,9 @@ from .opportunity_engine_v11_ultra import LiveOpportunityEngineV11Ultra
 from .opportunity_engine_vpro import LiveOpportunityEngineVPro
 from .opportunity_engine_vpro11 import LiveOpportunityEngineVPro11
 from ..models import LiveExperiment
+from .pattern_lab import record_match_snapshot
+
+logger = logging.getLogger(__name__)
 
 
 class LiveMatchCollector:
@@ -279,6 +283,12 @@ class LiveMatchCollector:
             match.opportunities_v11_ultra = LiveOpportunityEngineV11Ultra.evaluate(match)
             match.opportunities_vpro = LiveOpportunityEngineVPro.evaluate(match)
             match.opportunities_vpro11 = LiveOpportunityEngineVPro11.evaluate(match)
+
+        # Persistencia independiente: no genera apuestas ni modifica capitales.
+        try:
+            record_match_snapshot(match)
+        except Exception:
+            logger.exception("No se pudo guardar snapshot del laboratorio de patrones para evento %s", match.ecuabet_event_id)
         return match
 
     @classmethod
