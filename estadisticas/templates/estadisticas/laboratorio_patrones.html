@@ -1,0 +1,72 @@
+{% extends "estadisticas/base.html" %}
+{% block titulo %}🧠 Laboratorio de Patrones de Partidos{% endblock %}
+{% block contenido %}
+<style>
+.pattern-wrap{max-width:1500px;margin:auto}.pattern-head,.pattern-card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:1.2rem;margin-bottom:1rem}.pattern-head p,.muted{color:#94a3b8}.pattern-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.8rem;margin-top:1rem}.pattern-stat{background:#0f172a;border:1px solid #334155;border-radius:10px;padding:1rem}.pattern-stat strong{display:block;font-size:1.5rem}.team-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.8rem}.team-card{background:#0f172a;border:1px solid #334155;border-radius:10px;padding:1rem;min-width:0}.team-card h3{margin:.1rem 0 .7rem;font-size:1rem}.chips{display:flex;flex-wrap:wrap;gap:.4rem;margin:.6rem 0}.chip{background:#263449;border:1px solid #475569;border-radius:99px;padding:.25rem .55rem;font-size:.78rem}.trend{color:#86efac}.trend-down{color:#fca5a5}.table-scroll{overflow-x:auto}table{min-width:760px}@media(max-width:800px){.team-grid{grid-template-columns:1fr}.pattern-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+<div class="pattern-wrap">
+  <section class="pattern-head">
+    <h2 style="margin:.1rem 0 .5rem">🧠 Laboratorio de Patrones de Partidos</h2>
+    <p>Este módulo observa el comportamiento real del partido: evolución del marcador, minuto, estadísticas, presión estimada y estados de cada equipo. Guarda snapshots históricos y construye perfiles por equipo. Es independiente de las apuestas: no crea entradas, no usa capital virtual y no cambia reglas de los motores.</p>
+    <p class="muted">La recolección se alimenta cuando el recolector LIVE existente procesa un partido. Se evita guardar duplicados consecutivos si minuto, marcador, estado y estadísticas no han cambiado. Cuanta más cobertura y más partidos completos acumule, más útiles serán los patrones.</p>
+    <div class="pattern-stats">
+      <div class="pattern-stat"><span class="muted">Partidos observados</span><strong>{{ matches_count }}</strong></div>
+      <div class="pattern-stat"><span class="muted">Snapshots guardados</span><strong>{{ snapshots_count }}</strong></div>
+      <div class="pattern-stat"><span class="muted">Perfiles de equipos</span><strong>{{ teams_count }}</strong></div>
+      <div class="pattern-stat"><span class="muted">Última observación</span><strong style="font-size:1rem">{% if last_snapshot %}{{ last_snapshot.observed_at|date:"d/m H:i:s" }}{% else %}Sin datos{% endif %}</strong></div>
+    </div>
+    <p class="muted" style="margin-bottom:0">Actualización de esta vista: cada 30 segundos. Para acumular nuevos datos, el ciclo/recolector LIVE debe estar funcionando.</p>
+  </section>
+
+  <section class="pattern-card">
+    <h3 style="margin-top:0">📈 Perfil de comportamiento por equipo</h3>
+    {% if profiles %}
+      <div class="team-grid">
+      {% for profile in profiles %}
+        <article class="team-card">
+          <h3>{{ profile.team_name }}</h3>
+          <div class="muted">{{ profile.matches_observed }} partidos · {{ profile.snapshots_count }} observaciones · visto {% if profile.last_seen %}{{ profile.last_seen|date:"d/m H:i" }}{% else %}—{% endif %}</div>
+          <div class="chips">
+            <span class="chip">Ganando: {{ profile.behavior.states.ganando|default:0 }}</span>
+            <span class="chip">Empatando: {{ profile.behavior.states.empatando|default:0 }}</span>
+            <span class="chip">Perdiendo: {{ profile.behavior.states.perdiendo|default:0 }}</span>
+          </div>
+          <div class="chips">
+            <span class="chip trend">Presión subiendo: {{ profile.behavior.pressure_trends.subiendo|default:0 }}</span>
+            <span class="chip trend-down">Presión bajando: {{ profile.behavior.pressure_trends.bajando|default:0 }}</span>
+            <span class="chip">Estable: {{ profile.behavior.pressure_trends.estable|default:0 }}</span>
+          </div>
+          {% if profile.behavior.last_observation %}
+            <div class="muted">Último patrón observado: {{ profile.behavior.last_observation.estado }} · minuto {{ profile.behavior.last_observation.minute|default:"?" }} · marcador {{ profile.behavior.last_observation.marcador }} · presión estimada {{ profile.behavior.last_observation.presion }}</div>
+            {% if profile.behavior.last_observation.liga %}<div class="muted">Competición: {{ profile.behavior.last_observation.liga }}</div>{% endif %}
+          {% else %}<div class="muted">Esperando observaciones suficientes.</div>{% endif %}
+        </article>
+      {% endfor %}
+      </div>
+    {% else %}
+      <p class="muted">Todavía no hay perfiles. Cuando el recolector LIVE procese partidos, se crearán automáticamente.</p>
+    {% endif %}
+  </section>
+
+  <section class="pattern-card">
+    <h3 style="margin-top:0">🗂️ Últimas observaciones guardadas</h3>
+    {% if recent_snapshots %}
+      <div class="table-scroll"><table>
+        <thead><tr><th>Hora</th><th>Partido</th><th>Marcador</th><th>Minuto</th><th>Competición</th><th>Estado</th><th>Datos estadísticos</th></tr></thead>
+        <tbody>
+        {% for snap in recent_snapshots %}
+          <tr>
+            <td>{{ snap.observed_at|date:"d/m H:i:s" }}</td>
+            <td><strong>{{ snap.home_team }}</strong> vs <strong>{{ snap.away_team }}</strong></td>
+            <td>{% if snap.home_score != None and snap.away_score != None %}{{ snap.home_score }} - {{ snap.away_score }}{% else %}—{% endif %}</td>
+            <td>{{ snap.minute|default:"—" }}</td><td>{{ snap.league|default:"—" }}</td><td>{{ snap.status|default:"LIVE" }}</td>
+            <td>{{ snap.performance|length }} bloques</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table></div>
+    {% else %}<p class="muted">No hay snapshots guardados todavía.</p>{% endif %}
+  </section>
+</div>
+<script>window.setTimeout(function(){window.location.reload();},30000);</script>
+{% endblock %}

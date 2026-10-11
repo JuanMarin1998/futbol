@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 
 
 class Liga(models.Model):
@@ -437,3 +438,53 @@ class LiveExperimentDailyArchive(models.Model):
         verbose_name_plural = "Archivos diarios de experimento LIVE"
         ordering = ["-experiment_date"]
 
+
+
+
+class MatchBehaviorSnapshot(models.Model):
+    """Histórico independiente del comportamiento observado en partidos LIVE."""
+    ecuabet_event_id = models.BigIntegerField(db_index=True)
+    flashscore_event_id = models.CharField(max_length=100, blank=True, db_index=True)
+    home_team = models.CharField(max_length=180)
+    away_team = models.CharField(max_length=180)
+    league = models.CharField(max_length=180, blank=True)
+    minute = models.CharField(max_length=40, blank=True)
+    minute_number = models.IntegerField(null=True, blank=True)
+    period = models.CharField(max_length=40, blank=True)
+    home_score = models.IntegerField(null=True, blank=True)
+    away_score = models.IntegerField(null=True, blank=True)
+    status = models.CharField(max_length=40, blank=True)
+    performance = models.JSONField(default=dict, blank=True)
+    odds = models.JSONField(default=list, blank=True)
+    fingerprint = models.CharField(max_length=64, db_index=True)
+    observed_at = models.DateTimeField(default=timezone.now, db_index=True)
+
+    class Meta:
+        ordering = ["-observed_at"]
+        indexes = [
+            models.Index(fields=["ecuabet_event_id", "observed_at"], name="patron_evento_fecha"),
+            models.Index(fields=["home_team", "observed_at"], name="patron_local_fecha"),
+            models.Index(fields=["away_team", "observed_at"], name="patron_visita_fecha"),
+        ]
+
+    def __str__(self):
+        return f"{self.home_team} {self.home_score}-{self.away_score} {self.away_team} · {self.minute}"
+
+
+class TeamBehaviorProfile(models.Model):
+    """Perfil agregado por equipo, alimentado solo por snapshots de partidos."""
+    team_key = models.CharField(max_length=220, unique=True)
+    team_name = models.CharField(max_length=180)
+    snapshots_count = models.PositiveIntegerField(default=0)
+    matches_observed = models.PositiveIntegerField(default=0)
+    last_seen = models.DateTimeField(null=True, blank=True)
+    behavior = models.JSONField(default=dict, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-snapshots_count", "team_name"]
+        verbose_name = "Perfil de comportamiento de equipo"
+        verbose_name_plural = "Perfiles de comportamiento de equipos"
+
+    def __str__(self):
+        return self.team_name
