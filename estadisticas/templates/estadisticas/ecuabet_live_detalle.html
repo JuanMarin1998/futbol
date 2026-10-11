@@ -20,6 +20,18 @@
 .bar{height:5px;background:#0f172a;border-radius:5px;overflow:hidden}.bar>i{display:block;height:100%;background:#64748b}
 .ld-muted{color:#94a3b8;font-size:.85rem}.exp-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}.exp-box{background:#0f172a;border:1px solid #334155;border-radius:10px;padding:.75rem}.exp-life{font-size:1.65rem;font-weight:900}.exp-positive{color:#4ade80}.exp-negative{color:#f87171}.exp-actions{display:flex;gap:.6rem;flex-wrap:wrap}.exp-btn{border:0;border-radius:8px;padding:.65rem .9rem;font-weight:800;cursor:pointer}.exp-start{background:#16a34a;color:#fff}.exp-stop{background:#dc2626;color:#fff}.exp-badge{display:inline-block;border-radius:999px;padding:.2rem .5rem;font-size:.72rem;font-weight:900;background:#334155}.exp-entry{border:1px solid #334155;border-radius:9px;padding:.65rem;margin-top:.55rem}.exp-level-1{color:#4ade80}.exp-level-2{color:#facc15}.exp-level-3{color:#fb923c}.exp-level-0{color:#f87171}.ld-muted{color:#94a3b8;font-size:.85rem}.ld-back{color:#60a5fa;text-decoration:none}.lineup-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}.lineup-team{background:#0f172a;border:1px solid #334155;border-radius:10px;padding:.8rem;min-width:0}.lineup-team h4{margin:0 0 .5rem}.lineup-formation{font-size:.8rem;color:#93c5fd;margin-bottom:.55rem}.lineup-list{list-style:none;padding:0;margin:.25rem 0 .75rem}.lineup-list li{padding:.25rem 0;border-bottom:1px solid #1e293b;font-size:.86rem}.lineup-number{display:inline-block;min-width:1.7rem;color:#94a3b8;font-variant-numeric:tabular-nums}.lineup-subtitle{font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;color:#94a3b8;margin:.65rem 0 .25rem}.lineup-status{padding:.65rem;background:#0f172a;border-radius:8px;color:#cbd5e1;font-size:.88rem}@media(max-width:600px){.lineup-grid{grid-template-columns:1fr}}
 @media(max-width:800px){.ld-layout{grid-template-columns:1fr}}
+
+.ld-tabs{display:flex;gap:.45rem;flex-wrap:wrap;margin:1rem 0 .75rem;position:sticky;top:0;z-index:5;background:#0f172a;padding:.55rem;border:1px solid #334155;border-radius:10px}
+.ld-tab{border:1px solid #334155;background:#1e293b;color:#cbd5e1;border-radius:8px;padding:.6rem .8rem;cursor:pointer;font-weight:750;font-size:.88rem}
+.ld-tab[aria-selected="true"]{background:#2563eb;border-color:#3b82f6;color:#fff}
+.ld-tab-panel{display:none}.ld-tab-panel.active{display:block}
+.ld-summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.65rem;margin-top:.75rem}
+.ld-summary-item{background:#0f172a;border:1px solid #334155;border-radius:9px;padding:.75rem}
+.ld-summary-label{font-size:.78rem;color:#94a3b8}.ld-summary-value{font-size:1.1rem;font-weight:900;margin-top:.25rem}
+.ld-filter-row{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-bottom:.7rem}
+.ld-search{flex:1;min-width:180px;background:#0f172a;border:1px solid #475569;color:#e2e8f0;border-radius:8px;padding:.65rem}
+.ld-market-group{margin-bottom:.7rem}
+
 </style>
 
 <div class="ld-head">
@@ -231,27 +243,64 @@ function renderLineups(context, homeName, awayName){
     '</div><div class="ld-muted" style="margin-top:.5rem">Fuente: proveedor de contexto Flashscore · estado: disponible</div>';
 }
 
+let activeMatchTab='resumen';
+function setMatchTab(tab){
+  activeMatchTab=tab;
+  document.querySelectorAll('.ld-tab').forEach(b=>{
+    const selected=b.dataset.tab===tab;
+    b.setAttribute('aria-selected',selected?'true':'false');
+    b.tabIndex=selected?0:-1;
+  });
+  document.querySelectorAll('.ld-tab-panel').forEach(p=>p.classList.toggle('active',p.id==='tab-'+tab));
+}
+function filterMarkets(){
+  const q=(document.getElementById('market-search')?.value||'').trim().toLowerCase();
+  document.querySelectorAll('#tab-mercados .ld-market').forEach(m=>{
+    m.style.display=!q||m.textContent.toLowerCase().includes(q)?'':'none';
+  });
+}
 function render(e, flash){
   const teams=e.competitors||[], parts=(e.name||'').split(/\s+vs\.?\s+/i);
   const home=teams[0]?.name||parts[0]||'Local', away=teams[1]?.name||parts[1]||'Visitante', score=e.score||[];
   const markets=e.markets||[];
   const inventory=e.market_inventory||{};
-  let stats=flash?.performance;
-  return '<div class="ld-layout">'+
-    '<main><div class="ld-card"><div class="ld-teams"><div class="ld-team">'+esc(home)+'</div><div><div class="ld-score">'+(score[0]??0)+' - '+(score[1]??0)+'</div><div class="ld-minute">'+esc(e.liveTime||e.live_time||e.live_status||'LIVE') + (e.ls ? '<div class="ld-muted" style="font-size:.78rem">'+esc(e.ls)+'</div>' : '')+'</div></div><div class="ld-team ld-away">'+esc(away)+'</div></div><div class="ld-muted" style="text-align:center;margin-top:.7rem">'+esc(e.champ?.name||'')+'</div></div>'+
-    '<div class="ld-card ld-section"><div class="ld-title">📊 Estadísticas en línea</div>'+renderStats(stats)+'</div>'+
-    '<div class="ld-card ld-section"><div class="ld-title">👥 Alineaciones</div>'+renderLineups(flash?.pre_match_context,home,away)+'</div>'+
-    '<div class="ld-card ld-section"><div class="ld-title">🎯 Comparación de motores</div>'+renderOpportunities(flash?.opportunities||[],flash?.opportunities_v2||[])+'</div></main>'+
-    '<aside><div class="ld-card"><div class="ld-title">💰 Mercados y cuotas Ecuabet</div><div class="ld-muted" style="margin-bottom:.65rem">Mercados: '+esc(inventory.markets_count??markets.length)+' · Selecciones: '+esc(inventory.selections_count??markets.reduce((n,m)=>n+(m.selections||[]).length,0))+'</div>'+ (markets.length?markets.map(m=>'<div class="ld-market"><h4>'+esc(m.name||('Mercado '+(m.type_id??'')))+(m.line!==null&&m.line!==undefined&&m.line!==''?' · '+esc(m.line):'')+(m.status||m.market_status?' <span class="exp-badge">'+esc(m.market_status||m.status)+'</span>':'')+(m.is_suspended?' <span class="exp-badge">Suspendido</span>':'')+'</h4>'+((m.selections||[]).length?m.selections.map(o=>'<div style="display:flex;justify-content:space-between;padding:.55rem .7rem;border-bottom:1px solid #334155"><span>'+esc(o.name||o.short_name||('Selección '+(o.id??'')))+(o.odd_status?' <span class="ld-muted">('+esc(o.odd_status)+')</span>':'')+'</span><span class="ld-price">'+price(o.price)+'</span></div>').join(''):'<div class="ld-muted" style="padding:.55rem .7rem">Mercado recibido sin selecciones enlazadas.</div>')+'</div>').join(''):'<div class="ld-muted">Ecuabet no devolvió mercados para este evento en esta actualización.</div>')+'</div>'+
-    '<div class="ld-card ld-section"><div class="ld-title">🔗 Fuente estadística</div>'+ (flash?.flashscore_event_id?'<div class="ld-muted">Flashscore conectado · ID '+esc(flash.flashscore_event_id)+'</div><a class="ld-back" style="display:inline-block;margin-top:.55rem" href="'+esc(flash.flashscore_url||('https://www.flashscore.com/match/'+flash.flashscore_event_id+'/'))+'" target="_blank" rel="noopener noreferrer">↗ Abrir partido en Flashscore</a>':'<div class="ld-muted">El partido está seleccionado, pero aún falta vincular su ID de Flashscore.</div>')+(flash?.feed_error?'<div class="ld-muted" style="margin-top:.5rem;color:#fbbf24">⚠️ Estadísticas detalladas: '+esc(flash.feed_error)+'</div>':'')+'</div></aside></div>';
+  const stats=flash?.performance;
+  const minute=e.liveTime||e.live_time||e.live_status||'LIVE';
+  const marketHtml=markets.length?markets.map(m=>'<div class="ld-market"><h4>'+esc(m.name||('Mercado '+(m.type_id??'')))+(m.line!==null&&m.line!==undefined&&m.line!==''?' · '+esc(m.line):'')+(m.status||m.market_status?' <span class="exp-badge">'+esc(m.market_status||m.status)+'</span>':'')+(m.is_suspended?' <span class="exp-badge">Suspendido</span>':'')+'</h4>'+((m.selections||[]).length?m.selections.map(o=>'<div style="display:flex;justify-content:space-between;padding:.55rem .7rem;border-bottom:1px solid #334155"><span>'+esc(o.name||o.short_name||('Selección '+(o.id??'')))+(o.odd_status?' <span class="ld-muted">('+esc(o.odd_status)+')</span>':'')+'</span><span class="ld-price">'+price(o.price)+'</span></div>').join(''):'<div class="ld-muted" style="padding:.55rem .7rem">Mercado recibido sin selecciones enlazadas.</div>')+'</div>').join(''):'<div class="ld-muted">Ecuabet no devolvió mercados para este evento en esta actualización.</div>';
+  const sourceHtml=(flash?.flashscore_event_id?'<div class="ld-muted">Flashscore conectado · ID '+esc(flash.flashscore_event_id)+'</div><a class="ld-back" style="display:inline-block;margin-top:.55rem" href="'+esc(flash.flashscore_url||('https://www.flashscore.com/match/'+flash.flashscore_event_id+'/'))+'" target="_blank" rel="noopener noreferrer">↗ Abrir partido en Flashscore</a>':'<div class="ld-muted">El partido está seleccionado, pero aún falta vincular su ID de Flashscore.</div>')+(flash?.feed_error?'<div class="ld-muted" style="margin-top:.5rem;color:#fbbf24">⚠️ Estadísticas detalladas: '+esc(flash.feed_error)+'</div>':'');
+  const statTypes=[...new Set([...(stats?.raw_types||[]),...Object.keys(stats?.home||{}),...Object.keys(stats?.away||{})])];
+  const quickStats=['expected_goals','ball_possession','total_shots','shots_on_target','corner_kicks','big_chances'];
+  const statByLabel=(needle)=>{
+    const h=stats?.home||{}, a=stats?.away||{};
+    const t=statTypes.find(k=>String(statDisplayName(h,a,k)).toLowerCase().includes(needle));
+    return t?{label:statDisplayName(h,a,t),home:statText(h,t),away:statText(a,t)}:null;
+  };
+  const summaries=[statByLabel('expected goals'),statByLabel('posesión'),statByLabel('remates totales'),statByLabel('remates a puerta'),statByLabel('córneres'),statByLabel('grandes ocasiones')].filter(Boolean);
+  return '<div class="ld-card"><div class="ld-teams"><div class="ld-team">'+esc(home)+'</div><div><div class="ld-score">'+(score[0]??0)+' - '+(score[1]??0)+'</div><div class="ld-minute">'+esc(minute)+(e.ls?'<div class="ld-muted" style="font-size:.78rem">'+esc(e.ls)+'</div>':'')+'</div></div><div class="ld-team ld-away">'+esc(away)+'</div></div><div class="ld-muted" style="text-align:center;margin-top:.7rem">'+esc(e.champ?.name||'')+'</div></div>'+
+  '<nav class="ld-tabs" aria-label="Secciones del partido">'+
+    '<button type="button" class="ld-tab" data-tab="resumen" aria-selected="true" onclick="setMatchTab(\'resumen\')">📌 Resumen</button>'+
+    '<button type="button" class="ld-tab" data-tab="estadisticas" aria-selected="false" onclick="setMatchTab(\'estadisticas\')">📊 Estadísticas</button>'+
+    '<button type="button" class="ld-tab" data-tab="alineaciones" aria-selected="false" onclick="setMatchTab(\'alineaciones\')">👥 Alineaciones</button>'+
+    '<button type="button" class="ld-tab" data-tab="motores" aria-selected="false" onclick="setMatchTab(\'motores\')">🎯 Motores</button>'+
+    '<button type="button" class="ld-tab" data-tab="mercados" aria-selected="false" onclick="setMatchTab(\'mercados\')">💰 Mercados ('+esc(inventory.markets_count??markets.length)+')</button>'+
+    '<button type="button" class="ld-tab" data-tab="fuente" aria-selected="false" onclick="setMatchTab(\'fuente\')">🔗 Fuente</button>'+
+  '</nav>'+
+  '<section id="tab-resumen" class="ld-tab-panel active"><div class="ld-card"><div class="ld-title">📌 Resumen del partido</div><div class="ld-muted">Marcador en vivo y principales indicadores disponibles.</div><div class="ld-summary-grid">'+
+    (summaries.length?summaries.map(s=>'<div class="ld-summary-item"><div class="ld-summary-label">'+esc(s.label)+'</div><div class="ld-summary-value">'+esc(s.home)+' – '+esc(s.away)+'</div></div>').join(''):'<div class="ld-muted">Las estadísticas principales aún no están disponibles.</div>')+
+    '</div></div></section>'+
+  '<section id="tab-estadisticas" class="ld-tab-panel"><div class="ld-card"><div class="ld-title">📊 Estadísticas en línea</div>'+renderStats(stats)+'</div></section>'+
+  '<section id="tab-alineaciones" class="ld-tab-panel"><div class="ld-card"><div class="ld-title">👥 Alineaciones</div>'+renderLineups(flash?.pre_match_context,home,away)+'</div></section>'+
+  '<section id="tab-motores" class="ld-tab-panel"><div class="ld-card"><div class="ld-title">🎯 Comparación de motores</div>'+renderOpportunities(flash?.opportunities||[],flash?.opportunities_v2||[])+'</div></section>'+
+  '<section id="tab-mercados" class="ld-tab-panel"><div class="ld-card"><div class="ld-title">💰 Mercados y cuotas Ecuabet</div><div class="ld-muted" style="margin-bottom:.65rem">Mercados: '+esc(inventory.markets_count??markets.length)+' · Selecciones: '+esc(inventory.selections_count??markets.reduce((n,m)=>n+(m.selections||[]).length,0))+'</div><div class="ld-filter-row"><input id="market-search" class="ld-search" type="search" placeholder="Buscar mercado o selección..." oninput="filterMarkets()" aria-label="Buscar mercados y selecciones"></div>'+marketHtml+'</div></section>'+
+  '<section id="tab-fuente" class="ld-tab-panel"><div class="ld-card"><div class="ld-title">🔗 Fuente estadística</div>'+sourceHtml+'</div></section>';
 }
-
 async function cargar(){
   try{
     const r=await fetch("{% url 'estadisticas:api_ecuabet_live_detalle' ecuabet_event_id %}",{cache:'no-store'});
     const d=await r.json(); if(!r.ok||!d.ok)throw new Error(d.error||'No disponible');
     const flash=d.match || null;
     document.getElementById('match').innerHTML=render(d.event,flash);
+    setMatchTab(activeMatchTab);
     renderExperiment(d.experiment || null);
   }catch(err){document.getElementById('match').innerHTML='<div class="ld-card ld-muted">'+esc(err.message)+'</div>';}
 }
