@@ -24,6 +24,8 @@ class LiveMatch:
 
     odds: list = field(default_factory=list)
     performance: Dict[str, Any] = field(default_factory=dict)
+    # Contexto opcional de alineaciones, forma reciente e instalaciones/calendario.
+    pre_match_context: Dict[str, Any] = field(default_factory=dict)
     events: list = field(default_factory=list)
     opportunities: list = field(default_factory=list)
     opportunities_v2: list = field(default_factory=list)
@@ -57,6 +59,7 @@ class LiveMatch:
             "away_score": self.away_score,
             "odds": self.odds,
             "performance": self.performance,
+            "pre_match_context": self.pre_match_context,
             "events": self.events,
             "opportunities": self.opportunities,
             "opportunities_v2": self.opportunities_v2,

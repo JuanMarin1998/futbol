@@ -4,6 +4,7 @@ from ..ecuabet_client import EcuabetClient
 from ..flashscore_client import FlashscoreClient
 from .match_mapper import MatchMapper, MatchMappingError
 from .models import LiveMatch
+from .flashscore_context import FlashscoreContextProvider
 from .opportunity_engine import LiveOpportunityEngine
 from .opportunity_engine_v2 import LiveOpportunityEngineV2
 from .opportunity_engine_v11 import LiveOpportunityEngineV11
@@ -20,10 +21,11 @@ from ..models import LiveExperiment
 class LiveMatchCollector:
     """Une un evento LIVE de Ecuabet con datos LIVE de Flashscore."""
 
-    def __init__(self, ecuabet_client=None, flashscore_client=None, mapper=None):
+    def __init__(self, ecuabet_client=None, flashscore_client=None, mapper=None, context_provider=None):
         self.ecuabet = ecuabet_client or EcuabetClient()
         self.flashscore = flashscore_client or FlashscoreClient()
         self.mapper = mapper or MatchMapper()
+        self.context_provider = context_provider or FlashscoreContextProvider()
 
     def construir(self, ecuabet_event_id: int, flashscore_event_id: str) -> LiveMatch:
         ecuabet = self._obtener_ecuabet_evento(ecuabet_event_id)
@@ -229,6 +231,24 @@ class LiveMatchCollector:
             mapping_confidence=mapping_confidence,
             data_quality=self._calculate_data_quality(stats),
         )
+        # Contexto ampliado optativo. Solo se consulta cuando se configura un
+        # proveedor compatible; sus errores nunca interrumpen el motor LIVE.
+        # No cambia las fórmulas originales de V1, V2 ni V.Pro.
+        if self.context_provider.base_url and match.flashscore_event_id:
+            try:
+                match.pre_match_context = self.context_provider.obtener_contexto(
+                    match.flashscore_event_id,
+                    home_team_id=home.get("id"),
+                    away_team_id=away.get("id"),
+                )
+            except Exception as exc:
+                match.pre_match_context = {
+                    "provider": "flashscore_context_api",
+                    "lineups": {"status": "unavailable", "data": {}, "error": str(exc)},
+                    "history": {"status": "unavailable", "data": {}, "error": str(exc)},
+                    "fixtures": {"status": "unavailable", "data": {}, "error": str(exc)},
+                }
+
         # Si el proveedor confirma FINAL, los motores dejan de generar
         # oportunidades nuevas. El experimento solo debe liquidar las abiertas.
         if match.is_finished:
