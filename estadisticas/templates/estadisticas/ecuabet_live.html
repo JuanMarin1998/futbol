@@ -23,7 +23,7 @@
 const POLL_MS={{ live_poll_ms }};
 function esc(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
 function renderEvent(e){
-  const teams=e.competitors||[], parts=(e.name||'').split(/\\s+vs\\.?\\s+/i);
+  const teams=e.competitors||[], parts=(e.name||'').split(/\s+vs\.?\s+/i);
   const home=teams[0]?.name||parts[0]||'Local', away=teams[1]?.name||parts[1]||'Visitante', score=e.score||[];
   const minute=e.live_time||e.live_status||'LIVE';
   return '<a class="ec-card" href="/live/ecuabet/'+encodeURIComponent(e.id)+'/" style="text-decoration:none;color:inherit;display:block" aria-label="'+esc(home)+' '+(score[0]??0)+' a '+(score[1]??0)+' '+esc(away)+', '+esc(minute)+'"><div class="ec-match"><div class="ec-team">'+esc(home)+'</div><div class="ec-center"><div class="ec-score">'+(score[0]??0)+' - '+(score[1]??0)+'</div><div class="ec-minute">'+esc(minute)+'</div></div><div class="ec-team ec-away">'+esc(away)+'</div></div></a>';
