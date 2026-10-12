@@ -1738,6 +1738,72 @@ def laboratorio_patrones(request):
     return render(request, "estadisticas/laboratorio_patrones.html", context)
 
 
+def api_patron_oportunidades_partidos(request):
+    """Devuelve únicamente partidos LIVE con contexto previo guardado y favorito por cuota."""
+    try:
+        hoy = timezone.localdate()
+        contexts = list(EcuabetPreMatchContext.objects.filter(match_date=hoy).order_by("kickoff", "match_name"))
+        def cuota_valida(value):
+            try:
+                value = float(value)
+                return 1.05 <= value <= 2.00
+            except (TypeError, ValueError):
+                return False
+
+        eligible_contexts = []
+        for ctx in contexts:
+            if not ctx.favorite:
+                continue
+            if not (cuota_valida(ctx.home_odds) or cuota_valida(ctx.away_odds)):
+                continue
+            eligible_contexts.append(ctx)
+
+        if not eligible_contexts:
+            return JsonResponse({
+                "ok": True, "count": 0, "events": [],
+                "contexts_found": len(contexts), "live_found": 0,
+                "note": "No hay fichas previas de hoy con favorito dentro de la regla de cuota 1.05–2.00.",
+                "updated_at": timezone.localtime().strftime("%H:%M:%S"),
+            })
+
+        payload = EcuabetClient()._request("GET", "GetLivenow", {"eventCount": 0, "sportId": 66})
+        live_events = payload.get("events", []) if isinstance(payload, dict) else []
+        live_by_id = {
+            str(event.get("id") or event.get("eventId")): event
+            for event in live_events if isinstance(event, dict)
+        }
+        result = []
+        for ctx in eligible_contexts:
+            event = live_by_id.get(str(ctx.ecuabet_event_id))
+            if not event:
+                continue
+            result.append({
+                "id": ctx.ecuabet_event_id,
+                "name": ctx.match_name,
+                "home": ctx.home_team,
+                "away": ctx.away_team,
+                "favorite": ctx.favorite,
+                "home_odds": ctx.home_odds,
+                "draw_odds": ctx.draw_odds,
+                "away_odds": ctx.away_odds,
+                "captured_at": timezone.localtime(ctx.captured_at).strftime("%H:%M:%S"),
+                "live_time": event.get("liveTime") or event.get("timer") or event.get("status") or "LIVE",
+                "score": event.get("score"),
+                "championship": ctx.championship,
+            })
+        return JsonResponse({
+            "ok": True, "count": len(result), "events": result,
+            "contexts_found": len(contexts), "favorite_contexts": len(eligible_contexts),
+            "live_found": len(live_by_id),
+            "source": "Ecuabet GetLivenow + contexto previo persistente",
+            "updated_at": timezone.localtime().strftime("%H:%M:%S"),
+            "note": "Solo se incluyen partidos actualmente LIVE, con contexto guardado y favorito por cuota entre 1.05 y 2.00.",
+        })
+    except Exception as exc:
+        logger.exception("Error filtrando partidos del Patrón de Oportunidades")
+        return JsonResponse({"ok": False, "error": str(exc), "events": []}, status=502)
+
+
 def patron_oportunidades(request):
     """Pantalla del patrón conectado al flujo LIVE y motores existentes."""
     return render(
@@ -1764,6 +1830,22 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
     from .live_engine.opportunity_engine_vpro11 import LiveOpportunityEngineVPro11
 
     try:
+        saved_context = EcuabetPreMatchContext.objects.filter(
+            ecuabet_event_id=ecuabet_event_id, match_date=timezone.localdate()
+        ).first()
+        if not saved_context or not saved_context.favorite:
+            return JsonResponse({"ok": False, "error": "El partido no tiene un contexto previo guardado con favorito identificado."}, status=409)
+        valid_favorite_odds = []
+        for value in (saved_context.home_odds, saved_context.away_odds):
+            try:
+                odd_value = float(value)
+                if 1.05 <= odd_value <= 2.00:
+                    valid_favorite_odds.append(odd_value)
+            except (TypeError, ValueError):
+                pass
+        if not valid_favorite_odds:
+            return JsonResponse({"ok": False, "error": "La cuota del favorito no cumple el rango de 1.05 a 2.00."}, status=409)
+
         previous = (
             MatchBehaviorSnapshot.objects
             .filter(ecuabet_event_id=ecuabet_event_id)
@@ -1970,6 +2052,33 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
                 "decision": "DESCARTAR_POR_AHORA",
                 "motivo": "Los motores no reportaron edge positivo en las oportunidades disponibles.",
             }
+
+        # Guardar cada observación LIVE para que la siguiente pasada compare marcador/minuto.
+        import hashlib
+        import json
+        fingerprint_data = {
+            "id": int(match.ecuabet_event_id),
+            "minute": str(current_minute or ""),
+            "score": now_score,
+            "status": str(getattr(match, "status", "") or ""),
+        }
+        MatchBehaviorSnapshot.objects.create(
+            ecuabet_event_id=int(match.ecuabet_event_id),
+            flashscore_event_id=str(getattr(match, "flashscore_event_id", "") or ""),
+            home_team=str(match.home_team or ""),
+            away_team=str(match.away_team or ""),
+            league=str(match.league or ""),
+            minute=str(current_minute or ""),
+            minute_number=minute_num,
+            period=str(getattr(match, "period", "") or ""),
+            home_score=home,
+            away_score=away,
+            status=str(getattr(match, "status", "") or ""),
+            performance=performance if isinstance(performance, dict) else {},
+            odds=[],
+            fingerprint=hashlib.sha256(json.dumps(fingerprint_data, sort_keys=True, default=str).encode("utf-8")).hexdigest(),
+            observed_at=timezone.now(),
+        )
 
         return JsonResponse({
             "ok": True,
