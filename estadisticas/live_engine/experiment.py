@@ -189,11 +189,19 @@ class LiveExperimentManager:
             wins += int(status == "WON")
 
         if sample_size < 20:
-            return round(raw_probability, 6), sample_size, "muestra_insuficiente_probabilidad_original"
+            # Sin muestra comparable, retrae la estimación hacia la cuota implícita
+            # y evita presentar una probabilidad provisional extrema como certeza.
+            try:
+                price = float(opportunity.get("price") or 0)
+                market_probability = 1.0 / price if price > 1 else raw_probability
+            except (TypeError, ValueError):
+                market_probability = raw_probability
+            calibrated = 0.35 * raw_probability + 0.65 * market_probability
+            return round(max(0.02, min(0.90, calibrated)), 6), sample_size, "provisional_retraida_a_cuota_muestra_insuficiente"
         # Prior centrado en la probabilidad del modelo (12 observaciones equivalentes)
         # evita que una racha pequeña mueva demasiado la predicción.
         calibrated = (wins + raw_probability * 12.0) / (sample_size + 12.0)
-        return round(max(0.01, min(0.99, calibrated)), 6), sample_size, "media_empirica_suavizada_VP11"
+        return round(max(0.02, min(0.90, calibrated)), 6), sample_size, "media_empirica_suavizada_VP11"
 
     @classmethod
     def _prepare_opportunities(cls, motor: str, opportunities, match=None):
@@ -770,11 +778,22 @@ class LiveExperimentManager:
             raw_p = float(opportunity.get("raw_model_probability") or model_p)
             sample_n = int(opportunity.get("calibration_sample_size") or 0)
             method = str(opportunity.get("calibration_method") or "sin datos")
+            if sample_n < 20:
+                base += (
+                    f"; estimación provisional retraída hacia la cuota implícita: modelo original "
+                    f"{raw_p * 100:.1f}%, estimación prudente {model_p * 100:.1f}% "
+                    f"({method}, {sample_n}/20 resultados comparables); probabilidad limitada al 90%"
+                )
+            else:
+                base += (
+                    f"; probabilidad suavizada con historial VP11: original {raw_p * 100:.1f}%, "
+                    f"estimación {model_p * 100:.1f}% ({method}, {sample_n} resultados comparables); "
+                    "probabilidad limitada al 90%"
+                )
             base += (
-                f"; V.Pro 1.1 conserva probabilidad original {raw_p * 100:.1f}% y la calibra a "
-                f"{model_p * 100:.1f}% ({method}, {sample_n} resultados VP11 previos comparables); "
-                "filtro de cuota favorita 1.05–1.70, coherencia estadística, calidad de datos y "
-                "stake máximo 5 vidas, con topes de exposición propios"
+                "; filtro de cuota del favorito del partido 1.05–1.70 (no es el rango de cuota "
+                "de la selección apostada), validación de datos y coherencia estadística; "
+                "stake máximo 5 vidas y topes de exposición propios"
             )
         elif motor == "V4":
             raw_p = float(opportunity.get("raw_model_probability") or model_p)
@@ -984,6 +1003,21 @@ class LiveExperimentManager:
         )
         return entry
 
+    @staticmethod
+    def _vpro11_unsupported_combination(entry) -> bool:
+        """Combinadas VP11 sin probabilidad conjunta o regla segura de liquidación."""
+        text = f"{entry.market or ''} {entry.selection or ''}".casefold()
+        normalized = re.sub(r"[^a-z0-9]+", "", text)
+        has_joiner = any(token in text for token in ("&", "+", " y ", " and "))
+        has_draw = "empate" in normalized or "draw" in normalized
+        has_btts = any(token in normalized for token in (
+            "ambosequiposmarcan", "ambosmarcan", "btts", "bothteams", "empateysi", "drawandyes"
+        ))
+        has_multigoals = "multigoles" in normalized
+        has_double_chance = any(token in normalized for token in ("dobleoportunidad", "doublechance", "1x", "x2"))
+        has_total = any(token in normalized for token in ("totalgoles", "over", "under", "masde", "menosde", "goles"))
+        return has_multigoals or (has_joiner and ((has_draw and has_btts) or (has_double_chance and has_total)))
+
     @classmethod
     def _market_result(cls, entry, home_score, away_score, experiment) -> Optional[bool]:
         selection = entry.selection.lower().strip()
@@ -1061,7 +1095,7 @@ class LiveExperimentManager:
         if not cls._valid_final(match): return False
         final_home, final_away = int(match.home_score), int(match.away_score)
         for entry in experiment.entries.filter(status="OPEN"):
-            won = cls._market_result(entry, final_home, final_away, experiment)
+            won = None if entry.motor == "VP11" and cls._vpro11_unsupported_combination(entry) else cls._market_result(entry, final_home, final_away, experiment)
             if won is None:
                 entry.status, entry.pnl = "CANCELLED", Decimal("0")
             elif won:
@@ -1243,7 +1277,7 @@ class LiveExperimentManager:
 
         final_home, final_away = int(experiment.final_home_score), int(experiment.final_away_score)
         for entry in experiment.entries.select_for_update().filter(status="OPEN").order_by("placed_at", "id"):
-            result = cls._market_result(entry, final_home, final_away, experiment)
+            result = None if entry.motor == "VP11" and cls._vpro11_unsupported_combination(entry) else cls._market_result(entry, final_home, final_away, experiment)
             if result is None:
                 entry.status, entry.pnl = "CANCELLED", Decimal("0")
             elif result:
