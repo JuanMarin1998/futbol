@@ -253,7 +253,13 @@
       if(!res.ok||!data.ok)throw new Error(data.error||'Falló la simulación.');
       resultById[String(event.id)]={event,data};
       const reaction=data.etapas&&data.etapas.reaccion||{};
-      const signals=reaction.senales_recibidas||[];
+      const allSignals=reaction.senales_recibidas||[];
+      const normTeam=s=>String(s||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+      const favName=normTeam(event.favorite), homeName=normTeam(data.partido?.local), awayName=normTeam(data.partido?.visitante);
+      const favAway=!!favName&&!!awayName&&(favName===awayName||favName.includes(awayName)||awayName.includes(favName));
+      const favHome=!!favName&&!!homeName&&(favName===homeName||favName.includes(homeName)||homeName.includes(favName));
+      const focusKeys=favAway?['away','dc_x2']:favHome?['home','dc_1x']:[];
+      const signals=allSignals.filter(signal=>focusKeys.includes(String(signal.clave||'')));
       signals.forEach(signal=>{
        const key=String(event.id)+'::'+String(signal.clave||signal.mercado);
        const existingIndex=opportunityRecords.findIndex(record=>record.key===key);
