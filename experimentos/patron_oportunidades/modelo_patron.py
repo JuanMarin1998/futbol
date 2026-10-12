@@ -229,7 +229,8 @@ def analizar_patron(contexto: ContextoPrevio, estado: EstadoPartido,
                and estado.tiros_puerta_local is not None and estado.tiros_puerta_visitante is not None
                and bool(estado.mercados_disponibles) and bool(contexto.expectativa.strip())
                and (anterior is None or estado.minuto > anterior.minuto)
-               and not any("Marcador no monotónico" in x for x in faltantes))
+               and not any("Marcador no monotónico" in x for x in faltantes)
+               and not anomalias)
     puede_valorar = minimos and any(
         isinstance(estado.cuotas.get(m), (int, float)) and estado.cuotas[m] > 1
         and isinstance((probabilidades_motor or {}).get(m), (int, float))
