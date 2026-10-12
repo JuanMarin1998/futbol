@@ -87,21 +87,23 @@
   const name=(data&&data.partido)?(data.partido.local+' vs '+data.partido.visitante):e.name;
   if(error)return '<article class="match-card bad"><h3>'+esc(name)+'</h3><span class="pill">Error</span><p>'+esc(error)+'</p></article>';
   const stages=data.etapas||{}, calc=stages.calculo||{}, monitor=stages.monitoreo||{}, reaction=stages.reaccion||{};
-  const ops=calc.oportunidades||[];
-  const opsHtml=ops.length?'<ul class="op-list">'+ops.slice().sort((a,b)=>(Number(b.edge_estadistico_pct)||-999)-(Number(a.edge_estadistico_pct)||-999)).slice(0,8).map(op=>'<li><strong>'+esc(op.motor)+'</strong>: '+esc(op.mercado)+' · '+esc(op.seleccion)+' · cuota '+esc(op.cuota)+'<br>Edge del motor: '+esc(op.edge_pct==null?'—':op.edge_pct+'%')+' · Prob. estadística: '+esc(op.probabilidad_estadistica_pct==null?'sin referencia':op.probabilidad_estadistica_pct+'%')+' · Edge estadístico: '+esc(op.edge_estadistico_pct==null?'—':op.edge_estadistico_pct+'%')+'<br>Contraste: <strong>'+esc(op.consenso_estadistico||'—')+'</strong> · Estado: '+esc(op.estado_mercado_live||'—')+(op.diferencia_motor_vs_estadistica_pp==null?'':' · Diferencia: '+esc(op.diferencia_motor_vs_estadistica_pp)+' pp')+'</li>').join('')+'</ul>':'<p class="muted">Sin señales de oportunidad en esta pasada.</p>';
-  return '<article class="match-card '+(ops.length?'good':'')+'"><div class="result-title">'+esc(name)+'</div><div class="match-meta"><strong>Marcador:</strong> '+esc(scoreText(data.partido.marcador))+' · <strong>Minuto:</strong> '+esc(data.partido.minuto||'—')+'<br><strong>Calidad de datos:</strong> '+esc(data.partido.calidad_datos||'—')+'</div><div class="result-grid"><div class="stage-mini"><strong>Contexto</strong>'+esc(stages.contexto&&stages.contexto.status)+'</div><div class="stage-mini"><strong>Monitoreo</strong>'+esc(monitor.status)+'<br>'+esc(monitor.motivo)+'</div><div class="stage-mini"><strong>Acción · datos LIVE</strong>'+esc((stages.accion||{}).status)+'<br>'+esc(((stages.accion||{}).cambios_detectados||[]).length)+' cambios estadísticos detectados</div><div class="stage-mini"><strong>Probabilidad · estadísticas</strong>'+esc((stages.probabilidad||{}).status)+'<br>Más probable: '+esc(((stages.probabilidad||{}).mas_probable||{}).mercado||'—')+' ('+esc(((stages.probabilidad||{}).mas_probable||{}).probabilidad==null?'—':((stages.probabilidad||{}).mas_probable).probabilidad+'%')+')<br>'+esc(((stages.probabilidad||{}).mercados_probables||[]).slice(0,4).map(p=>p.mercado+': '+p.probabilidad+'%'+(p.estado_live==='YA_CUMPLIDO'?' (ya cumplido)':p.estado_live==='YA_NO_CUMPLIBLE'?' (ya no alcanzable)':'')).join(' · '))+'</div><div class="stage-mini"><strong>Cálculo · cuotas</strong>'+esc(calc.motores_con_senales||0)+' motores con señales · '+ops.length+' oportunidades</div><div class="stage-mini"><strong>Reacción</strong>'+esc(reaction.decision||'—')+'<br>'+esc(reaction.motivo||'')+'</div></div>'+opsHtml+'<details><summary>Ver diagnóstico completo</summary><pre class="match-meta">'+esc(JSON.stringify(stages,null,2))+'</pre></details></article>';
+  const ops=calc.mercados||[];
+  const opsHtml=ops.length?'<ul class="op-list">'+ops.map(op=>'<li><strong>'+esc(op.mercado||'Mercado')+'</strong> · Probabilidad '+esc(op.probabilidad==null?'—':op.probabilidad+'%')+' · Cuota justa '+esc(op.cuota_justa==null?'—':op.cuota_justa)+' · Ecuabet LIVE '+esc(op.cuota_ecuabet==null?'no disponible':op.cuota_ecuabet)+'<br>Variación probabilidad: '+esc(op.variacion_probabilidad_pp==null?'línea base':(op.variacion_probabilidad_pp>0?'+':'')+op.variacion_probabilidad_pp+' pp')+' · Variación cuota justa: '+esc(op.variacion_cuota_justa==null?'línea base':(op.variacion_cuota_justa>0?'+':'')+op.variacion_cuota_justa)+'</li>').join('')+'</ul>':'<p class="muted">Primera lectura: línea base guardada; los mercados se calcularán en el siguiente ciclo.</p>';
  }
  function renderOpportunities(){
-  opportunityCount.textContent=opportunityRecords.length+' señales';
+  opportunityCount.textContent=opportunityRecords.length+' mercados activos';
   if(!opportunityRecords.length){
-   opportunitiesResults.innerHTML='<p class="muted">Todavía no hay señales registradas. Se mostrarán aquí las oportunidades que reciban evaluación de Reacción, aunque finalmente se decida seguir monitoreando.</p>';
+   opportunitiesResults.innerHTML='<p class="muted">Primera lectura: guardando línea base. Los mercados aparecerán en el siguiente ciclo.</p>';
    return;
   }
-  opportunitiesResults.innerHTML=opportunityRecords.slice().reverse().map(record=>{
+  const movement=(value,suffix)=>{
+   if(value==null||!Number.isFinite(Number(value)))return 'sin variación previa';
+   const n=Number(value);
+   return n===0?'sin cambio':(n>0?'↑ +':'↓ ')+n+suffix;
+  };
+  opportunitiesResults.innerHTML=opportunityRecords.slice().sort((a,b)=>a.partido.localeCompare(b.partido)||String(a.signal.mercado).localeCompare(String(b.signal.mercado))).map(record=>{
    const op=record.signal||{};
-   const hasEdge=typeof op.edge_estadistico_pct==='number';
-   const eligible=op.estado_mercado_live==='ABIERTO'&&hasEdge&&op.edge_estadistico_pct>0&&op.consenso_estadistico!=='DISCREPANCIA_ALTA';
-   return '<article class="match-card '+(eligible?'good':'')+'"><h3>'+esc(record.partido||'Partido desconocido')+'</h3><div class="match-meta"><strong>Marcador:</strong> '+esc(scoreText(record.marcador))+' · <strong>Minuto:</strong> '+esc(record.minuto||'—')+'<br><strong>Registrado:</strong> '+esc(record.registrado||'—')+'<br><strong>Motor:</strong> '+esc(op.motor||'—')+'<br><strong>Mercado / selección:</strong> '+esc(op.mercado||'—')+' / '+esc(op.seleccion||'—')+'<br><strong>Cuota:</strong> '+esc(op.cuota==null?'—':op.cuota)+' · <strong>Estado:</strong> '+esc(op.estado_mercado_live||'—')+'<br><strong>Probabilidad del motor:</strong> '+esc(op.probabilidad_motor_pct==null?'—':op.probabilidad_motor_pct+'%')+' · <strong>Probabilidad estadística:</strong> '+esc(op.probabilidad_estadistica_pct==null?'sin referencia':op.probabilidad_estadistica_pct+'%')+'<br><strong>Probabilidad implícita:</strong> '+esc(op.probabilidad_implicita==null?'—':op.probabilidad_implicita)+' · <strong>Edge motor:</strong> '+esc(op.edge_motor_pct==null?'—':op.edge_motor_pct+'%')+' · <strong>Edge estadístico:</strong> '+esc(op.edge_estadistico_pct==null?'—':op.edge_estadistico_pct+'%')+'<br><strong>Consenso:</strong> '+esc(op.consenso_estadistico||'—')+' · <strong>Diferencia:</strong> '+esc(op.diferencia_motor_vs_estadistica_pp==null?'—':op.diferencia_motor_vs_estadistica_pp+' pp')+'<br><strong>Señal original:</strong> '+esc(op.senal_motor||'—')+'<br><strong>Evaluación de Reacción:</strong> '+(eligible?'<span class="pill">Edge positivo y mercado abierto</span>':'<span class="pill">Registrada · no supera todos los filtros</span>')+'</div></article>';
+   return '<article class="match-card"><h3>'+esc(record.partido||'Partido desconocido')+' · '+esc(op.mercado||'Mercado')+'</h3><div class="match-meta"><strong>Marcador:</strong> '+esc(scoreText(record.marcador))+' · <strong>Minuto:</strong> '+esc(record.minuto||'—')+'<br><strong>Probabilidad:</strong> '+esc(op.probabilidad==null?'—':op.probabilidad+'%')+' ('+esc(movement(op.variacion_probabilidad_pp,' pp'))+')<br><strong>Cuota justa calculada:</strong> '+esc(op.cuota_justa==null?'—':op.cuota_justa)+' ('+esc(movement(op.variacion_cuota_justa,''))+')<br><strong>Cuota Ecuabet LIVE:</strong> '+esc(op.cuota_ecuabet==null?'No disponible':op.cuota_ecuabet)+'<br><strong>Actualizado:</strong> '+esc(record.registrado||'—')+'</div></article>';
   }).join('');
  }
  function renderHistory(){
@@ -156,13 +158,13 @@
       resultById[String(event.id)]={event,data};
       const reaction=data.etapas&&data.etapas.reaccion||{};
       const signals=reaction.senales_recibidas||[];
-      signals.forEach(signal=>opportunityRecords.push({
-       partido:(data.partido.local+' vs '+data.partido.visitante),
-       marcador:data.partido.marcador,
-       minuto:data.partido.minuto,
-       registrado:new Date().toLocaleString(),
-       signal:signal
-      }));
+      signals.forEach(signal=>{
+       const key=String(event.id)+'::'+String(signal.clave||signal.mercado);
+       const existingIndex=opportunityRecords.findIndex(record=>record.key===key);
+       const record={key:key,event_id:String(event.id),partido:(data.partido.local+' vs '+data.partido.visitante),marcador:data.partido.marcador,minuto:data.partido.minuto,registrado:new Date().toLocaleString(),signal:signal};
+       if(existingIndex>=0)opportunityRecords[existingIndex]=record;
+       else opportunityRecords.push(record);
+      });
       renderOpportunities();
       const current=document.getElementById('pattern-result-'+String(event.id));
       if(current)current.outerHTML=resultCard(event,data,null).replace('<article class="match-card','<article id="pattern-result-'+esc(event.id)+'" class="match-card');
