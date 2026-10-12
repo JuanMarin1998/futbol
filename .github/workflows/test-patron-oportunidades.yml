@@ -39,3 +39,6 @@ jobs:
 
       - name: Validar cadena completa de seis etapas (Contexto a Reacción)
         run: python experimentos/patron_oportunidades/simular_cadena_completa.py
+
+      - name: Validar sintaxis de integración Django del patrón
+        run: python -m py_compile estadisticas/views_live.py estadisticas/urls.py
