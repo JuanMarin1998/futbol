@@ -2055,6 +2055,35 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
                 "cambios_detectados": changed_stats[:30],
             }
 
+        # Calcular probabilidades dentro del alcance de esta simulación por partido.
+        # El resultado se inicializa siempre para evitar referencias no definidas.
+        from .live_engine.probability_calculator import LiveProbabilityCalculator
+        calculator_result = None
+        if match is not None and monitoring["detonante"]:
+            calculator_result = LiveProbabilityCalculator.calculate(
+                match,
+                pre_match_context={
+                    "home_odds": saved_context.home_odds,
+                    "draw_odds": saved_context.draw_odds,
+                    "away_odds": saved_context.away_odds,
+                },
+            )
+            stage_probability = {
+                **calculator_result,
+                "status": "PROBABILIDAD_ESTADISTICA_ACTUALIZADA",
+                "estadisticas_live_recibidas": performance,
+                "criterio": "El calculador central estima los mercados permitidos con marcador/minuto LIVE, estadísticas disponibles y contexto 1X2 prepartido como referencia moderada.",
+                "motivo": "Probabilidades calculadas únicamente por LiveProbabilityCalculator; los motores no intervienen en este apartado.",
+            }
+        else:
+            stage_probability = {
+                "status": "ESPERANDO_DETONANTE",
+                "mercados_probables": [],
+                "mas_probable": None,
+                "estadisticas_utilizadas": {},
+                "motivo": "La primera lectura fija la línea base. El cálculo espera un nuevo gol confirmado.",
+            }
+
         # Patrón de Oportunidades usa exclusivamente el calculador central.
         # Los motores de estrategias permanecen fuera de este flujo y no se ejecutan aquí.
         mercados_calculados = list((calculator_result or {}).get("mercados_probables") or [])
