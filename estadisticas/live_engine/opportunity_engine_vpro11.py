@@ -29,14 +29,21 @@ class LiveOpportunityEngineVPro11:
         normalized = LiveOpportunityEngineVPro._norm(raw)
         if any(token in normalized for token in ("multigoles", "combinada", "combinado", "combo")):
             return True
+        has_joiner = "&" in raw or "+" in raw or " y " in raw or " and " in raw
         has_double_chance = any(token in normalized for token in (
             "dobleoportunidad", "doublechance", "1x", "x2", "12",
         ))
         has_total = any(token in normalized for token in (
-            "totalgoles", "over", "under", "masde", "menosde", "goles",
+            "totalgoles", "over", "under", "masde", "menosde", "multigoles", "goles",
         ))
-        has_joiner = "&" in raw or "+" in raw or " y " in raw or " and " in raw
-        return has_double_chance and has_total and has_joiner
+        has_draw = any(token in normalized for token in ("empate", "draw"))
+        has_btts = any(token in normalized for token in (
+            "ambosequiposmarcan", "ambosmarcan", "btts", "bothteams", "empateysi", "drawandyes",
+        ))
+        # Los mercados con varias condiciones requieren probabilidad conjunta.
+        return has_joiner and (
+            (has_double_chance and has_total) or (has_draw and has_btts)
+        )
 
     @classmethod
     def _all_market_candidates(cls, match, elapsed: float) -> List[Dict[str, Any]]:
