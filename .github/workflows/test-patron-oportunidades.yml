@@ -30,3 +30,5 @@ jobs:
         run: python experimentos/patron_oportunidades/simular_patron.py
       - name: Ejecutar flujo integral sintético de contexto a reacción
         run: python experimentos/patron_oportunidades/simular_partido_completo.py
+      - name: Probar cinco casos de Contexto frente a Acción
+        run: python experimentos/patron_oportunidades/prueba_contexto_accion_5_casos.py
