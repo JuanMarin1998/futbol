@@ -2118,11 +2118,14 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
             mapped_prices = {}
             live_selection_count = 0
 
+            import re
+            import unicodedata
+            from .live_engine.opportunity_engine import LiveOpportunityEngine
+
             def _odd_label(value):
-                import unicodedata
                 value = unicodedata.normalize("NFKD", str(value or ""))
                 value = "".join(char for char in value if not unicodedata.combining(char))
-                return " ".join(__import__("re").sub(r"[^a-z0-9]+", " ", value.lower()).split())
+                return " ".join(re.sub(r"[^a-z0-9]+", " ", value.lower()).split())
 
             def _valid_live_price(odd):
                 try:
@@ -2131,57 +2134,99 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
                     return None
                 if price <= 1:
                     return None
-                status = str(odd.get("odd_status") or odd.get("status") or "").lower()
-                if status in {"suspended", "closed", "inactive", "disabled"}:
+                status = _odd_label(odd.get("odd_status") or odd.get("status") or "")
+                if status in {"suspended", "closed", "inactive", "disabled", "2", "3"}:
                     return None
                 return price
 
             home_name = _odd_label(match.home_team)
             away_name = _odd_label(match.away_team)
+
             for odd in live_odds:
                 price = _valid_live_price(odd)
                 if price is None:
                     continue
                 live_selection_count += 1
-                market_name = _odd_label(odd.get("market_name") or "")
-                selection_name = _odd_label(odd.get("name") or "")
-                combined = market_name + " " + selection_name
+                raw_market_name = str(odd.get("market_name") or "")
+                raw_selection_name = str(odd.get("name") or "")
+                market_name = _odd_label(raw_market_name)
+                selection_name = _odd_label(raw_selection_name)
+                combined = f"{market_name} {selection_name}"
                 key = None
 
-                # Resultado 1X2: los nombres de las selecciones en Ecuabet
-                # suelen ser los nombres de los equipos, no "local"/"visitante".
-                if (
-                    "1x2" in market_name or "resultado" in market_name
-                    or "ganador" in market_name or str(odd.get("market_type_id") or "") == "1"
-                ):
-                    if selection_name in {"x", "draw", "empate", "tie", "the draw"}:
-                        key = "draw"
-                    elif home_name and (selection_name == home_name or home_name in selection_name or selection_name in home_name):
-                        key = "home"
-                    elif away_name and (selection_name == away_name or away_name in selection_name or selection_name in away_name):
-                        key = "away"
-                    elif selection_name in {"1", "local", "home"}:
-                        key = "home"
-                    elif selection_name in {"2", "visitante", "away"}:
-                        key = "away"
+                # Primera prioridad: exactamente el mismo mapeo de mercados que
+                # utilizan los motores LIVE, para mantener criterios consistentes.
+                try:
+                    key = LiveOpportunityEngine._market_key(
+                        raw_market_name, raw_selection_name, odd.get("line")
+                    )
+                except Exception:
+                    key = None
 
-                if key is None and ("doble oportunidad" in combined or "double chance" in combined):
-                    if "1x" in selection_name or "home or draw" in selection_name or "local o empate" in selection_name:
+                # Compatibilidad con etiquetas de Ecuabet que no reconoce el motor.
+                if key is None:
+                    market_type = str(odd.get("market_type_id") or "").strip()
+                    if (
+                        "1x2" in combined or "resultado" in combined
+                        or "ganador" in combined or market_type == "1"
+                    ):
+                        if selection_name in {"x", "draw", "empate", "tie", "the draw"}:
+                            key = "draw"
+                        elif selection_name in {"1", "local", "home", "home team"}:
+                            key = "home"
+                        elif selection_name in {"2", "visitante", "away", "away team"}:
+                            key = "away"
+                        elif home_name and (
+                            selection_name == home_name
+                            or (len(selection_name) >= 4 and selection_name in home_name)
+                            or (len(home_name) >= 4 and home_name in selection_name)
+                        ):
+                            key = "home"
+                        elif away_name and (
+                            selection_name == away_name
+                            or (len(selection_name) >= 4 and selection_name in away_name)
+                            or (len(away_name) >= 4 and away_name in selection_name)
+                        ):
+                            key = "away"
+
+                if key is None and (
+                    "doble oportunidad" in combined or "double chance" in combined
+                    or "doble chance" in combined
+                ):
+                    if (
+                        "1x" in selection_name or "1 x" in selection_name
+                        or "home or draw" in selection_name or "local o empate" in selection_name
+                        or "1 empate" in selection_name or "local empate" in selection_name
+                    ):
                         key = "dc_1x"
-                    elif "x2" in selection_name or "draw or away" in selection_name or "empate o visitante" in selection_name:
+                    elif (
+                        "x2" in selection_name or "x 2" in selection_name
+                        or "draw or away" in selection_name or "empate o visitante" in selection_name
+                        or "empate visitante" in selection_name
+                    ):
                         key = "dc_x2"
-                    elif "12" in selection_name or "home or away" in selection_name or "local o visitante" in selection_name:
+                    elif (
+                        "12" in selection_name or "1 2" in selection_name
+                        or "home or away" in selection_name or "local o visitante" in selection_name
+                        or "local visitante" in selection_name
+                    ):
                         key = "dc_12"
 
-                if key is None and ("ambos marcan" in combined or "both teams" in combined or "btts" in combined):
-                    if selection_name in {"yes", "si", "sí", "ambos marcan si"}:
+                if key is None and (
+                    "ambos marcan" in combined or "both teams" in combined
+                    or "btts" in combined or "ambos anotan" in combined
+                ):
+                    yes_labels = {"yes", "si", "ambos marcan si", "ambos anotan si", "1", "true"}
+                    no_labels = {"no", "ambos marcan no", "ambos anotan no", "2", "false"}
+                    if selection_name in yes_labels or selection_name.startswith("yes "):
                         key = "btts_yes"
-                    elif selection_name in {"no", "ambos marcan no"}:
+                    elif selection_name in no_labels or selection_name.startswith("no "):
                         key = "btts_no"
 
                 if key:
-                    # Si hubiera duplicados, conservar la primera cuota activa del feed.
-                    mapped_prices.setdefault(key, (price, odd.get("market_name"), odd.get("name")))
+                    # Solo se conservan precios reales válidos presentes en el feed.
+                    # En caso de duplicados, preferir la primera selección activa.
+                    mapped_prices.setdefault(key, (price, raw_market_name, raw_selection_name))
 
             for market in mercados_calculados:
                 key = str(market.get("clave") or "")
@@ -2203,10 +2248,15 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
 
             cuotas_live_diagnostico.update({
                 "estado": "OK" if mapped_prices else "SIN_CUOTAS_COMPATIBLES",
-                "fuente": "LiveMatchCollector.match.odds (GetLivenow)",
+                "fuente": "LiveMatchCollector.match.odds (GetLivenow), mapeo compartido con los motores",
                 "mercados_encontrados": len({str(odd.get("market_id")) for odd in live_odds}),
                 "selecciones_encontradas": live_selection_count,
                 "claves_mapeadas": sorted(mapped_prices.keys()),
+                "claves_sin_cuota": sorted({
+                    str(market.get("clave") or "")
+                    for market in mercados_calculados
+                    if not mapped_prices.get(str(market.get("clave") or ""))
+                }),
             })
         except Exception as odds_exc:
             logger.warning("No se pudieron obtener cuotas LIVE de Ecuabet para %s: %s", ecuabet_event_id, odds_exc)
