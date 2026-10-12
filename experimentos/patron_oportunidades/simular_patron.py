@@ -20,10 +20,20 @@ def estado(minuto, gl=0, gv=0, *, posesion=58, tl=5, tv=4, tpl=2, tpv=1,
             ("resultado_1x2", "doble_oportunidad", "proximo_gol", "total_goles", "ambos_marcan"),
         cuotas=cuotas or {"resultado_1x2": 2.2})
 
-def mostrar(nombre, actual, anterior=None, historial=None, probs=None):
-    r = analizar_patron(CTX, actual, anterior, historial, probs)
-    print("\n" + "=" * 96 + "\n" + nombre)
-    print(json.dumps(resultado_a_dict(r), ensure_ascii=False, indent=2))
+def mostrar(nombre, actual, anterior=None, historial=None, probs=None, contexto=None):
+    r = analizar_patron(contexto or CTX, actual, anterior, historial, probs)
+    print("\n" + "=" * 72 + "\n" + nombre)
+    print(f"Estado: {'LISTO PARA EVALUAR ESCENARIOS' if r.puede_pasar_a_calculo else 'BLOQUEADO: DATOS INSUFICIENTES O INCONSISTENTES'}")
+    print(f"Lectura: {r.interpretacion_conjunta}")
+    print("Expectativas vigentes: " + (", ".join(r.expectativas_vigentes) or "ninguna confirmada"))
+    print("Expectativas cuestionadas: " + (", ".join(r.expectativas_cuestionadas) or "ninguna"))
+    print("Detonantes: " + ("; ".join(r.detonantes) if r.detonantes else "ninguno"))
+    print("Mercados a revisar: " + ("; ".join(x["mercado"] + " — " + x["motivo"] for x in r.escenarios_a_reevaluar) if r.escenarios_a_reevaluar else "ninguno"))
+    if r.anomalias_datos:
+        print("ANOMALÍAS: " + " ".join(r.anomalias_datos))
+    if r.datos_faltantes:
+        print("Pendiente: " + "; ".join(r.datos_faltantes))
+    print("Valor de apuesta: " + ("EVALUABLE, no es recomendación" if r.puede_evaluar_valor else "NO EVALUABLE: falta probabilidad fiable del motor para la misma cuota/mercado"))
 
 def main():
     s8 = estado(8, posesion=60, tl=3, tv=1, tpl=1, tpv=0, apl=10, apv=4)
@@ -47,8 +57,7 @@ def main():
         tiros_puerta_local=None, tiros_puerta_visitante=None, mercados_disponibles=("resultado_1x2",))
     ctx_incompleto = ContextoPrevio(local="Equipo A", visitante="Equipo B", favorito="Equipo A",
         expectativa="Equipo A es favorito según el contexto previo.")
-    print("\n" + "=" * 96 + "\nE. Datos incompletos")
-    print(json.dumps(resultado_a_dict(analizar_patron(ctx_incompleto, incompleto)), ensure_ascii=False, indent=2))
+    mostrar("E. Datos incompletos", incompleto, contexto=ctx_incompleto)
 
     previo_f = estado(30, gl=0, gv=0, tl=6, tv=5, tpl=2, tpv=1)
     solo_cuota = estado(40, gl=1, gv=0, tl=8, tv=5, tpl=3, tpv=1, cuotas={"resultado_1x2": 1.4}, mercados=("resultado_1x2",))
