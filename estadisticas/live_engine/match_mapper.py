@@ -39,10 +39,12 @@ class MatchMapper:
     TEAM_ALIASES = {
         "hassania union": "hassania agadir",
         "hassania union sportive agadir": "hassania agadir",
+        "hassania union sportive d agadir": "hassania agadir",
         "hassania d agadir": "hassania agadir",
         "hassania dagadir": "hassania agadir",
         "husa": "hassania agadir",
         "as far rabat": "far rabat",
+        "as far": "far rabat",
         "association sportive des forces armees royales": "far rabat",
         "association sportive des forces armees royales rabat": "far rabat",
     }
@@ -176,18 +178,25 @@ class MatchMapper:
         margin = round(best["confidence"] - (second["confidence"] if second else 0.0), 4)
 
         team_ok = best["home_score"] >= 0.55 and best["away_score"] >= 0.55
-        accepted = (
-            team_ok
-            and best["confidence"] >= cls.MIN_CONFIDENCE
-            and (second is None or margin >= cls.MIN_MARGIN)
-        )
+        confidence_ok = best["confidence"] >= cls.MIN_CONFIDENCE
+        margin_ok = second is None or margin >= cls.MIN_MARGIN
+        accepted = team_ok and confidence_ok and margin_ok
+
+        if accepted:
+            reason = "match_confirmed"
+        elif not team_ok:
+            reason = "team_similarity_too_low"
+        elif not confidence_ok:
+            reason = "confidence_too_low"
+        else:
+            reason = "candidate_margin_too_low"
 
         return {
             "matched": accepted,
             "flashscore_event_id": best["flashscore_event_id"] if accepted else None,
             "confidence": best["confidence"],
             "margin": margin,
-            "reason": "match_confirmed" if accepted else "confidence_or_margin_too_low",
+            "reason": reason,
             "candidate": best,
             "candidates": scored[:5],
         }
