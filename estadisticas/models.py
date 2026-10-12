@@ -488,3 +488,32 @@ class TeamBehaviorProfile(models.Model):
 
     def __str__(self):
         return self.team_name
+
+
+class EcuabetPreMatchContext(models.Model):
+    """Ficha previa inmutable de cuotas para relacionar calendario y contexto por ID Ecuabet."""
+    ecuabet_event_id = models.BigIntegerField(unique=True)
+    match_name = models.CharField(max_length=250)
+    home_team = models.CharField(max_length=180, blank=True)
+    away_team = models.CharField(max_length=180, blank=True)
+    championship = models.CharField(max_length=180, blank=True)
+    match_date = models.DateField(db_index=True)
+    kickoff = models.DateTimeField(null=True, blank=True)
+    home_odds = models.FloatField(null=True, blank=True)
+    draw_odds = models.FloatField(null=True, blank=True)
+    away_odds = models.FloatField(null=True, blank=True)
+    favorite = models.CharField(max_length=180, blank=True)
+    status = models.CharField(max_length=100, blank=True)
+    explanation = models.TextField(blank=True)
+    source = models.CharField(max_length=100, default="Ecuabet · mercado 1X2")
+    captured_at = models.DateTimeField(default=timezone.now)
+    raw_context = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ["match_date", "kickoff", "match_name"]
+        indexes = [
+            models.Index(fields=["match_date", "kickoff"], name="ecuabet_ctx_date_kick"),
+        ]
+
+    def __str__(self):
+        return f"{self.match_name} · contexto previo"
