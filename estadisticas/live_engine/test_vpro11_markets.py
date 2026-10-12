@@ -90,6 +90,19 @@ class VPro11MarketScanTests(SimpleTestCase):
 
         self.assertNotIn("1X & Multigoles 4-5", selections)
 
+
+    def test_combined_draw_and_btts_market_is_excluded(self):
+        self.match.odds.append({
+            "market_name": "Resultado y ambos equipos marcan",
+            "name": "Empate y sí",
+            "line": None,
+            "price": 1.87,
+        })
+        candidates = LiveOpportunityEngineVPro11._all_market_candidates(
+            self.match, elapsed=67
+        )
+        self.assertNotIn("Empate y sí", {item["selection"] for item in candidates})
+
     def test_each_candidate_has_market_specific_probability(self):
         candidates = LiveOpportunityEngineVPro11._all_market_candidates(
             self.match, elapsed=38
