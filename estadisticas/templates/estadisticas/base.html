@@ -141,6 +141,7 @@
         <h1><a href="{% url 'estadisticas:inicio' %}">⚽ Fútbol Stats</a></h1>
         <nav>
             <a href="{% url 'estadisticas:partidos_en_vivo' %}" class="{% if seccion == 'live' %}activo{% endif %}">🔴 LIVE</a>
+            <a href="{% url 'estadisticas:calendario_ecuabet' %}" class="{% if seccion == 'calendario_ecuabet' %}activo{% endif %}">📅 Calendario</a>
             <a href="{% url 'estadisticas:ecuabet_live' %}" class="{% if seccion == 'ecuabet_live' %}activo{% endif %}">🟢 LIVE Ecuabet</a>
             <a href="{% url 'estadisticas:experimento_live' %}" class="{% if seccion == 'experimento_live' %}activo{% endif %}">🧪 Experimento</a>
             <a href="{% url 'estadisticas:laboratorio_patrones' %}" class="{% if seccion == 'patrones' %}activo{% endif %}">🧠 Patrones</a>
