@@ -12,7 +12,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
 from .live_engine.betting_runners import BettingRunnerLab
-from .models import BettingRunner, BettingRunnerBet, BettingRunnerEvaluation
+from .models import BettingRunner, BettingRunnerBet, BettingRunnerEvaluation, MatchBehaviorSnapshot
 
 logger = logging.getLogger(__name__)
 RUNNER_WORKER_KEY = "betting_runner_lab_enabled"
@@ -127,6 +127,42 @@ def api_corredores_estado(request):
         return JsonResponse({"ok": False, "error": str(exc)}, status=500)
 
 
+def _confirm_runner_event_result(event_id, collector=None):
+    """Confirma el final con el ID Flashscore persistido; no confía en un marcador LIVE."""
+    from .live_engine.collector import LiveMatchCollector
+
+    collector = collector or LiveMatchCollector()
+    snapshot = MatchBehaviorSnapshot.objects.filter(
+        ecuabet_event_id=int(event_id)
+    ).exclude(flashscore_event_id="").order_by("-observed_at").first()
+
+    if snapshot and snapshot.flashscore_event_id:
+        match = collector.construir_desde_flashscore(
+            snapshot.flashscore_event_id,
+            ecuabet_event_id=int(event_id),
+            home_team=snapshot.home_team,
+            away_team=snapshot.away_team,
+        )
+    else:
+        # Compatibilidad para partidos sin vínculo Flashscore persistido.
+        match = collector.construir_automatico(int(event_id))
+
+    if not getattr(match, "is_finished", False):
+        return {"settled": 0, "status": getattr(match, "match_status", None) or "PENDIENTE", "reason": "El proveedor todavía no confirma el final."}
+    if match.home_score is None or match.away_score is None:
+        return {"settled": 0, "status": "FINISHED_PENDING_SCORE", "reason": "El partido figura finalizado, pero falta un marcador final verificable."}
+
+    settled = BettingRunnerLab.settle_event(
+        int(event_id), match.home_score, match.away_score, True
+    )
+    return {
+        "settled": settled,
+        "status": "FINISHED",
+        "score": [int(match.home_score), int(match.away_score)],
+        "reason": "Resultado final confirmado desde el feed de Flashscore.",
+    }
+
+
 def _run_cycle():
     if not cache.add(RUNNER_CYCLE_KEY, True, 900):
         return {"ok": True, "busy": True, "message": "El ciclo anterior todavía está procesándose."}
@@ -161,9 +197,8 @@ def _run_cycle():
                 logger.exception("Error procesando corredor para evento %s", event_id)
                 outcomes.append({"event_id": event_id, "bets_placed": 0, "error": str(exc)})
 
-        # Liquidación de apuestas abiertas cuando el evento ya no aparece LIVE.
-        # La consulta del feed final se hace solo para partidos con apuestas abiertas.
-        from .live_engine.collector import LiveMatchCollector
+        # Comprobar apuestas abiertas en cada ciclo. Si el evento ya no está LIVE,
+        # usar el ID Flashscore persistido y exigir final + marcador verificable.
         open_event_ids = list(
             BettingRunnerBet.objects.filter(status="OPEN")
             .values_list("ecuabet_event_id", flat=True).distinct()
@@ -172,16 +207,17 @@ def _run_cycle():
             if int(event_id) in live_ids:
                 continue
             try:
-                match = LiveMatchCollector().construir_automatico(int(event_id))
-                if getattr(match, "is_finished", False):
-                    settled = BettingRunnerLab.settle_event(
-                        event_id, match.home_score, match.away_score, True
-                    )
-                    if settled:
-                        outcomes.append({"event_id": event_id, "settled": settled})
+                result = _confirm_runner_event_result(event_id)
+                outcomes.append({"event_id": int(event_id), **result})
             except Exception as exc:
-                # El partido puede haber desaparecido temporalmente del feed; conservar abierto y diagnosticar.
-                logger.info("Aún no se pudo confirmar resultado final del evento %s: %s", event_id, exc)
+                # No liquidar por suposición; conservar OPEN y exponer el diagnóstico.
+                logger.warning("Resultado aún no confirmado para evento %s: %s", event_id, exc)
+                outcomes.append({
+                    "event_id": int(event_id),
+                    "settled": 0,
+                    "status": "ERROR_CONSULTA",
+                    "error": str(exc),
+                })
 
         return {
             "ok": True,
@@ -245,18 +281,24 @@ def api_corredores_ciclo(request):
 @require_POST
 def api_corredores_liquidar(request):
     """Intenta liquidar apuestas abiertas usando el marcador final del proveedor."""
-    from .live_engine.collector import LiveMatchCollector
-    checked, settled, errors = 0, 0, []
+    checked, settled, errors, pending = 0, 0, [], []
     event_ids = list(BettingRunnerBet.objects.filter(status="OPEN").values_list("ecuabet_event_id", flat=True).distinct())
     for event_id in event_ids:
         checked += 1
         try:
-            match = LiveMatchCollector().construir_automatico(int(event_id))
-            if getattr(match, "is_finished", False):
-                settled += BettingRunnerLab.settle_event(event_id, match.home_score, match.away_score, True)
+            result = _confirm_runner_event_result(event_id)
+            settled += int(result.get("settled") or 0)
+            if not result.get("settled"):
+                pending.append({"event_id": int(event_id), **result})
         except Exception as exc:
-            errors.append({"event_id": event_id, "error": str(exc)})
-    return JsonResponse({"ok": True, "checked": checked, "settled": settled, "errors": errors[:20]})
+            errors.append({"event_id": int(event_id), "status": "ERROR_CONSULTA", "error": str(exc)})
+    return JsonResponse({
+        "ok": True,
+        "checked": checked,
+        "settled": settled,
+        "pending": pending[:30],
+        "errors": errors[:20],
+    })
 
 
 @require_POST
