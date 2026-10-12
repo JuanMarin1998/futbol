@@ -1918,10 +1918,15 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
             if old_value != new_value and (old_value is not None or new_value is not None):
                 changed_stats.append({"estadistica": stat_key, "anterior": old_value, "actual": new_value})
         score_changed = bool(previous and prev_score is not None and now_score is not None and prev_score != now_score)
+        goal_scored = bool(
+            previous and prev_score is not None and now_score is not None
+            and None not in prev_score and None not in now_score
+            and (now_score[0] > prev_score[0] or now_score[1] > prev_score[1])
+        )
         stats_changed = bool(previous and changed_stats)
         monitoring = {
             "status": "SIN_BASELINE_PREVIO" if previous is None else (
-                "CAMBIO_LIVE_DETECTADO" if (score_changed or stats_changed) else "SIN_CAMBIOS_RELEVANTES"
+                "GOL_NUEVO_DETECTADO" if goal_scored else "ESPERANDO_GOL"
             ),
             "minuto_anterior": previous.minute if previous else None,
             "marcador_anterior": prev_score,
@@ -1929,13 +1934,14 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
             "marcador_actual": now_score,
             "estadisticas_cambiadas": len(changed_stats),
             "cambios_estadisticos": changed_stats[:30],
-            "detonante": bool(previous and (score_changed or stats_changed)),
+            "gol_nuevo": goal_scored,
+            "detonante": goal_scored,
             "motivo": (
-                "Primera lectura: establece la línea base de marcador y estadísticas LIVE."
+                "Primera lectura: establece la línea base de marcador y estadísticas LIVE; todavía no activa Acción."
                 if previous is None else
-                "Cambió el marcador o alguna estadística LIVE; se activa Acción para evaluar la nueva lectura."
-                if (score_changed or stats_changed) else
-                "No cambiaron marcador ni estadísticas entre observaciones; continúa el monitoreo."
+                "Se confirmó un aumento en el marcador: el gol nuevo activa Acción."
+                if goal_scored else
+                "No se detectó un gol nuevo. Los cambios estadísticos por sí solos no activan Acción ni las etapas siguientes."
             ),
         }
 
@@ -1983,7 +1989,7 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
         if monitoring["detonante"]:
             stage_action = {
                 "status": "EVALUADA",
-                "diagnostico": f"Tras el cambio LIVE, {score_read}; {stats_read}",
+                "diagnostico": f"Tras detectar un gol nuevo, {score_read}; {stats_read}",
                 "datos_evaluados": [context_stage["status"], f"minuto {current_minute}", f"marcador {home}-{away}", stats_read],
                 "estadisticas_live": performance,
                 "cambios_detectados": changed_stats[:30],
@@ -1991,7 +1997,7 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
         else:
             stage_action = {
                 "status": "PENDIENTE_DE_DETONANTE",
-                "diagnostico": f"No se activa Acción porque no cambiaron los datos LIVE. Estado observado: {score_read}; {stats_read}",
+                "diagnostico": f"No se activa Acción porque no se detectó un gol nuevo. Estado observado: {score_read}; {stats_read}",
                 "datos_evaluados": [context_stage["status"], f"minuto {current_minute}", f"marcador {home}-{away}", stats_read],
                 "estadisticas_live": performance,
                 "cambios_detectados": changed_stats[:30],
@@ -2012,31 +2018,40 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
         ]
         # Probabilidad: modelo estadístico basado en minuto, marcador y estadísticas LIVE.
         # No consulta motores de oportunidades ni utiliza cuotas en esta etapa.
-        elapsed = LiveOpportunityEngine._elapsed_minutes(current_minute, match.period)
-        lambda_home, lambda_away = LiveOpportunityEngine._remaining_lambda(performance, elapsed)
-        probabilities = LiveOpportunityEngine._probabilities(home, away, lambda_home, lambda_away)
-        probability_keys = {
-            "Victoria local": "home", "Empate": "draw", "Victoria visitante": "away",
-            "Más de 0.5 goles": "over_0_5", "Más de 1.5 goles": "over_1_5",
-            "Más de 2.5 goles": "over_2_5", "Menos de 2.5 goles": "under_2_5",
-            "Ambos marcan: sí": "btts_yes", "Ambos marcan: no": "btts_no",
-        }
-        ranked_probabilities = [
-            {"mercado": label, "probabilidad": round(float(probabilities[key]) * 100, 2)}
-            for label, key in probability_keys.items() if key in probabilities
-        ]
-        ranked_probabilities.sort(key=lambda item: item["probabilidad"], reverse=True)
-        stage_probability = {
-            "status": "PROBABILIDAD_ESTADISTICA_ACTUALIZADA",
-            "mercados_probables": ranked_probabilities,
-            "mas_probable": ranked_probabilities[0] if ranked_probabilities else None,
-            "estadisticas_utilizadas": performance,
-            "minutos_restantes_estimados": round(max(0.0, 90.0 - elapsed), 1),
-            "motivo": "Probabilidad estima los mercados desde estadísticas LIVE, minuto y marcador; todavía no compara cuotas.",
-        }
+        if monitoring["detonante"]:
+            elapsed = LiveOpportunityEngine._elapsed_minutes(current_minute, match.period)
+            lambda_home, lambda_away = LiveOpportunityEngine._remaining_lambda(performance, elapsed)
+            probabilities = LiveOpportunityEngine._probabilities(home, away, lambda_home, lambda_away)
+            probability_keys = {
+                "Victoria local": "home", "Empate": "draw", "Victoria visitante": "away",
+                "Más de 0.5 goles": "over_0_5", "Más de 1.5 goles": "over_1_5",
+                "Más de 2.5 goles": "over_2_5", "Menos de 2.5 goles": "under_2_5",
+                "Ambos marcan: sí": "btts_yes", "Ambos marcan: no": "btts_no",
+            }
+            ranked_probabilities = [
+                {"mercado": label, "probabilidad": round(float(probabilities[key]) * 100, 2)}
+                for label, key in probability_keys.items() if key in probabilities
+            ]
+            ranked_probabilities.sort(key=lambda item: item["probabilidad"], reverse=True)
+            stage_probability = {
+                "status": "PROBABILIDAD_ESTADISTICA_ACTUALIZADA",
+                "mercados_probables": ranked_probabilities,
+                "mas_probable": ranked_probabilities[0] if ranked_probabilities else None,
+                "estadisticas_utilizadas": performance,
+                "minutos_restantes_estimados": round(max(0.0, 90.0 - elapsed), 1),
+                "motivo": "Probabilidad se ejecuta después de un gol nuevo; estima mercados con estadísticas LIVE, minuto y marcador, sin comparar cuotas.",
+            }
+        else:
+            stage_probability = {
+                "status": "ESPERANDO_GOL",
+                "mercados_probables": [],
+                "mas_probable": None,
+                "estadisticas_utilizadas": {},
+                "motivo": "Probabilidad no se ejecuta: no se detectó un gol nuevo desde la observación anterior.",
+            }
 
-        # Acción recoge la fotografía completa de estadísticas en línea cuando Monitoreo
-        # detecta un cambio. Cálculo contrasta después probabilidades y cuotas con los motores existentes.
+        # Acción y las etapas posteriores solo avanzan cuando Monitoreo confirma un gol nuevo.
+        # Los cambios estadísticos sin gol se guardan como observación, pero no son detonante.
         engine_results = []
         all_opportunities = []
         if monitoring["detonante"]:
@@ -2064,7 +2079,7 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
             "motores": engine_results,
             "oportunidades": all_opportunities[:100],
             "motores_con_senales": sum(1 for item in engine_results if item["senales"]),
-            "motivo": "Compara señales/probabilidades con cuotas y calcula edge cuando Acción recibe nuevos datos LIVE; sin cambios, espera.",
+            "motivo": "Solo compara señales/probabilidades con cuotas después de detectar un gol nuevo; en otro caso espera.",
         }
         if not monitoring["detonante"]:
             all_opportunities = []
