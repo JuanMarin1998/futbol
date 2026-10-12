@@ -2,109 +2,131 @@
 {% block titulo %}🎯 Simulación del Patrón de Oportunidades{% endblock %}
 {% block contenido %}
 <style>
-.patron-page{max-width:1400px;margin:auto}.panel{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:1.1rem;margin-bottom:1rem}.muted{color:#94a3b8}.matches{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:.8rem}.match-card,.stage{background:#0f172a;border:1px solid #334155;border-radius:10px;padding:1rem;min-width:0}.match-card h3{margin:.1rem 0 .6rem;font-size:1rem}.btn{border:0;border-radius:8px;background:#2563eb;color:#fff;padding:.65rem .9rem;cursor:pointer;font-weight:600}.btn:disabled{opacity:.5;cursor:wait}.btn-secondary{background:#334155}.stage-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:.8rem}.stage h3{margin:.1rem 0 .5rem;font-size:1rem}.stage-state{display:inline-block;border-radius:999px;background:#334155;padding:.2rem .55rem;font-size:.75rem;margin-bottom:.5rem}.good{border-color:#15803d}.warn{border-color:#a16207}.bad{border-color:#b91c1c}.details{font-size:.9rem;line-height:1.5;overflow-wrap:anywhere}.table-scroll{overflow-x:auto}table{min-width:800px}td,th{padding:.5rem;text-align:left;border-bottom:1px solid #334155}.status{padding:.6rem .8rem;border-radius:8px;background:#0f172a;margin:.6rem 0;white-space:pre-wrap}@media(max-width:600px){.stage-grid{grid-template-columns:1fr}}
+.patron-page{max-width:1450px;margin:auto}.panel{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:1.1rem;margin-bottom:1rem}.muted{color:#94a3b8}.matches{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:.8rem}.match-card{background:#0f172a;border:1px solid #334155;border-radius:10px;padding:1rem;min-width:0}.match-card h3{margin:.1rem 0 .6rem;font-size:1rem}.btn{border:0;border-radius:8px;background:#2563eb;color:#fff;padding:.7rem 1rem;cursor:pointer;font-weight:700}.btn:disabled{opacity:.5;cursor:wait}.btn-secondary{background:#334155}.btn-stop{background:#991b1b}.status{padding:.65rem .8rem;border-radius:8px;background:#0f172a;margin:.7rem 0;white-space:pre-wrap}.pill{display:inline-block;border-radius:999px;background:#334155;padding:.2rem .55rem;font-size:.75rem;margin:.12rem}.good{border-color:#15803d}.warn{border-color:#a16207}.bad{border-color:#b91c1c}.match-meta{line-height:1.65;font-size:.9rem}.result-title{font-weight:800;margin-bottom:.35rem}.result-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:.45rem;margin-top:.7rem}.stage-mini{background:#172033;border:1px solid #334155;border-radius:7px;padding:.55rem;font-size:.82rem;overflow-wrap:anywhere}.stage-mini strong{display:block;margin-bottom:.25rem}.op-list{font-size:.82rem;line-height:1.5;margin:.5rem 0 0;padding-left:1.1rem}.section-title{display:flex;gap:.8rem;align-items:center;justify-content:space-between;flex-wrap:wrap}@media(max-width:600px){.matches{grid-template-columns:1fr}}
 </style>
 <div class="patron-page">
-  <section class="panel">
-    <h2 style="margin:.1rem 0 .5rem">🎯 Patrón de Oportunidades · Simulación LIVE</h2>
-    <p class="muted">Este apartado conecta las seis etapas con partidos LIVE de Ecuabet/Flashscore y las salidas de los motores existentes. No crea apuestas, no cambia capitales ni modifica V1, V2, VPro u otros motores.</p>
-    <p class="muted">Selecciona un partido y pulsa <strong>Ejecutar patrón</strong>. La primera ejecución puede establecer la observación base. Si todavía no existe un snapshot anterior, o no ocurrió un gol nuevo, las etapas posteriores esperan el detonante.</p>
-    <button id="reloadMatches" class="btn btn-secondary">↻ Cargar / actualizar partidos LIVE</button>
-    <div id="listStatus" class="status">Cargando partidos LIVE…</div>
-  </section>
-  <section class="panel">
-    <h3 style="margin-top:0">Partidos disponibles</h3>
-    <div id="matches" class="matches"></div>
-  </section>
-  <section class="panel" id="resultPanel" hidden>
-    <h3 style="margin-top:0">Recorrido del patrón</h3>
-    <div id="matchTitle"></div>
-    <div id="stageResults" class="stage-grid"></div>
-    <div id="calculationResults"></div>
-    <p id="finalNote" class="muted"></p>
-  </section>
+ <section class="panel">
+  <h2 style="margin:.1rem 0 .5rem">🎯 Patrón de Oportunidades · Simulación LIVE</h2>
+  <p class="muted">Solo entran partidos que tienen contexto previo guardado, favorito por cuota entre 1.05 y 2.00 y presencia confirmada en LIVE de Ecuabet. La simulación consulta los motores existentes; no crea apuestas ni modifica sus fórmulas o capitales.</p>
+  <div style="display:flex;gap:.6rem;flex-wrap:wrap">
+   <button id="reloadMatches" class="btn btn-secondary">↻ Actualizar candidatos</button>
+   <button id="startAll" class="btn">▶ Simular todos los partidos elegibles</button>
+   <button id="stopAll" class="btn btn-stop" disabled>■ Detener simulación</button>
+  </div>
+  <div id="listStatus" class="status">Buscando partidos LIVE con contexto y favorito…</div>
+  <div class="muted">Cuando la simulación está activa, vuelve a consultar los partidos elegibles en ciclos continuos. Si un encuentro deja de estar LIVE, ya no se incluirá en el siguiente ciclo.</div>
+ </section>
+ <section class="panel">
+  <div class="section-title"><h3 style="margin-top:0">Partidos elegibles</h3><span id="candidateCount" class="pill">0 partidos</span></div>
+  <div id="matches" class="matches"><p class="muted">Cargando…</p></div>
+ </section>
+ <section class="panel">
+  <div class="section-title"><h3 style="margin-top:0">Resultados de la simulación por partido</h3><span id="cycleLabel" class="pill">Sin iniciar</span></div>
+  <div id="results" class="matches"><p class="muted">Pulsa «Simular todos los partidos elegibles» para iniciar.</p></div>
+ </section>
 </div>
 <script>
 (function(){
  const matchesEl=document.getElementById('matches');
+ const resultsEl=document.getElementById('results');
  const listStatus=document.getElementById('listStatus');
- const resultPanel=document.getElementById('resultPanel');
- const stagesEl=document.getElementById('stageResults');
- const calcEl=document.getElementById('calculationResults');
- const titleEl=document.getElementById('matchTitle');
- const finalNote=document.getElementById('finalNote');
- const stageNames=[
-  ['contexto','1. Contexto'],['monitoreo','2. Monitoreo'],['accion','3. Acción'],
-  ['probabilidad','4. Probabilidad'],['calculo','5. Cálculo · motores existentes'],['reaccion','6. Reacción']
- ];
+ const candidateCount=document.getElementById('candidateCount');
+ const cycleLabel=document.getElementById('cycleLabel');
+ const startBtn=document.getElementById('startAll');
+ const stopBtn=document.getElementById('stopAll');
+ const reloadBtn=document.getElementById('reloadMatches');
+ const candidatesUrl="{% url 'estadisticas:api_patron_oportunidades_partidos' %}";
+ const simulationUrl="{% url 'estadisticas:api_simular_patron_oportunidades' 0 %}";
+ let running=false, busy=false, cycle=0, lastIds=[];
  function esc(v){return String(v==null?'—':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
- function pretty(v){return typeof v==='object'&&v!==null?JSON.stringify(v,null,2):String(v==null?'—':v);}
- async function loadMatches(){
-  matchesEl.innerHTML='';listStatus.textContent='Consultando partidos LIVE de Ecuabet…';
+ function pretty(v){return typeof v==='object'&&v!==null?JSON.stringify(v):String(v==null?'—':v);}
+ function scoreText(v){if(Array.isArray(v))return v.join(' - ');return pretty(v);}
+ async function fetchCandidates(){
+  listStatus.textContent='Sincronizando contextos guardados con el feed LIVE de Ecuabet…';
   try{
-   const res=await fetch('/api/live/ecuabet/',{cache:'no-store'});
+   const res=await fetch(candidatesUrl,{cache:'no-store'});
    const data=await res.json();
-   if(!res.ok||data.error) throw new Error(data.error||'No se pudieron cargar los partidos.');
+   if(!res.ok||!data.ok)throw new Error(data.error||'No se pudieron consultar los candidatos.');
    const events=data.events||[];
-   listStatus.textContent='Partidos LIVE encontrados: '+events.length+'. Fuente: '+(data.source||'Ecuabet LIVE');
-   if(!events.length){matchesEl.innerHTML='<p class="muted">No hay partidos LIVE en este momento. Actualiza más tarde.</p>';return;}
-   matchesEl.innerHTML=events.map(e=>{
-    const score=Array.isArray(e.score)?e.score.join(' - '):pretty(e.score);
-    const teams=(e.competitors||[]).map(c=>c.name).filter(Boolean);
-    const name=e.name||teams.join(' vs ')||('Evento '+e.id);
-    return '<article class="match-card"><h3>'+esc(name)+'</h3><div class="muted">'+esc((e.champ||{}).name||'Competición sin nombre')+' · '+esc((e.category||{}).name||'')+'</div><p>Marcador: <strong>'+esc(score)+'</strong><br>Minuto/estado: '+esc(e.live_time||e.status||e.live_status||'LIVE')+'</p><button class="btn run-pattern" data-id="'+esc(e.id)+'" data-name="'+esc(name)+'">▶ Ejecutar patrón</button></article>';
-   }).join('');
-  }catch(err){listStatus.textContent='Error al cargar partidos: '+err.message;matchesEl.innerHTML='';}
- }
- function renderStage(key,title,stage){
-  stage=stage||{};
-  let state=stage.status||'SIN_ESTADO';
-  let cls=/DETECTADO|EVALUADA|SENALES|CALCULO_CON|DISPONIBLE/.test(state)?'good':/ESPERANDO|INCOMPLETO|SIN_|REVISAR|BLOQUEADO|ANOMALIA/.test(state)?'warn':'';
-  let body='';
-  if(key==='contexto'){
-   body='<p><strong>Expectativa:</strong> '+esc(stage.expectativa)+'</p><p><strong>Fuente:</strong> '+esc(stage.fuente)+'</p>';
-   if(stage.datos&&Object.keys(stage.datos).length)body+='<details><summary>Ver datos contextuales</summary><pre class="details">'+esc(pretty(stage.datos))+'</pre></details>';
-  }else if(key==='monitoreo'){
-   body='<p><strong>Detonante:</strong> '+(stage.detonante?'SÍ':'NO')+'</p><p>'+esc(stage.motivo)+'</p><p><strong>Anterior:</strong> '+esc(pretty(stage.marcador_anterior))+' · '+esc(stage.minuto_anterior||'—')+'</p><p><strong>Actual:</strong> '+esc(pretty(stage.marcador_actual))+' · '+esc(stage.minuto_actual||'—')+'</p>';
-  }else if(key==='accion'){
-   body='<p>'+esc(stage.diagnostico)+'</p><ul>'+(stage.datos_evaluados||[]).map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>';
-  }else if(key==='probabilidad'){
-   body='<p>'+esc(stage.motivo||'')+'</p>';
-   if(stage.motores&&stage.motores.length)body+='<details><summary>Ver señales por motor</summary><pre class="details">'+esc(pretty(stage.motores))+'</pre></details>';
-  }else if(key==='calculo'){
-   body='<p>'+esc(stage.motivo||'')+'</p><p>Motores con señales: <strong>'+esc(stage.motores_con_senales||0)+'</strong></p><p>Oportunidades listadas: <strong>'+(stage.oportunidades||[]).length+'</strong></p>';
-  }else if(key==='reaccion'){
-   body='<p><strong>Resultado:</strong> '+esc(stage.decision||'—')+'</p><p>'+esc(stage.motivo||'')+'</p>';
+   lastIds=events.map(e=>String(e.id));
+   candidateCount.textContent=events.length+' partidos LIVE';
+   listStatus.textContent='Contextos de hoy: '+(data.contexts_found||0)+' · Favoritos por regla: '+(data.favorite_contexts||0)+' · En LIVE y elegibles: '+events.length+' · Actualizado: '+(data.updated_at||'—');
+   if(!events.length){
+    matchesEl.innerHTML='<p class="muted">No hay partidos que cumplan los tres requisitos: contexto guardado, favorito 1.05–2.00 y partido actualmente LIVE.</p>';
+   }else{
+    matchesEl.innerHTML=events.map(e=>'<article class="match-card"><h3>'+esc(e.name)+'</h3><div class="match-meta"><div><strong>Favorito:</strong> '+esc(e.favorite)+'</div><div><strong>Cuotas iniciales:</strong> '+esc(e.home_odds)+' / '+esc(e.draw_odds)+' / '+esc(e.away_odds)+'</div><div><strong>Marcador LIVE:</strong> '+esc(scoreText(e.score))+'</div><div><strong>Minuto/estado:</strong> '+esc(pretty(e.live_time))+'</div><div class="muted"><strong>Contexto capturado:</strong> '+esc(e.captured_at||'—')+'</div></div><span class="pill">Contexto guardado</span><span class="pill">LIVE</span><span class="pill">Favorito válido</span></article>').join('');
+   }
+   return events;
+  }catch(err){
+   listStatus.textContent='Error al consultar candidatos: '+err.message;
+   matchesEl.innerHTML='<p class="muted">No se pudo cargar la lista filtrada.</p>';
+   return [];
   }
-  return '<article class="stage '+cls+'"><h3>'+esc(title)+'</h3><span class="stage-state">'+esc(state)+'</span><div class="details">'+body+'</div></article>';
  }
- function renderCalculation(rows){
-  if(!rows||!rows.length){calcEl.innerHTML='<p class="muted">No hay oportunidades de motor que mostrar en esta pasada.</p>';return;}
-  calcEl.innerHTML='<h3>Detalle del cálculo entregado por los motores</h3><div class="table-scroll"><table><thead><tr><th>Motor</th><th>Mercado</th><th>Selección</th><th>Cuota</th><th>Prob. modelo</th><th>Prob. implícita</th><th>Edge</th><th>Confianza</th></tr></thead><tbody>'+rows.map(x=>'<tr><td>'+esc(x.motor)+'</td><td>'+esc(x.mercado)+'</td><td>'+esc(x.seleccion)+'</td><td>'+esc(x.cuota)+'</td><td>'+esc(x.probabilidad_modelo==null?'—':(x.probabilidad_modelo*100).toFixed(1)+'%')+'</td><td>'+esc(x.probabilidad_implicita==null?'—':(x.probabilidad_implicita*100).toFixed(1)+'%')+'</td><td>'+esc(x.edge_pct==null?'—':x.edge_pct+'%')+'</td><td>'+esc(x.confianza==null?'—':(x.confianza*100).toFixed(1)+'%')+'</td></tr>').join('')+'</tbody></table></div>';
+ function resultCard(e,data,error){
+  const name=(data&&data.partido)?(data.partido.local+' vs '+data.partido.visitante):e.name;
+  if(error)return '<article class="match-card bad"><h3>'+esc(name)+'</h3><span class="pill">Error</span><p>'+esc(error)+'</p></article>';
+  const stages=data.etapas||{}, calc=stages.calculo||{}, monitor=stages.monitoreo||{}, reaction=stages.reaccion||{};
+  const ops=calc.oportunidades||[];
+  const opsHtml=ops.length?'<ul class="op-list">'+ops.slice(0,5).map(op=>'<li><strong>'+esc(op.motor)+'</strong>: '+esc(op.mercado)+' · '+esc(op.seleccion)+' · cuota '+esc(op.cuota)+' · edge '+esc(op.edge_pct==null?'—':op.edge_pct+'%')+'</li>').join('')+'</ul>':'<p class="muted">Sin señales de oportunidad en esta pasada.</p>';
+  return '<article class="match-card '+(ops.length?'good':'')+'"><div class="result-title">'+esc(name)+'</div><div class="match-meta"><strong>Marcador:</strong> '+esc(scoreText(data.partido.marcador))+' · <strong>Minuto:</strong> '+esc(data.partido.minuto||'—')+'<br><strong>Calidad de datos:</strong> '+esc(data.partido.calidad_datos||'—')+'</div><div class="result-grid"><div class="stage-mini"><strong>Contexto</strong>'+esc(stages.contexto&&stages.contexto.status)+'</div><div class="stage-mini"><strong>Monitoreo</strong>'+esc(monitor.status)+'<br>'+esc(monitor.motivo)+'</div><div class="stage-mini"><strong>Acción</strong>'+esc((stages.accion||{}).status)+'</div><div class="stage-mini"><strong>Probabilidad</strong>'+esc((stages.probabilidad||{}).status)+'</div><div class="stage-mini"><strong>Cálculo</strong>'+esc(calc.motores_con_senales||0)+' motores con señales · '+ops.length+' oportunidades</div><div class="stage-mini"><strong>Reacción</strong>'+esc(reaction.decision||'—')+'<br>'+esc(reaction.motivo||'')+'</div></div>'+opsHtml+'<details><summary>Ver diagnóstico completo</summary><pre class="match-meta">'+esc(JSON.stringify(stages,null,2))+'</pre></details></article>';
  }
- async function runPattern(id,name,button){
-  button.disabled=true;button.textContent='Ejecutando…';resultPanel.hidden=false;
-  titleEl.innerHTML='<h3>'+esc(name)+'</h3><p class="muted">Consultando snapshot LIVE y ejecutando motores existentes…</p>';
-  stagesEl.innerHTML='';calcEl.innerHTML='';finalNote.textContent='';
+ async function simulateCycle(){
+  if(!running||busy)return;
+  busy=true;cycle++;cycleLabel.textContent='Ciclo '+cycle+' · ejecutando';
+  startBtn.disabled=true;reloadBtn.disabled=true;
   try{
-   const res=await fetch('/api/live/patron-oportunidades/'+encodeURIComponent(id)+'/',{cache:'no-store'});
-   const data=await res.json();
-   if(!res.ok||!data.ok)throw new Error(data.error||'Falló la simulación del patrón.');
-   titleEl.innerHTML='<h3>'+esc(data.partido.local)+' vs '+esc(data.partido.visitante)+'</h3><p class="muted">'+esc(data.partido.liga)+' · minuto '+esc(data.partido.minuto)+' · marcador '+esc(pretty(data.partido.marcador))+' · calidad de datos '+esc(data.partido.calidad_datos)+'</p>';
-   const stages=data.etapas||{};
-   stagesEl.innerHTML=stageNames.map(([key,label])=>renderStage(key,label,stages[key])).join('');
-   renderCalculation((stages.calculo||{}).oportunidades||[]);
-   finalNote.textContent=data.nota||'';
-   resultPanel.scrollIntoView({behavior:'smooth',block:'start'});
-  }catch(err){titleEl.innerHTML='<p class="status">Error: '+esc(err.message)+'</p>';}
-  finally{button.disabled=false;button.textContent='▶ Ejecutar patrón';}
+   const events=await fetchCandidates();
+   if(!running)return;
+   if(!events.length){
+    resultsEl.innerHTML='<p class="muted">No hay partidos elegibles en este ciclo. Se volverán a buscar mientras la simulación permanezca activa.</p>';
+   }else{
+    const resultById={};
+    resultsEl.innerHTML=events.map(e=>'<article class="match-card" id="pattern-result-'+esc(e.id)+'"><h3>'+esc(e.name)+'</h3><p class="muted">En cola para simular…</p></article>').join('');
+    for(let idx=0;idx<events.length;idx++){
+     if(!running)break;
+     const event=events[idx];
+     const target=document.getElementById('pattern-result-'+String(event.id));
+     if(target)target.innerHTML='<h3>'+esc(event.name)+'</h3><p class="muted">Simulando '+(idx+1)+' de '+events.length+'…</p>';
+     try{
+      const url=simulationUrl.replace('/0/','/'+encodeURIComponent(event.id)+'/');
+      const res=await fetch(url,{cache:'no-store'});
+      const data=await res.json();
+      if(!res.ok||!data.ok)throw new Error(data.error||'Falló la simulación.');
+      resultById[String(event.id)]={event,data};
+      if(target)target.outerHTML=resultCard(event,data,null).replace('<article class="match-card','<article id="pattern-result-'+esc(event.id)+'" class="match-card');
+     }catch(err){
+      if(target)target.outerHTML=resultCard(event,null,err.message).replace('<article class="match-card','<article id="pattern-result-'+esc(event.id)+'" class="match-card');
+     }
+    }
+    cycleLabel.textContent='Ciclo '+cycle+' · '+events.length+' partidos procesados';
+   }
+  }catch(err){listStatus.textContent='Error del ciclo: '+err.message;}
+  finally{
+   busy=false;
+   if(running){
+    cycleLabel.textContent='Ciclo '+cycle+' finalizado · siguiente ciclo en 10 s';
+    window.setTimeout(simulateCycle,10000);
+   }else{
+    startBtn.disabled=false;reloadBtn.disabled=false;stopBtn.disabled=true;
+    cycleLabel.textContent='Detenido · último ciclo '+cycle;
+   }
+  }
  }
- matchesEl.addEventListener('click',e=>{
-  const btn=e.target.closest('.run-pattern');if(!btn)return;
-  runPattern(btn.dataset.id,btn.dataset.name,btn);
+ startBtn.addEventListener('click',()=>{
+  if(running)return;
+  running=true;startBtn.disabled=true;stopBtn.disabled=false;
+  resultsEl.innerHTML='<p class="muted">Iniciando simulación continua para todos los partidos elegibles…</p>';
+  simulateCycle();
  });
- document.getElementById('reloadMatches').addEventListener('click',loadMatches);
- loadMatches();
+ stopBtn.addEventListener('click',()=>{
+  running=false;stopBtn.disabled=true;cycleLabel.textContent='Deteniendo después de la pasada en curso…';
+  if(!busy){startBtn.disabled=false;reloadBtn.disabled=false;cycleLabel.textContent='Detenido';}
+ });
+ reloadBtn.addEventListener('click',async()=>{
+  reloadBtn.disabled=true;await fetchCandidates();reloadBtn.disabled=running;
+ });
+ fetchCandidates();
 })();
 </script>
 {% endblock %}
