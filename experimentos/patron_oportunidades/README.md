@@ -14,6 +14,8 @@ Desde la raíz del repositorio:
 3. Contraste de expectativas: señala las que parecen vigentes, cuestionadas o sin evidencia suficiente.
 4. Escenarios a reevaluar: cada escenario reabierto incluye el motivo.
 5. Separación de cuota y probabilidad: una cuota sola nunca habilita evaluar valor. Se necesita probabilidad válida del motor para el mismo mercado. El valor esperado preliminar se calcula como p * cuota - 1 y no es recomendación.
-6. Casos sintéticos para gol aislado, pérdida de dominio sin gol, señales contradictorias, datos incompletos y cuota sin probabilidad.
+6. Casos sintéticos para gol aislado, pérdida de dominio sin gol, señales contradictorias, datos incompletos, cuota sin probabilidad y marcador inconsistente.
+7. Validación temporal: si el marcador retrocede o las estadísticas acumuladas disminuyen entre snapshots, registra anomalías y bloquea el cálculo hasta verificar los datos. Una corrección legítima del proveedor debe confirmarse, no interpretarse automáticamente como un cambio del partido.
+8. Reevaluaciones agrupadas por mercado para evitar duplicar el mismo mercado cuando varios detonantes apuntan a él.
 
 Los datos son artificiales, no partidos reales ni predicciones. Mantener esta rama aislada hasta revisar y aprobar sus resultados.
