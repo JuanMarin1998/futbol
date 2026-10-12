@@ -1363,15 +1363,32 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
         match = LiveMatchCollector().construir_automatico(ecuabet_event_id)
 
         context_data = match.pre_match_context if isinstance(match.pre_match_context, dict) else {}
-        context_has_data = bool(context_data)
+        source_names = ("lineups", "history", "fixtures")
+        source_status = {
+            name: (context_data.get(name) or {}).get("status", "unavailable")
+            for name in source_names
+        }
+        available_sources = [name for name, status in source_status.items() if status == "available"]
+        context_has_data = bool(available_sources)
+        context_summaries = {
+            "lineups": "Alineaciones disponibles" if source_status["lineups"] == "available" else "Alineaciones no disponibles",
+            "history": "Enfrentamientos directos disponibles" if source_status["history"] == "available" else "Historial directo no disponible",
+            "fixtures": "Resultados/calendario reciente disponible" if source_status["fixtures"] == "available" else "Resultados/calendario reciente no disponibles",
+        }
         context_stage = {
-            "status": "CONTEXTO_PREVIO_DISPONIBLE" if context_has_data else "CONTEXTO_PREVIO_INCOMPLETO",
+            "status": (
+                "CONTEXTO_PREVIO_DISPONIBLE" if len(available_sources) == len(source_names)
+                else "CONTEXTO_PREVIO_PARCIAL" if context_has_data
+                else "CONTEXTO_PREVIO_INCOMPLETO"
+            ),
             "expectativa": (
-                "Se recibió contexto prepartido del proveedor; revisar historial, alineaciones y calidad."
+                "Se validaron fuentes contextuales; revisar los datos concretos antes de establecer una expectativa."
                 if context_has_data else
-                "El proveedor no entregó contexto prepartido utilizable. No se inventa favorito ni expectativa."
+                "El proveedor no entregó fuentes contextuales utilizables. No se inventa favorito ni expectativa."
             ),
             "fuente": context_data.get("provider", "sin proveedor contextual disponible"),
+            "fuentes": context_summaries,
+            "estados_fuentes": source_status,
             "datos": context_data,
         }
 
@@ -1424,14 +1441,17 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
 
         stage_action = {
             "status": "PENDIENTE_DE_DETONANTE",
-            "diagnostico": "Acción espera un gol nuevo confirmado entre snapshots.",
+            "diagnostico": "No se detectó un gol nuevo; se mantiene pendiente la Acción desencadenada por gol.",
             "datos_evaluados": [],
         }
-        stage_probability = {"status": "ESPERANDO_ACCION", "motores": []}
-        stage_calculation = {"status": "ESPERANDO_ACCION", "oportunidades": [], "motores_con_senales": 0}
-        stage_reaction = {"status": "ESPERANDO_ACCION", "decision": "SEGUIR_MONITOREANDO", "motivo": "Monitoreo aún no ha confirmado el detonante."}
+        stage_probability = {"status": "ANALISIS_LIVE_SIN_DETONANTE", "motores": [], "motivo": "Lectura informativa del estado actual; no equivale a una Acción activada por gol."}
+        stage_calculation = {"status": "ANALISIS_BASELINE", "oportunidades": [], "motores_con_senales": 0, "motivo": "Consulta informativa de salidas actuales; no crea apuestas."}
+        stage_reaction = {"status": "SEGUIR_MONITOREANDO", "decision": "SEGUIR_MONITOREANDO", "motivo": "No se confirmó un gol nuevo. Las señales se muestran solo como diagnóstico y no activan una apuesta."}
 
-        if monitoring["detonante"]:
+        # El gol solo activa la etapa Acción. Contexto, probabilidades y señales
+        # de los motores se muestran también en la primera observación y en ciclos
+        # sin gol, para que ejecutar el patrón nunca termine en una pantalla vacía.
+        if True:
             home_sot = None
             away_sot = None
             performance = match.performance or {}
@@ -1463,11 +1483,18 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
                 stats_read = f"{match.away_team} tiene ventaja en tiros a puerta ({away_sot:g} contra {home_sot:g})."
             else:
                 stats_read = f"Los tiros a puerta no muestran una ventaja clara ({home_sot:g} contra {away_sot:g})."
-            stage_action = {
-                "status": "EVALUADA",
-                "diagnostico": f"Tras el gol, {score_read}; {stats_read}",
-                "datos_evaluados": ["contexto prepartido disponible/incompleto", f"minuto {current_minute}", f"marcador {home}-{away}", stats_read],
-            }
+            if monitoring["detonante"]:
+                stage_action = {
+                    "status": "EVALUADA",
+                    "diagnostico": f"Tras el gol, {score_read}; {stats_read}",
+                    "datos_evaluados": [context_stage["status"], f"minuto {current_minute}", f"marcador {home}-{away}", stats_read],
+                }
+            else:
+                stage_action = {
+                    "status": "PENDIENTE_DE_DETONANTE",
+                    "diagnostico": f"No se activa Acción porque no se confirmó un gol nuevo. Estado observado: {score_read}; {stats_read}",
+                    "datos_evaluados": [context_stage["status"], f"minuto {current_minute}", f"marcador {home}-{away}", stats_read],
+                }
 
             engine_specs = [
                 ("V1", LiveOpportunityEngine, "opportunities"),
@@ -1519,7 +1546,7 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
                 stage_reaction = {
                     "status": "SIN_SENALES_DE_MOTORES",
                     "decision": "SEGUIR_MONITOREANDO",
-                    "motivo": "El detonante llegó a los motores, pero ninguno devolvió oportunidades compatibles en este snapshot.",
+                    "motivo": "Ningún motor devolvió oportunidades compatibles en este snapshot. No se crea una apuesta.",
                 }
             elif positive:
                 best = max(positive, key=lambda x: x.get("edge_pct", 0))
