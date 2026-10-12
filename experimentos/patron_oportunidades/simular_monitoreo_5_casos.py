@@ -16,18 +16,18 @@ def e(minuto, local, visitante):
 
 
 CASOS = (
-    ("1. Gol de Croacia: España queda 0-1", e(10, 0, 0), e(11, 0, 1)),
-    ("2. Gol de Croacia: España queda 1-2", e(20, 1, 1), e(21, 1, 2)),
-    ("3. Gol de Croacia: España queda 0-2", e(30, 0, 1), e(31, 0, 2)),
-    ("4. Gol de España: empata 1-1", e(40, 0, 1), e(41, 1, 1)),
-    ("5. Gol de España: pasa a ganar 1-0", e(50, 0, 0), e(51, 1, 0)),
+    ("1. Croacia marca: España queda 0-1 al 11'", e(10, 0, 0), e(11, 0, 1)),
+    ("2. Croacia marca: España queda 1-2 al 61'", e(60, 1, 1), e(61, 1, 2)),
+    ("3. Croacia marca: España queda 0-2 al 31'", e(30, 0, 1), e(31, 0, 2)),
+    ("4. España empata 1-1 al 20'", e(19, 0, 1), e(20, 1, 1)),
+    ("5. España empata 1-1 al 85'", e(84, 0, 1), e(85, 1, 1)),
 )
 
 
 def ejecutar():
-    print("MONITOREO — DETONANTE: GOL NUEVO")
-    print("Todos los equipos, minutos y marcadores son ficticios. No se usan datos reales ni motores.")
-    print("Regla: activar Acción solo si hay un gol nuevo y el favorito queda perdiendo.\n")
+    print("MONITOREO — DETONANTE: CUALQUIER GOL NUEVO")
+    print("Todos los equipos, minutos y marcadores son ficticios. Sin datos reales ni motores.")
+    print("Regla: un gol nuevo activa Acción; Acción evaluará el contexto, estadísticas y minuto.\n")
     resultados = []
     for nombre, anterior, actual in CASOS:
         r = monitorear_gol(CONTEXTO, anterior, actual)
