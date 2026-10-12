@@ -1987,8 +1987,8 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
         for side, team in (("home", match.home_team), ("away", match.away_team)):
             current_red = _red_card_count(performance, side)
             previous_red = _red_card_count(previous_performance, side)
-            if current_red is not None and previous_red is not None and current_red > previous_red:
-                red_card_changes.append({"equipo": team, "anterior": previous_red, "actual": current_red})
+            if current_red is not None and current_red > (previous_red if previous_red is not None else 0):
+                red_card_changes.append({"equipo": team, "anterior": previous_red if previous_red is not None else 0, "actual": current_red})
         red_card_detected = bool(red_card_changes)
         previous_patron = (
             (previous.performance or {}).get("patron_oportunidades", {})
