@@ -32,6 +32,14 @@ class PatronOportunidadesTests(unittest.TestCase):
         r = analizar_patron(CTX, s25, s18, historial=[s10, s18])
         self.assertIn("cambio de control", r.interpretacion_conjunta.lower())
 
+    def test_impulso_reciente_del_rival_cuestiona_dominio_acumulado_del_favorito(self):
+        s28 = snap(28, gl=0, gv=1, tpl=5, tpv=1, tl=10, tv=4, apl=29, apv=12)
+        s40 = snap(40, gl=0, gv=1, tpl=5, tpv=4, tl=11, tv=10, apl=31, apv=30)
+        r = analizar_patron(CTX, s40, s28, historial=[snap(15, tpl=3, tpv=0, tl=6, tv=2, apl=18, apv=7), s28])
+        self.assertIn("tendencia reciente", r.interpretacion_conjunta.lower())
+        self.assertIn("España genera más peligro", r.expectativas_cuestionadas)
+        self.assertNotIn("España genera más peligro", r.expectativas_vigentes)
+
     def test_indicadores_contradictorios_no_afirma_dominio_claro(self):
         anterior = snap(20, gv=1, tpl=4, tpv=1)
         actual = snap(30, gv=1, tpl=4, tpv=3, tl=5, tv=9, rl=1)
