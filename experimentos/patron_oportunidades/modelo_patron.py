@@ -49,6 +49,7 @@ class ResultadoPatron:
     puede_pasar_a_calculo: bool
     puede_evaluar_valor: bool
     motivo_bloqueo_valor: str
+    anomalias_datos: list[str] = field(default_factory=list)
     decision_apuesta: str = "NO_EVALUADA: la decide Reacción"
     probabilidades: str = "NO_CALCULADAS: corresponden a los motores"
 
@@ -69,7 +70,7 @@ def analizar_patron(contexto: ContextoPrevio, estado: EstadoPartido,
     """Compara snapshots, contrasta expectativas y prepara escenarios sin decidir apuestas."""
     partido = f"{contexto.local} vs {contexto.visitante}"
     marcador = f"{estado.goles_local}-{estado.goles_visitante}"
-    faltantes, detonantes, comparacion, reevaluar = [], [], [], []
+    faltantes, detonantes, comparacion, reevaluar, anomalias = [], [], [], [], []
     if not 0 <= estado.minuto <= 130: faltantes.append("Minuto fuera del rango permitido (0-130)")
     if estado.goles_local < 0 or estado.goles_visitante < 0: faltantes.append("Marcador inválido")
     if not contexto.local.strip() or not contexto.visitante.strip(): faltantes.append("Nombre de uno o ambos equipos")
@@ -86,6 +87,14 @@ def analizar_patron(contexto: ContextoPrevio, estado: EstadoPartido,
     if anterior is not None:
         if estado.minuto <= anterior.minuto:
             faltantes.append("Orden temporal inválido: el snapshot actual debe ser posterior al anterior")
+            anomalias.append("El minuto actual no es posterior al snapshot anterior.")
+        if estado.goles_local < anterior.goles_local or estado.goles_visitante < anterior.goles_visitante:
+            anomalias.append(f"El marcador retrocede de {anterior.goles_local}-{anterior.goles_visitante} a {estado.goles_local}-{estado.goles_visitante}; verificar corrección VAR, orden de snapshots o cruce de eventos.")
+            faltantes.append("Marcador no monotónico: confirmar el dato antes de continuar")
+        for campo, etiqueta in (("tiros_local", f"tiros de {contexto.local}"), ("tiros_visitante", f"tiros de {contexto.visitante}"), ("tiros_puerta_local", f"tiros a puerta de {contexto.local}"), ("tiros_puerta_visitante", f"tiros a puerta de {contexto.visitante}"), ("ataques_peligrosos_local", f"ataques peligrosos de {contexto.local}"), ("ataques_peligrosos_visitante", f"ataques peligrosos de {contexto.visitante}")):
+            val, prev = getattr(estado, campo), getattr(anterior, campo)
+            if val is not None and prev is not None and val < prev:
+                anomalias.append(f"Disminuyeron los {etiqueta} acumulados ({prev} → {val}); verificar corrección del proveedor o mezcla de snapshots.")
         if (estado.goles_local, estado.goles_visitante) != (anterior.goles_local, anterior.goles_visitante):
             detonantes.append(f"CAMBIO DE MARCADOR: {anterior.goles_local}-{anterior.goles_visitante} → {marcador}; revisar sin asumir cambio de dominio.")
             reevaluar += [
@@ -134,13 +143,16 @@ def analizar_patron(contexto: ContextoPrevio, estado: EstadoPartido,
     dom_fav = fav_sot is not None and rival_sot is not None and fav_sot >= rival_sot + 2
     dom_rival = fav_sot is not None and rival_sot is not None and rival_sot >= fav_sot + 2
     tendencia_rival = False
-    if len(snapshots) >= 2 and favorito:
-        s1, s2 = snapshots[-2], estado
-        f1 = s1.tiros_puerta_local if fav_local else s1.tiros_puerta_visitante
-        r1 = s1.tiros_puerta_visitante if fav_local else s1.tiros_puerta_local
-        f2 = s2.tiros_puerta_local if fav_local else s2.tiros_puerta_visitante
-        r2 = s2.tiros_puerta_visitante if fav_local else s2.tiros_puerta_local
-        tendencia_rival = all(x is not None for x in (f1, r1, f2, r2)) and (r2 - f2) > (r1 - f1) and r2 > f2
+    if len(snapshots) >= 2 and favorito and anterior is not None:
+        viejo = snapshots[-2]
+        fv = viejo.tiros_puerta_local if fav_local else viejo.tiros_puerta_visitante
+        rv = viejo.tiros_puerta_visitante if fav_local else viejo.tiros_puerta_local
+        fp = anterior.tiros_puerta_local if fav_local else anterior.tiros_puerta_visitante
+        rp = anterior.tiros_puerta_visitante if fav_local else anterior.tiros_puerta_local
+        fa = estado.tiros_puerta_local if fav_local else estado.tiros_puerta_visitante
+        ra = estado.tiros_puerta_visitante if fav_local else estado.tiros_puerta_local
+        valores = (fv, rv, fp, rp, fa, ra)
+        tendencia_rival = all(x is not None for x in valores) and rp > fp and (ra - fa) > (rp - fp) and (rp - fp) > (rv - fv)
     gol_nuevo = anterior is not None and (estado.goles_local + estado.goles_visitante > anterior.goles_local + anterior.goles_visitante)
     roja_fav = (fav_local and estado.rojas_local > 0) or (favorito == contexto.visitante and estado.rojas_visitante > 0)
     if gol_nuevo and dom_fav and not roja_fav:
@@ -159,23 +171,26 @@ def analizar_patron(contexto: ContextoPrevio, estado: EstadoPartido,
     vigentes, cuestionadas, sin_evidencia = [], [], []
     for exp in contexto.escenarios_esperados:
         low = exp.lower()
-        if favorito_perdiendo and (("victoria" in low) or ("remontada" in low) or (favorito and favorito.lower() in low)):
+        es_dominio = "genera más peligro" in low or "dominio" in low or "domina" in low
+        es_victoria_fav = "victoria" in low and (favorito is None or favorito.lower() in low)
+        if es_dominio:
+            if dom_fav: vigentes.append(exp)
+            elif dom_rival: cuestionadas.append(exp)
+            else: sin_evidencia.append(exp)
+        elif es_victoria_fav and favorito_perdiendo:
             cuestionadas.append(exp)
-        elif dom_rival and (("dominio" in low) or ("peligro" in low) or (favorito and favorito.lower() in low)):
-            cuestionadas.append(exp)
-        elif dom_fav and favorito and favorito.lower() in low:
-            vigentes.append(exp)
         else:
             sin_evidencia.append(exp)
     if not contexto.escenarios_esperados:
         sin_evidencia.append("No se definieron escenarios esperados concretos.")
 
-    reevaluar_unicos, vistos = [], set()
+    motivos_por_mercado = {}
     for item in reevaluar:
-        key = (item["mercado"], item["motivo"])
-        if key not in vistos:
-            vistos.add(key)
-            reevaluar_unicos.append(item)
+        mercado = item["mercado"]
+        motivos_por_mercado.setdefault(mercado, [])
+        if item["motivo"] not in motivos_por_mercado[mercado]:
+            motivos_por_mercado[mercado].append(item["motivo"])
+    reevaluar_unicos = [{"mercado": mercado, "motivo": " ".join(motivos)} for mercado, motivos in motivos_por_mercado.items()]
     if not reevaluar_unicos:
         reevaluar_unicos.append({"mercado": "ninguno_por_ahora", "motivo": "No hay detonantes suficientes; continuar observando."})
 
@@ -196,7 +211,8 @@ def analizar_patron(contexto: ContextoPrevio, estado: EstadoPartido,
     minimos = (0 <= estado.minuto <= 130 and estado.goles_local >= 0 and estado.goles_visitante >= 0
                and estado.tiros_puerta_local is not None and estado.tiros_puerta_visitante is not None
                and bool(estado.mercados_disponibles) and bool(contexto.expectativa.strip())
-               and (anterior is None or estado.minuto > anterior.minuto))
+               and (anterior is None or estado.minuto > anterior.minuto)
+               and not any("Marcador no monotónico" in x for x in faltantes))
     puede_valorar = minimos and any(
         isinstance(estado.cuotas.get(m), (int, float)) and estado.cuotas[m] > 1
         and isinstance((probabilidades_motor or {}).get(m), (int, float))
@@ -218,7 +234,8 @@ def analizar_patron(contexto: ContextoPrevio, estado: EstadoPartido,
         puede_pasar_a_calculo=minimos, puede_evaluar_valor=puede_valorar,
         motivo_bloqueo_valor=("Falta una probabilidad válida del motor para el mismo mercado y una cuota válida."
                               if not puede_valorar else
-                              "Valor esperado calculable; Reacción aún debe aplicar sus reglas, sin apuesta automática.")
+                              "Valor esperado calculable; Reacción aún debe aplicar sus reglas, sin apuesta automática."),
+        anomalias_datos=anomalias
     )
 
 def resultado_a_dict(resultado: ResultadoPatron) -> dict[str, Any]:
