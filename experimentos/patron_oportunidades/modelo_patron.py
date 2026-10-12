@@ -135,7 +135,7 @@ def analizar_patron(contexto: ContextoPrevio, estado: EstadoPartido,
     dom_rival = fav_sot is not None and rival_sot is not None and rival_sot >= fav_sot + 2
     tendencia_rival = False
     if len(snapshots) >= 2 and favorito:
-        s1, s2 = snapshots[-2], snapshots[-1]
+        s1, s2 = snapshots[-2], estado
         f1 = s1.tiros_puerta_local if fav_local else s1.tiros_puerta_visitante
         r1 = s1.tiros_puerta_visitante if fav_local else s1.tiros_puerta_local
         f2 = s2.tiros_puerta_local if fav_local else s2.tiros_puerta_visitante
