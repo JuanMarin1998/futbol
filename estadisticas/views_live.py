@@ -140,6 +140,178 @@ def api_calendario_ecuabet(request):
         }, status=502)
 
 
+
+def contexto_ecuabet(request):
+    """Página para generar y revisar el contexto previo de los partidos de hoy."""
+    return render(
+        request,
+        "estadisticas/contexto_ecuabet.html",
+        {"seccion": "contexto_ecuabet", "fecha_hoy": timezone.localdate()},
+    )
+
+
+def api_generar_contexto_ecuabet(request):
+    """Genera contexto previo usando localía y cuotas 1X2 de Ecuabet."""
+    hoy = timezone.localdate()
+    cache_key = f"ecuabet_pre_match_context_v1_{hoy.isoformat()}"
+    try:
+        # Solo recalcular cuando el usuario pulsa Generar contexto o no hay resultado.
+        generated = cache.get(cache_key)
+        if generated is not None and request.GET.get("force") != "1":
+            return JsonResponse(generated)
+
+        client = EcuabetClient()
+        payload = client._request(
+            "GET", "GetEvents",
+            {"eventCount": 0, "sportId": 66, "champIds": 0},
+        )
+        raw_events = payload.get("events", []) if isinstance(payload, dict) else []
+        champs = payload.get("champs", []) or payload.get("availableChamps", []) or []
+        champs_by_id = {
+            str(item.get("id") or item.get("champId") or item.get("LI") or item.get("I")):
+                (item.get("name") or item.get("champName") or item.get("L") or item.get("LE") or "")
+            for item in champs if isinstance(item, dict)
+        }
+        competitors = payload.get("competitors", []) or []
+        competitors_by_id = {
+            str(item.get("id")): item.get("name", "")
+            for item in competitors if isinstance(item, dict) and item.get("id") is not None
+        }
+
+        def parse_event_datetime(event):
+            value = event.get("startDate") or event.get("start_date") or event.get("date")
+            if value is None:
+                return None
+            if isinstance(value, (int, float)):
+                try:
+                    stamp = value / 1000 if value > 10**11 else value
+                    return timezone.localtime(datetime.fromtimestamp(stamp, tz=timezone.get_current_timezone()))
+                except (OverflowError, OSError, ValueError):
+                    return None
+            if isinstance(value, str):
+                parsed = parse_datetime(value)
+                if parsed is None:
+                    try:
+                        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+                    except (TypeError, ValueError):
+                        return None
+                if timezone.is_naive(parsed):
+                    parsed = timezone.make_aware(parsed, timezone.get_current_timezone())
+                return timezone.localtime(parsed)
+            return None
+
+        def numeric_price(value):
+            try:
+                price = float(value)
+                return price if price > 1 else None
+            except (TypeError, ValueError):
+                return None
+
+        from datetime import datetime
+        contexts = []
+        for event in raw_events:
+            if not isinstance(event, dict):
+                continue
+            kickoff = parse_event_datetime(event)
+            if kickoff is None or kickoff.date() != hoy:
+                continue
+
+            event_name = event.get("name") or event.get("eventName") or "Partido sin nombre"
+            competitor_ids = event.get("competitorIds") or []
+            home = competitors_by_id.get(str(competitor_ids[0]), "") if competitor_ids else ""
+            away = competitors_by_id.get(str(competitor_ids[1]), "") if len(competitor_ids) > 1 else ""
+            if not home or not away:
+                for separator in (" - ", " vs ", " VS ", " v "):
+                    if separator in event_name:
+                        pieces = event_name.split(separator, 1)
+                        home = home or pieces[0].strip()
+                        away = away or pieces[1].strip()
+                        break
+
+            normalized = client.normalizar_mercados_evento(event, payload)
+            market = next(
+                (item for item in normalized.get("markets", [])
+                 if str(item.get("market_type_id") or item.get("type_id") or "") == "1"),
+                None,
+            )
+            home_price = away_price = draw_price = None
+            if market:
+                for selection in market.get("selections", []):
+                    price = numeric_price(selection.get("price"))
+                    if price is None:
+                        continue
+                    selection_name = str(selection.get("name") or "").strip().lower()
+                    competitor_id = selection.get("competitor_id")
+                    if competitor_id is not None and competitor_ids:
+                        if str(competitor_id) == str(competitor_ids[0]):
+                            home_price = price
+                            continue
+                        if len(competitor_ids) > 1 and str(competitor_id) == str(competitor_ids[1]):
+                            away_price = price
+                            continue
+                    if selection_name in {"x", "draw", "empate", "tie"}:
+                        draw_price = price
+                    elif selection_name and home and selection_name == home.lower():
+                        home_price = price
+                    elif selection_name and away and selection_name == away.lower():
+                        away_price = price
+
+            favorite = ""
+            status = "Cuotas 1X2 no identificadas"
+            explanation = "No se pudo identificar con seguridad la cuota de victoria de ambos equipos; no se asigna favorito."
+            if home_price is not None and away_price is not None:
+                eligible = []
+                if 1.05 <= home_price <= 2.00:
+                    eligible.append((home_price, home, "local"))
+                if 1.05 <= away_price <= 2.00:
+                    eligible.append((away_price, away, "visitante"))
+                if len(eligible) == 1:
+                    _, favorite, side = eligible[0]
+                    status = "Favorito según la regla"
+                    explanation = f"{favorite} es el favorito según la regla de cuotas (1.05–2.00), jugando como {side}."
+                elif len(eligible) == 2:
+                    _, favorite, side = min(eligible, key=lambda item: item[0])
+                    status = "Favorito según la regla · cuotas parejas"
+                    explanation = f"Ambos equipos están en el rango definido; {favorite} tiene la cuota menor y queda como favorito relativo."
+                else:
+                    status = "Sin favorito según la regla"
+                    explanation = "Ninguna cuota de victoria está entre 1.05 y 2.00; no se asigna favorito."
+            champ_id = event.get("champId") or event.get("champ_id")
+            champ = event.get("champName") or event.get("champ") or champs_by_id.get(str(champ_id), "")
+            contexts.append({
+                "id": event.get("id") or event.get("eventId"),
+                "name": event_name,
+                "home": home or "Local no identificado",
+                "away": away or "Visitante no identificado",
+                "time": kickoff.strftime("%H:%M"),
+                "championship": champ.get("name", "") if isinstance(champ, dict) else str(champ or ""),
+                "home_odds": home_price,
+                "draw_odds": draw_price,
+                "away_odds": away_price,
+                "favorite": favorite,
+                "status": status,
+                "explanation": explanation,
+                "source": "Ecuabet · mercado 1X2",
+                "captured_at": timezone.localtime().strftime("%H:%M:%S"),
+            })
+
+        contexts.sort(key=lambda item: (item["time"], item["name"].lower()))
+        result = {
+            "ok": True,
+            "date": hoy.isoformat(),
+            "date_label": hoy.strftime("%d/%m/%Y"),
+            "count": len(contexts),
+            "contexts": contexts,
+            "generated_at": timezone.localtime().strftime("%H:%M:%S"),
+            "source": "Ecuabet GetEvents",
+            "note": "Contexto previo basado únicamente en localía y cuotas 1X2. Es una clasificación según la regla definida, no una predicción segura del resultado.",
+        }
+        cache.set(cache_key, result, 60 * 60 * 12)
+        return JsonResponse(result)
+    except Exception as exc:
+        logger.exception("Error generando contexto previo de Ecuabet")
+        return JsonResponse({"ok": False, "error": str(exc), "contexts": []}, status=502)
+
 def partidos_en_vivo(request):
     poll_seconds = getattr(settings, "LIVE_POLL_SECONDS", 60)
     return render(request, "estadisticas/live.html", {"live_poll_ms": poll_seconds * 1000})
