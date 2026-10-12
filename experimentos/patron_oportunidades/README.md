@@ -3,20 +3,21 @@
 Este experimento no se conecta a Django, Ecuabet, V1/V2/VPro ni a la simulación LIVE.
 
 ## Archivos
-- `modelo_patron.py`: etapas Contexto → Acción → escenarios disponibles.
-- `simular_patron.py`: cuatro casos controlados para revisar el comportamiento.
+- `modelo_patron.py`: registra contexto previo, compara señales y puede comparar una instantánea actual con una anterior.
+- `simular_patron.py`: cuatro casos sintéticos para probar la lógica.
 
 ## Ejecutar desde la raíz del repositorio
 ```powershell
 python experimentos/patron_oportunidades/simular_patron.py
 ```
 
-## Qué debe comprobarse
-1. El favorito dominando no produce un detonante de contradicción fuerte.
-2. Un gol en contra del favorito genera revisión, no una apuesta automática.
-3. Señales adicionales contrarias al contexto se enumeran como detonantes.
-4. Cuando faltan estadísticas, el modelo lo declara explícitamente.
-5. Se enumeran mercados disponibles, pero las probabilidades quedan vacías para que las calculen los motores.
-6. No se recomienda ni se registra ninguna apuesta.
+## Qué observar
+1. Si el favorito mantiene el dominio, no debe activarse una contradicción fuerte sin señales que la respalden.
+2. Un gol que cambia el marcador debe activar revisión, no una apuesta automática.
+3. El modelo compara señales disponibles y muestra el contexto inicial y los escenarios esperados.
+4. Los mercados sin cuota quedan identificados como `SIN_CUOTA_DISPONIBLE`.
+5. Si faltan tiros a puerta de ambos equipos, no se permite pasar a cálculo.
+6. Calcular probabilidades y evaluar valor son cosas distintas: tener una cuota no significa que exista una apuesta de valor.
+7. No se recomienda ni se registra ninguna apuesta.
 
-Los casos son ejemplos sintéticos para validar la lógica, no predicciones ni resultados reales. Este prototipo es la primera versión del patrón y debe revisarse antes de conectarlo a datos LIVE.
+Los casos son ejemplos sintéticos, no partidos reales ni predicciones. Esta rama es un laboratorio aislado y no debe integrarse a LIVE hasta validar sus salidas.
