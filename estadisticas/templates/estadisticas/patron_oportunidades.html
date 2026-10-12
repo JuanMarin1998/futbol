@@ -150,7 +150,7 @@
    const fair=op.cuota_justa==null?null:Number(op.cuota_justa);
    let evReason='';
    if(!Number.isFinite(p)||p<=0||p>=99) evReason='la probabilidad es extrema y no permite una comparación fiable';
-   else if(probabilityQuality<0.5) evReason='faltan al menos dos estadísticas LIVE comparables para validar la probabilidad';
+   else if(probabilityQuality<0.75) evReason='faltan al menos tres estadísticas LIVE comparables para validar la probabilidad';
    else if(fallbackOnly) evReason='el partido usa respaldo de Ecuabet sin estadísticas independientes de Flashscore';
    else if(odd==null||!Number.isFinite(odd)||odd<=1) evReason='falta una cuota LIVE válida para este mercado';
    const ev=!evReason?(p/100*odd-1)*100:null;
