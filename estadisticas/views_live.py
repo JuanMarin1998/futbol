@@ -2068,45 +2068,29 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
             ("V.Pro", LiveOpportunityEngineVPro, "opportunities_vpro"),
             ("V.Pro 1.1", LiveOpportunityEngineVPro11, "opportunities_vpro11"),
         ]
-        # Probabilidad se calcula en CADA pasada LIVE, no solo cuando cambia el marcador.
-        # El gol nuevo activa la etapa Acción; no debe bloquear el análisis de mercados existentes.
+        # El calculador central recibe la solicitud de probabilidad, el snapshot LIVE
+        # y el contexto 1X2 guardado. Los motores dejan de ser la referencia estadística.
+        from .live_engine.probability_calculator import LiveProbabilityCalculator
         probabilities = {}
+        calculator_result = None
         elapsed = None
         if match is not None and monitoring["detonante"]:
             elapsed = LiveOpportunityEngine._elapsed_minutes(current_minute, match.period)
-            lambda_home, lambda_away = LiveOpportunityEngine._remaining_lambda(performance, elapsed)
-            probabilities = LiveOpportunityEngine._probabilities(home, away, lambda_home, lambda_away)
-            probability_keys = {
-                "Victoria local": "home", "Empate": "draw", "Victoria visitante": "away",
-                "Doble oportunidad 1X": "dc_1x", "Doble oportunidad 12": "dc_12",
-                "Doble oportunidad X2": "dc_x2",
-                "Ambos marcan: sí": "btts_yes", "Ambos marcan: no": "btts_no",
-            }
-            probabilities["dc_1x"] = probabilities["home"] + probabilities["draw"]
-            probabilities["dc_12"] = probabilities["home"] + probabilities["away"]
-            probabilities["dc_x2"] = probabilities["draw"] + probabilities["away"]
-            ranked_probabilities = []
-            for label, key in probability_keys.items():
-                if key not in probabilities:
-                    continue
-                market_state = "ABIERTO"
-                ranked_probabilities.append({
-                    "mercado": label,
-                    "clave": key,
-                    "probabilidad": round(float(probabilities[key]) * 100, 2),
-                    "estado_live": market_state,
-                })
-            ranked_probabilities.sort(key=lambda item: item["probabilidad"], reverse=True)
-            open_probabilities = [item for item in ranked_probabilities if item["estado_live"] == "ABIERTO"]
-            best_open = max(open_probabilities, key=lambda item: item["probabilidad"]) if open_probabilities else None
+            calculator_result = LiveProbabilityCalculator.calculate(
+                match,
+                pre_match_context={
+                    "home_odds": saved_context.home_odds,
+                    "draw_odds": saved_context.draw_odds,
+                    "away_odds": saved_context.away_odds,
+                },
+            )
+            probabilities = calculator_result.get("probabilidades") or {}
             stage_probability = {
+                **calculator_result,
                 "status": "PROBABILIDAD_ESTADISTICA_ACTUALIZADA",
-                "mercados_probables": ranked_probabilities,
-                "mas_probable": best_open,
-                "estadisticas_utilizadas": performance,
-                "minutos_restantes_estimados": round(max(0.0, 90.0 - elapsed), 1),
-                "criterio": "Las probabilidades de resultado final incorporan el marcador actual. Los mercados ya cumplidos o imposibles se identifican y no se presentan como oportunidades futuras.",
-                "motivo": "Referencia estadística LIVE calculada tras el detonante; todavía no incorpora cuotas.",
+                "estadisticas_live_recibidas": performance,
+                "criterio": "El calculador central estima los mercados permitidos con marcador/minuto LIVE, estadísticas comparables disponibles y cuotas 1X2 prepartido guardadas como referencia moderada.",
+                "motivo": "Probabilidades calculadas por LiveProbabilityCalculator. Los motores se contrastan con esta referencia y no la sustituyen.",
             }
         else:
             stage_probability = {
