@@ -21,6 +21,14 @@ MARKETS = (
     ("Doble oportunidad X2", "dc_x2"),
     ("Ambos marcan: sí", "btts_yes"),
     ("Ambos marcan: no", "btts_no"),
+    ("Más de 0.5 goles", "over_0_5"),
+    ("Menos de 0.5 goles", "under_0_5"),
+    ("Más de 1.5 goles", "over_1_5"),
+    ("Menos de 1.5 goles", "under_1_5"),
+    ("Más de 2.5 goles", "over_2_5"),
+    ("Menos de 2.5 goles", "under_2_5"),
+    ("Más de 3.5 goles", "over_3_5"),
+    ("Menos de 3.5 goles", "under_3_5"),
 )
 
 
@@ -195,15 +203,23 @@ class LiveProbabilityCalculator:
         # pronóstico prepartido sin marcador, porque podría contradecir un 3-0 al 80'.
         outcome = _normalize([home_win, draw, away_win])
 
+        # Distribución del total de goles al final, sumando marcador actual y goles restantes.
+        total_goals_over = {1: 0.0, 2: 0.0, 3: 0.0, 4: 0.0}
+        for h_extra, ph in enumerate(home_goals):
+            for a_extra, pa in enumerate(away_goals):
+                final_total = home_score + away_score + h_extra + a_extra
+                for threshold in total_goals_over:
+                    if final_total >= threshold:
+                        total_goals_over[threshold] += ph * pa
+
         probabilities = {
-            "home": outcome[0],
-            "draw": outcome[1],
-            "away": outcome[2],
-            "dc_1x": outcome[0] + outcome[1],
-            "dc_12": outcome[0] + outcome[2],
-            "dc_x2": outcome[1] + outcome[2],
-            "btts_yes": both_yes,
-            "btts_no": 1.0 - both_yes,
+            "home": outcome[0], "draw": outcome[1], "away": outcome[2],
+            "dc_1x": outcome[0] + outcome[1], "dc_12": outcome[0] + outcome[2],
+            "dc_x2": outcome[1] + outcome[2], "btts_yes": both_yes, "btts_no": 1.0 - both_yes,
+            "over_0_5": total_goals_over[1], "under_0_5": 1.0 - total_goals_over[1],
+            "over_1_5": total_goals_over[2], "under_1_5": 1.0 - total_goals_over[2],
+            "over_2_5": total_goals_over[3], "under_2_5": 1.0 - total_goals_over[3],
+            "over_3_5": total_goals_over[4], "under_3_5": 1.0 - total_goals_over[4],
         }
         probabilities = {key: max(0.0, min(1.0, value)) for key, value in probabilities.items()}
         ranked = []
@@ -217,11 +233,22 @@ class LiveProbabilityCalculator:
             )
             # Ambos marcan queda matemáticamente decidido en cuanto ambos anotan;
             # no debe mostrarse como una oportunidad abierta.
+            threshold_by_key = {
+                "over_0_5": 1, "under_0_5": 1, "over_1_5": 2, "under_1_5": 2,
+                "over_2_5": 3, "under_2_5": 3, "over_3_5": 4, "under_3_5": 4,
+            }
+            threshold = threshold_by_key.get(key)
+            total_now = home_score + away_score
             market_settled = (
                 key == "btts_yes" and home_score > 0 and away_score > 0
             ) or (
-                key == "btts_no" and (home_score == 0 or away_score == 0)
-                and minute >= 90
+                key == "btts_no" and (home_score == 0 or away_score == 0) and minute >= 90
+            ) or (
+                threshold is not None and (
+                    (key.startswith("over_") and total_now >= threshold)
+                    or (key.startswith("under_") and total_now >= threshold)
+                    or minute >= 90
+                )
             )
             ranked.append({
                 "mercado": label,
