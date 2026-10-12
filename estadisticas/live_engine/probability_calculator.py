@@ -108,7 +108,10 @@ class LiveProbabilityCalculator:
         minute = cls._minute(match.minute)
         remaining = max(0.0, min(1.0, (90.0 - minute) / 90.0))
         if minute > 90:
-            remaining = 0.0
+            # El minuto 90+ no significa que el partido ya haya terminado.
+            # Conservamos una pequeña ventana de tiempo añadido para no convertir
+            # automáticamente un empate en una probabilidad del 100% para X2/1X.
+            remaining = max(0.02, min(0.10, (100.0 - minute) / 90.0))
 
         # Estadísticas que miden amenaza ofensiva. Solo se usan si existen en el feed.
         aliases = {
@@ -262,5 +265,12 @@ class LiveProbabilityCalculator:
 
     @staticmethod
     def _minute(value):
-        match = re.search(r"\d+", str(value or ""))
+        text = str(value or "").strip().lower()
+        # Los feeds pueden informar el descanso como texto, no como minuto.
+        # Antes se convertía "Descanso" en 0', simulando todo el partido por jugar.
+        if any(token in text for token in ("descanso", "half time", "halftime", "interval", "medio tiempo")):
+            return 45
+        if any(token in text for token in ("finalizado", "final", "finished", "full time", "fulltime")):
+            return 90
+        match = re.search(r"\d+", text)
         return max(0, min(120, int(match.group(0)))) if match else 0
