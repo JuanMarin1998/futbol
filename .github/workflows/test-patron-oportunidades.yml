@@ -24,5 +24,7 @@ jobs:
       - name: Ejecutar pruebas automáticas
         working-directory: experimentos/patron_oportunidades
         run: python -m unittest -q
-      - name: Simular escenarios y mostrar informe
+      - name: Simular contexto previo y mostrar informe
+        run: python experimentos/patron_oportunidades/simular_contexto.py
+      - name: Simular escenarios del partido y mostrar informe
         run: python experimentos/patron_oportunidades/simular_patron.py
