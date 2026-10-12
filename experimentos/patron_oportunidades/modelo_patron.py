@@ -169,9 +169,34 @@ def analizar_patron(contexto: ContextoPrevio, estado: EstadoPartido,
         tiros_fav is not None and tiros_rival is not None and tiros_rival > tiros_fav,
         ataques_fav is not None and ataques_rival is not None and ataques_rival > ataques_fav,
     ))
-    contradictorias = votos_fav > 0 and votos_rival > 0
+
+    # Separar el acumulado del impulso de la fase LIVE más reciente.
+    impulso_rival = False
+    impulso_fav = False
+    deltas_recientes = {}
+    if anterior is not None:
+        for equipo, campo_local, campo_visitante in (
+            ("tiros", "tiros_local", "tiros_visitante"),
+            ("tiros a puerta", "tiros_puerta_local", "tiros_puerta_visitante"),
+            ("ataques peligrosos", "ataques_peligrosos_local", "ataques_peligrosos_visitante"),
+        ):
+            campo_fav, campo_rival = (campo_local, campo_visitante) if fav_local else (campo_visitante, campo_local)
+            af, pf = getattr(estado, campo_fav), getattr(anterior, campo_fav)
+            ar, pr = getattr(estado, campo_rival), getattr(anterior, campo_rival)
+            if all(x is not None for x in (af, pf, ar, pr)):
+                deltas_recientes[equipo] = (af - pf, ar - pr)
+        rival_votes = sum(1 for df, dr in deltas_recientes.values() if dr >= df + 3)
+        fav_votes = sum(1 for df, dr in deltas_recientes.values() if df >= dr + 3)
+        impulso_rival = rival_votes >= 2
+        impulso_fav = fav_votes >= 2
+
+    contradictorias = (votos_fav > 0 and votos_rival > 0) or (impulso_rival and votos_fav > 0) or (impulso_fav and votos_rival > 0)
     if contradictorias:
-        interpretacion = "Indicadores contradictorios: unas métricas favorecen al favorito y otras al rival. No afirmar un cambio sostenido; comprobar calidad de datos y esperar otra observación."
+        interpretacion = "Indicadores contradictorios: el acumulado y la tendencia reciente no cuentan la misma historia. No afirmar un cambio sostenido; conservar incertidumbre y comprobar otra observación."
+    elif impulso_rival and votos_fav == 0:
+        interpretacion = "El rival acelera claramente en varias métricas recientes. Aunque el acumulado aún no lo refleje, la expectativa de dominio del favorito queda cuestionada; confirmar si persiste."
+    elif impulso_fav and votos_rival == 0:
+        interpretacion = "El favorito acelera claramente en varias métricas recientes; la tendencia favorece su control, pendiente de confirmación."
     elif gol_nuevo and dom_fav and not roja_fav:
         interpretacion = "El favorito conserva ventaja en tiros a puerta; el gol no demuestra por sí solo un cambio de dominio. Confirmar en la siguiente observación."
     elif votos_rival >= 2 and (tendencia_rival or roja_fav):
@@ -191,9 +216,14 @@ def analizar_patron(contexto: ContextoPrevio, estado: EstadoPartido,
         es_dominio = "genera más peligro" in low or "dominio" in low or "domina" in low
         es_victoria_fav = "victoria" in low and (favorito is None or favorito.lower() in low)
         if es_dominio:
-            if dom_fav: vigentes.append(exp)
-            elif dom_rival: cuestionadas.append(exp)
-            else: sin_evidencia.append(exp)
+            if impulso_rival:
+                cuestionadas.append(exp)
+            elif impulso_fav or dom_fav:
+                vigentes.append(exp)
+            elif dom_rival:
+                cuestionadas.append(exp)
+            else:
+                sin_evidencia.append(exp)
         elif es_victoria_fav and favorito_perdiendo:
             cuestionadas.append(exp)
         else:
