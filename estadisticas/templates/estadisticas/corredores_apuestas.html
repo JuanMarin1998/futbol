@@ -1,0 +1,99 @@
+{% extends "estadisticas/base.html" %}
+{% block titulo %}Laboratorio de Corredores Virtuales{% endblock %}
+{% block contenido %}
+<style>
+.runner-page{max-width:1500px;margin:auto}.runner-panel{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:1rem;margin-bottom:1rem;color:#e2e8f0}.runner-muted{color:#94a3b8}.runner-actions{display:flex;gap:.6rem;flex-wrap:wrap}.runner-btn{border:0;border-radius:8px;padding:.65rem .95rem;font-weight:700;cursor:pointer;background:#2563eb;color:white}.runner-btn.secondary{background:#475569}.runner-btn.stop{background:#991b1b}.runner-btn:disabled{opacity:.55;cursor:wait}.runner-status{background:#0f172a;border:1px solid #334155;border-radius:8px;padding:.75rem;white-space:pre-wrap;margin-top:.8rem}.runner-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:.8rem}.runner-card{background:#0f172a;border:1px solid #334155;border-radius:10px;padding:1rem;min-width:0}.runner-card h3{margin:.1rem 0 .55rem}.runner-stat-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.45rem;margin:.65rem 0}.runner-stat{background:#172033;border-radius:7px;padding:.55rem}.runner-stat small{display:block;color:#94a3b8}.runner-stat strong{font-size:1.1rem}.runner-pill{display:inline-block;border-radius:999px;background:#334155;padding:.2rem .55rem;font-size:.75rem}.runner-good{color:#86efac}.runner-bad{color:#fca5a5}.runner-table-wrap{overflow:auto}table.runner-table{width:100%;border-collapse:collapse;font-size:.86rem}table.runner-table th,table.runner-table td{border-bottom:1px solid #334155;padding:.65rem;text-align:left;vertical-align:top}table.runner-table th{color:#94a3b8;white-space:nowrap}.runner-reason{max-width:340px;white-space:normal;line-height:1.4}.runner-top{display:flex;justify-content:space-between;align-items:start;gap:1rem;flex-wrap:wrap}@media(max-width:650px){.runner-table{min-width:850px}}
+</style>
+<div class="runner-page">
+ <section class="runner-panel">
+  <div class="runner-top">
+   <div>
+    <h2 style="margin:.1rem 0 .5rem">🏁 Laboratorio de Corredores Virtuales</h2>
+    <p class="runner-muted" style="margin:.2rem 0">Seis estrategias independientes. Reciben las oportunidades del Patrón, verifican la cuota LIVE de Ecuabet y deciden por separado. No modifican ni ejecutan los nueve motores.</p>
+    <div class="runner-muted">Capital inicial: <strong>100 vidas por corredor</strong> · Máximo: <strong>una apuesta por partido y corredor</strong> · Solo simulación virtual.</div>
+   </div>
+   <div class="runner-actions">
+    <button class="runner-btn" id="startRunner">▶ Iniciar</button>
+    <button class="runner-btn stop" id="stopRunner">Ⅱ Pausar</button>
+    <button class="runner-btn secondary" id="cycleRunner">↻ Ejecutar ciclo</button>
+    <button class="runner-btn secondary" id="settleRunner">✓ Liquidar pendientes</button>
+    <button class="runner-btn secondary" id="resetRunner">Reiniciar día</button>
+    <button class="runner-btn secondary" id="refreshRunner">Actualizar panel</button>
+   </div>
+  </div>
+  <div class="runner-status" id="runnerStatus">Cargando estado del laboratorio…</div>
+  <form style="display:none">{% csrf_token %}</form>
+ </section>
+ <section class="runner-panel">
+  <div class="runner-top"><h2 style="margin:.1rem 0">Corredores</h2><span class="runner-muted" id="runnerDate">—</span></div>
+  <div class="runner-grid" id="runnerCards"><p class="runner-muted">Cargando…</p></div>
+ </section>
+ <section class="runner-panel">
+  <h2 style="margin:.1rem 0 .8rem">Registro de apuestas</h2>
+  <p class="runner-muted">Cada registro conserva la cuota de Ecuabet utilizada, probabilidad, stake, beneficio potencial, resultado y motivo. Las cuotas y probabilidades históricas no se reescriben.</p>
+  <div class="runner-table-wrap"><table class="runner-table"><thead><tr><th>Hora</th><th>Corredor</th><th>Partido / marcador</th><th>Mercado</th><th>Cuota Ecuabet</th><th>Prob.</th><th>Stake</th><th>P/L</th><th>Estado</th><th>Motivo</th></tr></thead><tbody id="runnerBets"><tr><td colspan="10">Cargando apuestas…</td></tr></tbody></table></div>
+ </section>
+ <section class="runner-panel">
+  <h2 style="margin:.1rem 0 .8rem">Últimas decisiones y abstenciones</h2>
+  <div class="runner-table-wrap"><table class="runner-table"><thead><tr><th>Hora</th><th>Corredor</th><th>Partido</th><th>Estado</th><th>Selección</th><th>Motivo</th></tr></thead><tbody id="runnerEvaluations"><tr><td colspan="6">Cargando evaluaciones…</td></tr></tbody></table></div>
+ </section>
+</div>
+<script>
+(function(){
+ const stateUrl="{% url 'estadisticas:api_corredores_estado' %}";
+ const startUrl="{% url 'estadisticas:api_corredores_iniciar' %}";
+ const stopUrl="{% url 'estadisticas:api_corredores_pausar' %}";
+ const cycleUrl="{% url 'estadisticas:api_corredores_ciclo' %}";
+ const settleUrl="{% url 'estadisticas:api_corredores_liquidar' %}";
+ const resetUrl="{% url 'estadisticas:api_corredores_reiniciar' %}";
+ const statusEl=document.getElementById('runnerStatus');
+ let busy=false;
+ function esc(v){return String(v==null?'—':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+ function num(v,d=2){const n=Number(v);return Number.isFinite(n)?n.toFixed(d):'—';}
+ function signed(v){const n=Number(v||0);return (n>0?'+':'')+num(n,2);}
+ function time(v){if(!v)return '—';try{return new Date(v).toLocaleString();}catch(e){return v;}}
+ function csrf(){const el=document.querySelector('[name=csrfmiddlewaretoken]');return el?el.value:'';}
+ async function post(url){
+  if(busy)return null;busy=true;
+  try{const r=await fetch(url,{method:'POST',headers:{'X-CSRFToken':csrf(),'Content-Type':'application/json'},body:'{}',cache:'no-store'});const d=await r.json();if(!r.ok||!d.ok)throw new Error(d.error||'La acción no se pudo completar.');statusEl.textContent=d.message||('Acción completada'+(d.bets_placed!=null?': '+d.bets_placed+' apuestas registradas.':''));return d;}
+  catch(e){statusEl.textContent='Error: '+e.message;return null;}
+  finally{busy=false;await refresh();}
+ }
+ function renderRunners(rows){
+  const root=document.getElementById('runnerCards');
+  if(!rows.length){root.innerHTML='<p class="runner-muted">Todavía no hay corredores registrados.</p>';return;}
+  root.innerHTML=rows.map(r=>{
+   const last=r.last_evaluation;
+   const action=last?last.action:'SIN EVALUAR';
+   const reason=last?last.reason:'Esperando el primer ciclo.';
+   return '<article class="runner-card"><h3>'+esc(r.name)+'</h3><span class="runner-pill">'+esc(r.strategy)+'</span><p class="runner-muted">'+esc(r.description)+'</p><div class="runner-stat-grid"><div class="runner-stat"><small>Capital disponible hoy</small><strong>'+num(r.lives)+'</strong></div><div class="runner-stat"><small>P/L de hoy</small><strong class="'+(r.pnl_today>=0?'runner-good':'runner-bad')+'">'+signed(r.pnl_today)+'</strong></div><div class="runner-stat"><small>Apuestas hoy / total</small><strong>'+r.bets_today+' / '+r.bets_total+'</strong></div><div class="runner-stat"><small>Abiertas · Ganadas · Perdidas</small><strong>'+r.open+' · '+r.won+' · '+r.lost+'</strong></div></div><div><strong>Última decisión:</strong> '+esc(action)+'</div><div class="runner-muted" style="margin-top:.35rem;line-height:1.4">'+esc(reason)+'</div></article>';
+  }).join('');
+ }
+ function renderBets(rows){
+  const root=document.getElementById('runnerBets');
+  if(!rows.length){root.innerHTML='<tr><td colspan="10" class="runner-muted">Todavía no se han registrado apuestas.</td></tr>';return;}
+  root.innerHTML=rows.map(b=>'<tr><td>'+esc(time(b.placed_at))+'</td><td>'+esc(b.runner)+'</td><td><strong>'+esc(b.home)+' vs '+esc(b.away)+'</strong><br><span class="runner-muted">'+esc((b.score||[]).join('–'))+' · '+esc(b.minute)+'</span></td><td>'+esc(b.market)+'<br><span class="runner-muted">'+esc(b.selection)+(b.line?' '+esc(b.line):'')+'</span></td><td><strong>'+num(b.price,3)+'</strong></td><td>'+num(Number(b.probability)*100,2)+'%</td><td>'+num(b.stake,2)+'</td><td class="'+(b.pnl>=0?'runner-good':'runner-bad')+'">'+signed(b.pnl)+'</td><td>'+esc(b.status)+'</td><td class="runner-reason">'+esc(b.reason)+'</td></tr>').join('');
+ }
+ function renderEvaluations(rows){
+  const root=document.getElementById('runnerEvaluations');
+  if(!rows.length){root.innerHTML='<tr><td colspan="6" class="runner-muted">Todavía no hay decisiones registradas.</td></tr>';return;}
+  root.innerHTML=rows.map(e=>'<tr><td>'+esc(time(e.evaluated_at))+'</td><td>'+esc(e.runner)+'</td><td>'+esc(e.home+' vs '+e.away)+'<br><span class="runner-muted">'+esc((e.score||[]).join('–'))+' · '+esc(e.minute)+'</span></td><td>'+esc(e.action)+'</td><td>'+esc(e.selected_market)+'</td><td class="runner-reason">'+esc(e.reason)+'</td></tr>').join('');
+ }
+ async function refresh(){
+  try{
+   const r=await fetch(stateUrl,{cache:'no-store'});const d=await r.json();if(!r.ok||!d.ok)throw new Error(d.error||'No se pudo leer el estado.');
+   document.getElementById('runnerDate').textContent='Fecha del libro de vidas: '+d.today;
+   renderRunners(d.runners||[]);renderBets(d.bets||[]);renderEvaluations(d.evaluations||[]);
+   if(!busy)statusEl.textContent='Estado: '+(d.running?'ACTIVO':'PAUSADO')+(d.busy?' · ciclo procesándose':'')+' · Actualizado: '+time(d.updated_at);
+  }catch(e){if(!busy)statusEl.textContent='Error consultando estado: '+e.message;}
+ }
+ document.getElementById('startRunner').addEventListener('click',()=>post(startUrl));
+ document.getElementById('stopRunner').addEventListener('click',()=>post(stopUrl));
+ document.getElementById('cycleRunner').addEventListener('click',()=>post(cycleUrl));
+ document.getElementById('settleRunner').addEventListener('click',()=>post(settleUrl));
+ document.getElementById('resetRunner').addEventListener('click',async()=>{if(confirm('¿Cancelar apuestas abiertas de hoy y conservar todo el historial?'))await post(resetUrl);});
+ document.getElementById('refreshRunner').addEventListener('click',refresh);
+ refresh();setInterval(refresh,10000);
+})();
+</script>
+{% endblock %}
