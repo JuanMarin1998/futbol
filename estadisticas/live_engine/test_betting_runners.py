@@ -114,3 +114,32 @@ class BettingRunnerLabTests(TestCase):
         result = BettingRunnerLab.process_payload(987654, payload)
         self.assertEqual(result["bets_placed"], 0)
         self.assertEqual(BettingRunnerBet.objects.filter(ecuabet_event_id=987654).count(), 0)
+
+    def test_missing_live_stats_do_not_globally_block_value_runner(self):
+        payload = dict(self.payload)
+        payload["etapas"] = {
+            **self.payload["etapas"],
+            "monitoreo": {"detonante": False},
+            "probabilidad": {
+                "confianza_calculador": 0.45,
+                "calidad_datos": 0.20,
+                "cantidad_estadisticas_utilizadas": 0,
+            },
+            "calculo": {"mercados": [{
+                "clave": "under_3_5",
+                "mercado": "Menos de 3.5 goles",
+                "probabilidad": 79.84,
+                "probabilidad_decimal": 0.7984,
+                "cuota_ecuabet": 1.525,
+                "estado_cuota_ecuabet": "DISPONIBLE",
+                "estado_live": "ABIERTO",
+            }]},
+        }
+        result = BettingRunnerLab.process_payload(555555, payload)
+        self.assertEqual(result["bets_placed"], 3)
+        self.assertTrue(BettingRunnerBet.objects.filter(
+            runner__key="valor", ecuabet_event_id=555555
+        ).exists())
+        self.assertFalse(BettingRunnerBet.objects.filter(
+            runner__key="validador", ecuabet_event_id=555555
+        ).exists())
