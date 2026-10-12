@@ -2152,7 +2152,7 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
                 # suelen ser los nombres de los equipos, no "local"/"visitante".
                 if (
                     "1x2" in market_name or "resultado" in market_name
-                    or "ganador" in market_name or odd.get("market_type_id") == 1
+                    or "ganador" in market_name or str(odd.get("market_type_id") or "") == "1"
                 ):
                     if selection_name in {"x", "draw", "empate", "tie", "the draw"}:
                         key = "draw"
