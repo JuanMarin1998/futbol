@@ -2,12 +2,12 @@
 {% block titulo %}🎯 Simulación del Patrón de Oportunidades{% endblock %}
 {% block contenido %}
 <style>
-.patron-page{max-width:1450px;margin:auto}.panel{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:1.1rem;margin-bottom:1rem}.muted{color:#94a3b8}.matches{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:.8rem}.match-card{background:#0f172a;border:1px solid #334155;border-radius:10px;padding:1rem;min-width:0}.match-card h3{margin:.1rem 0 .6rem;font-size:1rem}.btn{border:0;border-radius:8px;background:#2563eb;color:#fff;padding:.7rem 1rem;cursor:pointer;font-weight:700}.btn:disabled{opacity:.5;cursor:wait}.btn-secondary{background:#334155}.btn-stop{background:#991b1b}.status{padding:.65rem .8rem;border-radius:8px;background:#0f172a;margin:.7rem 0;white-space:pre-wrap}.pill{display:inline-block;border-radius:999px;background:#334155;padding:.2rem .55rem;font-size:.75rem;margin:.12rem}.good{border-color:#15803d}.warn{border-color:#a16207}.bad{border-color:#b91c1c}.match-meta{line-height:1.65;font-size:.9rem}.result-title{font-weight:800;margin-bottom:.35rem}.result-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:.45rem;margin-top:.7rem}.stage-mini{background:#172033;border:1px solid #334155;border-radius:7px;padding:.55rem;font-size:.82rem;overflow-wrap:anywhere}.stage-mini strong{display:block;margin-bottom:.25rem}.op-list{font-size:.82rem;line-height:1.5;margin:.5rem 0 0;padding-left:1.1rem}.section-title{display:flex;gap:.8rem;align-items:center;justify-content:space-between;flex-wrap:wrap}@media(max-width:600px){.matches{grid-template-columns:1fr}}
+.patron-page{max-width:1450px;margin:auto}.panel{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:1.1rem;margin-bottom:1rem}.muted{color:#94a3b8}.matches{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:.8rem}.match-card{background:#0f172a;border:1px solid #334155;border-radius:10px;padding:1rem;min-width:0}.match-card h3{margin:.1rem 0 .6rem;font-size:1rem}.btn{border:0;border-radius:8px;background:#2563eb;color:#fff;padding:.7rem 1rem;cursor:pointer;font-weight:700}.btn:disabled{opacity:.5;cursor:wait}.btn-secondary{background:#334155}.btn-stop{background:#991b1b}.status{padding:.65rem .8rem;border-radius:8px;background:#0f172a;margin:.7rem 0;white-space:pre-wrap}.pill{display:inline-block;border-radius:999px;background:#334155;padding:.2rem .55rem;font-size:.75rem;margin:.12rem}.good{border-color:#15803d}.warn{border-color:#a16207}.bad{border-color:#b91c1c}.match-meta{line-height:1.65;font-size:.9rem}.result-title{font-weight:800;margin-bottom:.35rem}.result-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:.45rem;margin-top:.7rem}.stage-mini{background:#172033;border:1px solid #334155;border-radius:7px;padding:.55rem;font-size:.82rem;overflow-wrap:anywhere}.stage-mini strong{display:block;margin-bottom:.25rem}.op-list{font-size:.82rem;line-height:1.5;margin:.5rem 0 0;padding-left:1.1rem}.section-title{display:flex;gap:.8rem;align-items:center;justify-content:space-between;flex-wrap:wrap}.tabs{display:flex;gap:.5rem;flex-wrap:wrap;margin:1rem 0 0}.tab-btn{border:1px solid #475569;border-radius:8px;background:#0f172a;color:#cbd5e1;padding:.65rem .95rem;cursor:pointer;font-weight:700}.tab-btn.active{background:#2563eb;border-color:#2563eb;color:#fff}.tab-panel[hidden]{display:none!important}@media(max-width:600px){.matches{grid-template-columns:1fr}.tab-btn{flex:1}}
 </style>
 <div class="patron-page">
  <section class="panel">
   <h2 style="margin:.1rem 0 .5rem">🎯 Patrón de Oportunidades · Simulación LIVE</h2>
-  <p class="muted">Solo entran partidos que tienen contexto previo guardado, favorito por cuota entre 1.05 y 2.00 y presencia confirmada en LIVE de Ecuabet. La simulación consulta los motores existentes; no crea apuestas ni modifica sus fórmulas o capitales.</p>
+  <p class="muted">Solo entran partidos que tienen contexto previo guardado, favorito por cuota entre 1.05 y 2.00 y presencia confirmada en LIVE de Ecuabet. La simulación usa una cadena independiente de seis etapas y el calculador central de probabilidades. No interviene en los motores de apuestas.</p>
   <div style="display:flex;gap:.6rem;flex-wrap:wrap">
    <button id="reloadMatches" class="btn btn-secondary">↻ Actualizar candidatos</button>
    <button id="startAll" class="btn">▶ Simular todos los partidos elegibles</button>
@@ -15,30 +15,46 @@
   </div>
   <div id="listStatus" class="status">Buscando partidos LIVE con contexto y favorito…</div>
   <div class="muted">Cuando la simulación está activa, vuelve a consultar los partidos elegibles cada 30 segundos después de completar cada ciclo. Si un encuentro deja de estar LIVE, ya no se incluirá en el siguiente ciclo.</div>
+  <nav class="tabs" aria-label="Secciones del Patrón de Oportunidades"><button type="button" class="tab-btn active" data-tab="principal">① Principal · Partidos y etapas</button><button type="button" class="tab-btn" data-tab="oportunidades">③ Oportunidades</button><button type="button" class="tab-btn" data-tab="historial">④ Historial y cuadro</button></nav>
  </section>
+ <div class="tab-panel" data-tab-panel="principal">
  <section class="panel">
-  <div class="section-title"><h3 style="margin-top:0">Partidos elegibles</h3><span id="candidateCount" class="pill">0 partidos</span></div>
+  <div class="section-title"><h3 style="margin-top:0">1. Partidos elegibles</h3><span id="candidateCount" class="pill">0 partidos</span></div>
   <div id="matches" class="matches"><p class="muted">Cargando…</p></div>
  </section>
  <section class="panel">
-  <div class="section-title"><h3 style="margin-top:0">Resultados de la simulación por partido</h3><span id="cycleLabel" class="pill">Sin iniciar</span></div>
+  <div class="section-title"><h3 style="margin-top:0">2. Cadena de análisis por partido · seis etapas</h3><span id="cycleLabel" class="pill">Sin iniciar</span></div>
   <div id="results" class="matches"><p class="muted">Pulsa «Simular todos los partidos elegibles» para iniciar.</p></div>
  </section>
+ </div>
+ <div class="tab-panel" data-tab-panel="oportunidades" hidden>
  <section class="panel" id="opportunitiesPanel">
   <div class="section-title"><h3 style="margin-top:0">🎯 Oportunidades · señales recibidas por Reacción</h3><span id="opportunityCount" class="pill">0 señales</span></div>
   <p class="muted">Registro de cada señal que llega a Reacción, con partido, minuto, marcador, motor, mercado, selección, cuota, probabilidades, edges, consenso y estado del mercado. Las señales se conservan también en el historial de cada pasada.</p>
   <div id="opportunitiesResults" class="matches"><p class="muted">Inicia la simulación para registrar las señales que reciben los motores de Reacción.</p></div>
  </section>
+ </section>
+ </div>
+ <div class="tab-panel" data-tab-panel="historial" hidden>
  <section class="panel">
-  <div class="section-title"><h3 style="margin-top:0">📚 Historial guardado de partidos</h3><button id="reloadHistory" class="btn btn-secondary">↻ Cargar historial</button></div>
+  <div class="section-title"><h3 style="margin-top:0">📚 Historial y cuadro de registros</h3><button id="reloadHistory" class="btn btn-secondary">↻ Cargar historial</button></div>
   <p class="muted">Cada pasada queda guardada en la base de datos con marcador, minuto y las seis etapas. Filtra por nombre o ID de Ecuabet y abre el diagnóstico de cada registro.</p>
   <input id="historyFilter" type="search" placeholder="Filtrar por partido o ID de Ecuabet…" style="box-sizing:border-box;width:100%;padding:.7rem;border-radius:8px;border:1px solid #475569;background:#0f172a;color:inherit;margin-bottom:.7rem">
   <div id="historyStatus" class="status">Cargando historial guardado…</div>
   <div id="historyResults" class="matches"><p class="muted">Consultando registros guardados…</p></div>
  </section>
+ </div>
 </div>
 <script>
 (function(){
+ const tabButtons=Array.from(document.querySelectorAll('[data-tab]'));
+ const tabPanels=Array.from(document.querySelectorAll('[data-tab-panel]'));
+ function activateTab(name){
+  tabButtons.forEach(button=>{const active=button.dataset.tab===name;button.classList.toggle('active',active);button.setAttribute('aria-selected',active?'true':'false');});
+  tabPanels.forEach(panel=>{panel.hidden=panel.dataset.tabPanel!==name;});
+ }
+ tabButtons.forEach(button=>button.addEventListener('click',()=>activateTab(button.dataset.tab)));
+ activateTab('principal');
  const matchesEl=document.getElementById('matches');
  const resultsEl=document.getElementById('results');
  const listStatus=document.getElementById('listStatus');
