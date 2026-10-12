@@ -1809,7 +1809,7 @@ def patron_oportunidades(request):
     return render(
         request,
         "estadisticas/patron_oportunidades.html",
-        {"live_poll_ms": 10000, "seccion": "patron_oportunidades"},
+        {"live_poll_ms": 30000, "seccion": "patron_oportunidades"},
     )
 
 
