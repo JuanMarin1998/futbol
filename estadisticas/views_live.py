@@ -1936,7 +1936,9 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
             score_delta = (now_score[0] - prev_score[0]) + (now_score[1] - prev_score[1])
 
         performance = match.performance or {}
-        previous_performance = previous.performance if previous and isinstance(previous.performance, dict) else {}
+        previous_performance = dict(previous.performance) if previous and isinstance(previous.performance, dict) else {}
+        # El bloque de auditoría del Patrón no es una estadística LIVE; no debe aparecer como cambio falso.
+        previous_performance.pop("patron_oportunidades", None)
         def _flatten_stats(value, prefix=""):
             flattened = {}
             if isinstance(value, dict):
