@@ -152,7 +152,7 @@ def analizar_patron(contexto: ContextoPrevio, estado: EstadoPartido,
         fa = estado.tiros_puerta_local if fav_local else estado.tiros_puerta_visitante
         ra = estado.tiros_puerta_visitante if fav_local else estado.tiros_puerta_local
         valores = (fv, rv, fp, rp, fa, ra)
-        tendencia_rival = all(x is not None for x in valores) and rp > fp and (ra - fa) > (rp - fp) and (rp - fp) > (rv - fv)
+        tendencia_rival = all(x is not None for x in valores) and ra > fa and (ra - fa) > (rp - fp) and (rp - fp) > (rv - fv)
     gol_nuevo = anterior is not None and (estado.goles_local + estado.goles_visitante > anterior.goles_local + anterior.goles_visitante)
     roja_fav = (fav_local and estado.rojas_local > 0) or (favorito == contexto.visitante and estado.rojas_visitante > 0)
     tiros_fav = estado.tiros_local if fav_local else estado.tiros_visitante
