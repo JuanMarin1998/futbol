@@ -15,6 +15,7 @@ urlpatterns = [
     path("live/patrones/", views_live.laboratorio_patrones, name="laboratorio_patrones"),
     path("live/patron-oportunidades/", views_live.patron_oportunidades, name="patron_oportunidades"),
     path("api/live/patron-oportunidades/partidos/", views_live.api_patron_oportunidades_partidos, name="api_patron_oportunidades_partidos"),
+    path("api/live/patron-oportunidades/historial/", views_live.api_historial_patron_oportunidades, name="api_historial_patron_oportunidades"),
     path("api/live/patron-oportunidades/<int:ecuabet_event_id>/", views_live.api_simular_patron_oportunidades, name="api_simular_patron_oportunidades"),
     path("live/calendario/", views_live.calendario_ecuabet, name="calendario_ecuabet"),
     path("api/live/calendario/", views_live.api_calendario_ecuabet, name="api_calendario_ecuabet"),
