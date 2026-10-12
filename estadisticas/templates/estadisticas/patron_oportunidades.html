@@ -163,11 +163,12 @@
   });
   const best=candidates[0]||null;
   const labelFor=op=>op.mercado||op.nombre||'Mercado del favorito';
+  const probabilityText=p=>p>=99?'≥99% (extrema)':p<=1?'≤1% (extrema)':p.toFixed(2)+'%';
   const marketHtml=op=>{
    const evText=op._ev==null?'Valor no evaluable: '+(op._evReason||'datos insuficientes para validar la estimación'):('Valor esperado estimado: '+(op._ev>0?'+':'')+op._ev.toFixed(2)+'% por unidad');
    const fairText=op._fair!=null&&Number.isFinite(op._fair)?op._fair.toFixed(3):'—';
    const oddText=op._odd!=null&&Number.isFinite(op._odd)?op._odd.toFixed(3):'No disponible';
-   return '<div class="fav-market'+(best&&op.clave===best.clave?' best':'')+'"><div class="market-row"><strong>'+esc(labelFor(op))+'</strong><strong>'+esc(op._p.toFixed(2))+'%</strong></div><div class="market-note">Cuota LIVE: '+esc(oddText)+' · Cuota justa: '+esc(fairText)+'</div><div class="market-note">'+esc(evText)+'</div></div>';
+   return '<div class="fav-market'+(best&&op.clave===best.clave?' best':'')+'"><div class="market-row"><strong>'+esc(labelFor(op))+'</strong><strong>'+esc(probabilityText(op._p))+'</strong></div><div class="market-note">Cuota LIVE: '+esc(oddText)+' · Cuota justa: '+esc(fairText)+'</div><div class="market-note">'+esc(evText)+'</div></div>';
   };
   let opsHtml='';
   if(best){
@@ -175,7 +176,7 @@
    const evaluable=best._ev!=null;
    const heading=positive?'MEJOR OPORTUNIDAD':evaluable?'MEJOR ALTERNATIVA EVALUADA':'SEÑAL SIN VALIDAR';
    const sub=!evaluable?'No se declara una oportunidad: '+(best._evReason||'faltan datos fiables')+'.':positive?'La estimación y los datos disponibles sugieren valor; no garantiza un resultado.':'Ningún mercado evaluado ofrece valor esperado positivo con las cuotas actuales.';
-   opsHtml='<div class="best-opportunity"><span class="best-badge">★ '+heading+'</span><div style="font-size:1.05rem;font-weight:800;margin-top:.65rem">'+esc(labelFor(best))+'</div><div class="best-prob">'+esc(best._p.toFixed(2))+'%</div><div>'+esc(sub)+'</div></div>'+candidates.map(marketHtml).join('');
+   opsHtml='<div class="best-opportunity"><span class="best-badge">★ '+heading+'</span><div style="font-size:1.05rem;font-weight:800;margin-top:.65rem">'+esc(labelFor(best))+'</div><div class="best-prob">'+esc(probabilityText(best._p))+'</div><div>'+esc(sub)+'</div></div>'+candidates.map(marketHtml).join('');
   }else{
    opsHtml='<p class="muted">No hay una oportunidad evaluable para el favorito en esta lectura. Se necesita identificar al favorito y calcular su victoria o la doble oportunidad que lo protege.</p>';
   }
