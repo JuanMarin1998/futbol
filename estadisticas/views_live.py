@@ -1288,9 +1288,16 @@ def _crear_experimento_desde_evento(event):
         collector = LiveMatchCollector()
         mapping = collector.mapper.mapear(event, collector.flashscore)
         if not mapping.get("matched"):
+            candidate = mapping.get("candidate") or {}
+            candidate_name = (
+                f"{candidate.get('home_team', '?')} vs {candidate.get('away_team', '?')}"
+                if candidate else "sin candidato"
+            )
             raise MatchMappingError(
                 f"No se pudo vincular Ecuabet {event_id} con Flashscore "
                 f"(confianza={float(mapping.get('confidence', 0.0)):.2f}, "
+                f"margen={float(mapping.get('margin', 0.0)):.2f}, "
+                f"candidato={candidate_name}, "
                 f"motivo={mapping.get('reason', 'sin coincidencia')})."
             )
         match = collector.construir_desde_evento(
