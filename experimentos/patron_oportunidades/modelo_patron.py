@@ -128,7 +128,7 @@ def analizar_patron(
     if estado.tiros_local is None or estado.tiros_visitante is None:
         faltantes.append("Tiros totales de ambos equipos")
     elif abs(estado.tiros_local - estado.tiros_visitante) >= 6:
-        dominante = contexto.local if estado.tiros_local > estado.tiros_visitante else contexto.visit
+        dominante = contexto.local if estado.tiros_local > estado.tiros_visitante else contexto.visitante
         detonantes.append(f"Volumen de tiros claramente desigual a favor de {dominante}.")
 
     if estado.posesion_local is None:
