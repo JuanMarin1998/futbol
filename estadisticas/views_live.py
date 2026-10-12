@@ -1804,6 +1804,41 @@ def api_patron_oportunidades_partidos(request):
         return JsonResponse({"ok": False, "error": str(exc), "events": []}, status=502)
 
 
+
+
+def api_historial_patron_oportunidades(request):
+    """Devuelve resultados persistidos del Patrón, con filtros opcionales por partido."""
+    try:
+        event_id = request.GET.get("event_id", "").strip()
+        qs = MatchBehaviorSnapshot.objects.all().order_by("-observed_at")
+        if event_id.isdigit():
+            qs = qs.filter(ecuabet_event_id=int(event_id))
+        records = []
+        # Iterar en orden reciente y solo devolver snapshots que contienen resultado del Patrón.
+        for snap in qs[:1000]:
+            stored = snap.performance if isinstance(snap.performance, dict) else {}
+            patron = stored.get("patron_oportunidades")
+            if not isinstance(patron, dict):
+                continue
+            records.append({
+                "id": snap.id,
+                "event_id": snap.ecuabet_event_id,
+                "partido": patron.get("partido") or {
+                    "local": snap.home_team, "visitante": snap.away_team,
+                    "liga": snap.league, "minuto": snap.minute,
+                    "marcador": [snap.home_score, snap.away_score],
+                },
+                "etapas": patron.get("etapas") or {},
+                "guardado_en": patron.get("guardado_en") or timezone.localtime(snap.observed_at).isoformat(),
+                "observed_at": timezone.localtime(snap.observed_at).isoformat(),
+            })
+            if len(records) >= 200:
+                break
+        return JsonResponse({"ok": True, "count": len(records), "results": records})
+    except Exception as exc:
+        logger.exception("Error consultando historial del Patrón de Oportunidades")
+        return JsonResponse({"ok": False, "error": str(exc), "results": []}, status=500)
+
 def patron_oportunidades(request):
     """Pantalla del patrón conectado al flujo LIVE y motores existentes."""
     return render(
@@ -2119,6 +2154,29 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
             "score": now_score,
             "status": str(getattr(match, "status", "") or ""),
         }
+        # Persistir también el resultado completo del Patrón para poder auditarlo después.
+        saved_performance = dict(performance) if isinstance(performance, dict) else {}
+        saved_performance["patron_oportunidades"] = {
+            "partido": {
+                "id": int(match.ecuabet_event_id),
+                "local": str(match.home_team or ""),
+                "visitante": str(match.away_team or ""),
+                "liga": str(match.league or ""),
+                "minuto": str(current_minute or ""),
+                "marcador": now_score,
+                "calidad_datos": str(match.data_quality or ""),
+                "confianza_mapeo": match.mapping_confidence,
+            },
+            "etapas": {
+                "contexto": context_stage,
+                "monitoreo": monitoring,
+                "accion": stage_action,
+                "probabilidad": stage_probability,
+                "calculo": stage_calculation,
+                "reaccion": stage_reaction,
+            },
+            "guardado_en": timezone.localtime().isoformat(),
+        }
         MatchBehaviorSnapshot.objects.create(
             ecuabet_event_id=int(match.ecuabet_event_id),
             flashscore_event_id=str(getattr(match, "flashscore_event_id", "") or ""),
@@ -2131,7 +2189,7 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
             home_score=home,
             away_score=away,
             status=str(getattr(match, "status", "") or ""),
-            performance=performance if isinstance(performance, dict) else {},
+            performance=saved_performance,
             odds=[],
             fingerprint=hashlib.sha256(json.dumps(fingerprint_data, sort_keys=True, default=str).encode("utf-8")).hexdigest(),
             observed_at=timezone.now(),
