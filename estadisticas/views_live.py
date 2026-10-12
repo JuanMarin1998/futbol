@@ -1900,41 +1900,48 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
         if prev_score and None not in prev_score and None not in now_score:
             score_delta = (now_score[0] - prev_score[0]) + (now_score[1] - prev_score[1])
 
+        performance = match.performance or {}
+        previous_performance = previous.performance if previous and isinstance(previous.performance, dict) else {}
+        def _flatten_stats(value, prefix=""):
+            flattened = {}
+            if isinstance(value, dict):
+                for key, child in value.items():
+                    flattened.update(_flatten_stats(child, f"{prefix}.{key}" if prefix else str(key)))
+            elif isinstance(value, (int, float, str, bool)) or value is None:
+                flattened[prefix] = value
+            return flattened
+        old_stats = _flatten_stats(previous_performance)
+        new_stats = _flatten_stats(performance)
+        changed_stats = []
+        for stat_key in sorted(set(old_stats) | set(new_stats)):
+            old_value, new_value = old_stats.get(stat_key), new_stats.get(stat_key)
+            if old_value != new_value and (old_value is not None or new_value is not None):
+                changed_stats.append({"estadistica": stat_key, "anterior": old_value, "actual": new_value})
+        score_changed = bool(previous and prev_score is not None and now_score is not None and prev_score != now_score)
+        stats_changed = bool(previous and changed_stats)
         monitoring = {
-            "status": "SIN_BASELINE_PREVIO" if previous is None else "SIN_CAMBIO_DE_GOL",
+            "status": "SIN_BASELINE_PREVIO" if previous is None else (
+                "CAMBIO_LIVE_DETECTADO" if (score_changed or stats_changed) else "SIN_CAMBIOS_RELEVANTES"
+            ),
             "minuto_anterior": previous.minute if previous else None,
             "marcador_anterior": prev_score,
             "minuto_actual": current_minute,
             "marcador_actual": now_score,
-            "detonante": False,
+            "estadisticas_cambiadas": len(changed_stats),
+            "cambios_estadisticos": changed_stats[:30],
+            "detonante": bool(previous and (score_changed or stats_changed)),
             "motivo": (
-                "Es la primera observación guardada. Esta pasada establece la línea base; vuelve a ejecutar para detectar cambios."
+                "Primera lectura: establece la línea base de marcador y estadísticas LIVE."
                 if previous is None else
-                "No se detectó exactamente un gol nuevo entre los dos snapshots."
+                "Cambió el marcador o alguna estadística LIVE; se activa Acción para evaluar la nueva lectura."
+                if (score_changed or stats_changed) else
+                "No cambiaron marcador ni estadísticas entre observaciones; continúa el monitoreo."
             ),
         }
-        if previous and score_delta == 1 and minute_num is not None and (
-            previous.minute_number is None or minute_num >= previous.minute_number
-        ):
-            monitoring.update({
-                "status": "GOL_NUEVO_DETECTADO",
-                "detonante": True,
-                "motivo": "Se detectó un gol nuevo entre snapshots consecutivos; se activa Acción.",
-            })
-        elif previous and score_delta is not None and score_delta > 1:
-            monitoring.update({
-                "status": "REVISAR_EVENTOS",
-                "motivo": "El marcador aumentó más de un gol entre snapshots; no se atribuye un detonante sin revisar eventos.",
-            })
-        elif previous and score_delta is not None and score_delta < 0:
-            monitoring.update({
-                "status": "ANOMALIA_MARCADOR",
-                "motivo": "El marcador retrocedió. Revisar VAR, proveedor y orden de snapshots.",
-            })
 
         stage_action = {
             "status": "PENDIENTE_DE_DETONANTE",
-            "diagnostico": "No se detectó un gol nuevo; se mantiene pendiente la Acción desencadenada por gol.",
+            "diagnostico": "No se detectó cambio en las estadísticas LIVE; Acción queda pendiente.",
             "datos_evaluados": [],
         }
         stage_probability = {"status": "ANALISIS_LIVE_SIN_DETONANTE", "motores": [], "motivo": "Lectura informativa del estado actual; no equivale a una Acción activada por gol."}
@@ -1946,7 +1953,6 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
         # sin gol, para que ejecutar el patrón nunca termine en una pantalla vacía.
         home_sot = None
         away_sot = None
-        performance = match.performance or {}
         def stat(side, *keys):
             data = performance.get(side) or {}
             for key in keys:
@@ -1978,13 +1984,13 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
         if monitoring["detonante"]:
             stage_action = {
                 "status": "EVALUADA",
-                "diagnostico": f"Tras el gol, {score_read}; {stats_read}",
+                "diagnostico": f"Tras el cambio LIVE, {score_read}; {stats_read}",
                 "datos_evaluados": [context_stage["status"], f"minuto {current_minute}", f"marcador {home}-{away}", stats_read],
             }
         else:
             stage_action = {
                 "status": "PENDIENTE_DE_DETONANTE",
-                "diagnostico": f"No se activa Acción porque no se confirmó un gol nuevo. Estado observado: {score_read}; {stats_read}",
+                "diagnostico": f"No se activa Acción porque no cambiaron los datos LIVE. Estado observado: {score_read}; {stats_read}",
                 "datos_evaluados": [context_stage["status"], f"minuto {current_minute}", f"marcador {home}-{away}", stats_read],
             }
 
@@ -2001,16 +2007,42 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
             ("V.Pro", LiveOpportunityEngineVPro, "opportunities_vpro"),
             ("V.Pro 1.1", LiveOpportunityEngineVPro11, "opportunities_vpro11"),
         ]
+        # Probabilidad: modelo estadístico basado en minuto, marcador y estadísticas LIVE.
+        # No consulta motores de oportunidades ni utiliza cuotas en esta etapa.
+        elapsed = LiveOpportunityEngine._elapsed_minutes(current_minute, match.period)
+        lambda_home, lambda_away = LiveOpportunityEngine._remaining_lambda(performance, elapsed)
+        probabilities = LiveOpportunityEngine._probabilities(home, away, lambda_home, lambda_away)
+        probability_keys = {
+            "Victoria local": "home", "Empate": "draw", "Victoria visitante": "away",
+            "Más de 0.5 goles": "over_0_5", "Más de 1.5 goles": "over_1_5",
+            "Más de 2.5 goles": "over_2_5", "Menos de 2.5 goles": "under_2_5",
+            "Ambos marcan: sí": "btts_yes", "Ambos marcan: no": "btts_no",
+        }
+        ranked_probabilities = [
+            {"mercado": label, "probabilidad": round(float(probabilities[key]) * 100, 2)}
+            for label, key in probability_keys.items() if key in probabilities
+        ]
+        ranked_probabilities.sort(key=lambda item: item["probabilidad"], reverse=True)
+        stage_probability = {
+            "status": "PROBABILIDAD_ESTADISTICA_ACTUALIZADA",
+            "mercados_probables": ranked_probabilities,
+            "mas_probable": ranked_probabilities[0] if ranked_probabilities else None,
+            "estadisticas_utilizadas": performance,
+            "minutos_restantes_estimados": round(max(0.0, 90.0 - elapsed), 1),
+            "motivo": "Probabilidad estima los mercados desde estadísticas LIVE, minuto y marcador; todavía no compara cuotas.",
+        }
+
+        # Acción recoge la fotografía completa de estadísticas en línea cuando Monitoreo
+        # detecta un cambio. Cálculo contrasta después probabilidades y cuotas con los motores existentes.
         engine_results = []
         all_opportunities = []
         if monitoring["detonante"]:
-            # Solo avanzar a Probabilidad y Cálculo cuando Monitoreo activa Acción.
             for label, engine, attr in engine_specs:
                 opportunities = getattr(match, attr, None)
                 if opportunities is None:
                     opportunities = engine.evaluate(match)
                 clean = []
-                for op in (opportunities or [])[:5]:
+                for op in (opportunities or [])[:10]:
                     item = {
                         "mercado": op.get("market", ""),
                         "seleccion": op.get("selection", ""),
@@ -2024,29 +2056,15 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
                     clean.append(item)
                     all_opportunities.append({"motor": label, **item})
                 engine_results.append({"motor": label, "senales": len(opportunities or []), "oportunidades": clean})
-            stage_probability = {
-                "status": "EVALUADA_TRAS_ACCION",
-                "motores": engine_results,
-                "motivo": "Acción activada por un gol nuevo confirmado; se consultan las probabilidades que entregan los motores existentes sin alterar sus fórmulas.",
-            }
-            stage_calculation = {
-                "status": "CALCULO_TRAS_ACCION",
-                "oportunidades": all_opportunities[:60],
-                "motores_con_senales": sum(1 for item in engine_results if item["senales"]),
-                "motivo": "Se calculan y ordenan las señales recibidas de los motores después de activar Acción. No se crean apuestas.",
-            }
-        else:
-            stage_probability = {
-                "status": "PENDIENTE_DE_ACCION",
-                "motores": [],
-                "motivo": "Preparada, pero espera el detonante de Monitoreo para consultar los motores en esta cadena.",
-            }
-            stage_calculation = {
-                "status": "PENDIENTE_DE_PROBABILIDAD",
-                "oportunidades": [],
-                "motores_con_senales": 0,
-                "motivo": "Se ejecutará después de Acción y Probabilidad; no se calculan oportunidades antes del detonante.",
-            }
+        stage_calculation = {
+            "status": "CALCULO_COMPLETADO" if monitoring["detonante"] else "ESPERANDO_CAMBIO_LIVE",
+            "motores": engine_results,
+            "oportunidades": all_opportunities[:100],
+            "motores_con_senales": sum(1 for item in engine_results if item["senales"]),
+            "motivo": "Compara señales/probabilidades con cuotas y calcula edge cuando Acción recibe nuevos datos LIVE; sin cambios, espera.",
+        }
+        if not monitoring["detonante"]:
+            all_opportunities = []
         positive = [x for x in all_opportunities if isinstance(x.get("edge_pct"), (int, float)) and x["edge_pct"] > 0]
         if not monitoring["detonante"]:
             stage_reaction = {
