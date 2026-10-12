@@ -36,3 +36,6 @@ jobs:
         run: python experimentos/patron_oportunidades/simular_monitoreo_5_casos.py
       - name: Validar cadena completa de cinco partidos (Contexto a Acción)
         run: python experimentos/patron_oportunidades/simular_cadena_5_partidos.py
+
+      - name: Validar cadena completa de seis etapas (Contexto a Reacción)
+        run: python experimentos/patron_oportunidades/simular_cadena_completa.py
