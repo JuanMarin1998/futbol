@@ -34,9 +34,23 @@ class PatronOportunidadesTests(unittest.TestCase):
 
     def test_indicadores_contradictorios_no_afirma_dominio_claro(self):
         anterior = snap(20, gv=1, tpl=4, tpv=1)
-        actual = snap(30, gv=1, tpl=4, tpv=3, rl=1)
+        actual = snap(30, gv=1, tpl=4, tpv=3, tl=5, tv=9, rl=1)
         r = analizar_patron(CTX, actual, anterior)
         self.assertIn("insuficientes o mixtas", r.interpretacion_conjunta.lower())
+
+    def test_gol_no_cuestiona_automaticamente_el_dominio(self):
+        escenarios = ("victoria España", "empate", "remontada posible", "España genera más peligro")
+        contexto = ContextoPrevio(local="España", visitante="Croacia", favorito="España",
+            expectativa="España es favorita.", escenarios_esperados=escenarios)
+        r = analizar_patron(contexto, snap(15, gv=1, tpl=5, tpv=1), snap(10, tpl=2, tpv=0))
+        self.assertIn("España genera más peligro", r.expectativas_vigentes)
+        self.assertNotIn("remontada posible", r.expectativas_cuestionadas)
+
+    def test_marcador_que_retrocede_bloquea_calculo(self):
+        r = analizar_patron(CTX, snap(40, gl=1, gv=0), snap(30, gl=0, gv=1))
+        self.assertFalse(r.puede_pasar_a_calculo)
+        self.assertTrue(r.anomalias_datos)
+        self.assertTrue(any("Marcador no monotónico" in x for x in r.datos_faltantes))
 
     def test_faltan_datos_bloquea_calculo(self):
         s = EstadoPartido(minuto=20, goles_local=0, goles_visitante=0,
