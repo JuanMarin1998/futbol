@@ -2228,6 +2228,25 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
             "discrepancias_altas": sum(1 for item in all_opportunities if item.get("consenso_estadistico") == "DISCREPANCIA_ALTA"),
             "motivo": "Cada señal mantiene la salida original del motor y añade contraste estadístico, probabilidad implícita, edge independiente y estado LIVE del mercado.",
         }
+        # Registro explícito de todas las señales entregadas a Reacción.
+        # Se conserva en la respuesta LIVE y en el historial persistido.
+        reaction_inputs = []
+        for signal in all_opportunities:
+            reaction_inputs.append({
+                "motor": signal.get("motor"),
+                "mercado": signal.get("mercado"),
+                "seleccion": signal.get("seleccion"),
+                "cuota": signal.get("cuota"),
+                "probabilidad_motor_pct": signal.get("probabilidad_motor_pct"),
+                "probabilidad_estadistica_pct": signal.get("probabilidad_estadistica_pct"),
+                "probabilidad_implicita": signal.get("probabilidad_implicita"),
+                "edge_motor_pct": signal.get("edge_pct"),
+                "edge_estadistico_pct": signal.get("edge_estadistico_pct"),
+                "consenso_estadistico": signal.get("consenso_estadistico"),
+                "diferencia_motor_vs_estadistica_pp": signal.get("diferencia_motor_vs_estadistica_pp"),
+                "estado_mercado_live": signal.get("estado_mercado_live"),
+                "senal_motor": signal.get("senal"),
+            })
         positive = [
             item for item in all_opportunities
             if item.get("estado_mercado_live") == "ABIERTO"
@@ -2238,6 +2257,8 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
         if positive:
             best = max(positive, key=lambda item: (item.get("edge_estadistico_pct", 0), item.get("probabilidad_estadistica_pct", 0)))
             stage_reaction = {
+                "senales_recibidas": reaction_inputs,
+                "total_senales_recibidas": len(reaction_inputs),
                 "status": "SENALES_CON_RESPALDO_ESTADISTICO",
                 "decision": "REVISAR_SENAL_CON_RESPALDO",
                 "motivo": f"{len(positive)} señales tienen edge estadístico positivo y no presentan discrepancia alta con la referencia. La mejor por edge estadístico: {best['motor']} · {best['mercado']} · {best['seleccion']} (probabilidad estadística {best.get('probabilidad_estadistica_pct', '—')}%, edge estadístico {best.get('edge_estadistico_pct', '—')}%). No se ejecuta una apuesta.",
@@ -2245,6 +2266,8 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
             }
         else:
             stage_reaction = {
+                "senales_recibidas": reaction_inputs,
+                "total_senales_recibidas": len(reaction_inputs),
                 "status": "SIN_CONSENSO_ESTADISTICO_SUFICIENTE",
                 "decision": "SEGUIR_MONITOREANDO",
                 "motivo": "No hay señales abiertas con edge estadístico positivo y contraste suficiente. Las señales de edge del motor, por sí solas, no bastan para recomendar una acción.",
