@@ -1326,3 +1326,239 @@ def laboratorio_patrones(request):
         "seccion": "patrones",
     }
     return render(request, "estadisticas/laboratorio_patrones.html", context)
+
+
+def patron_oportunidades(request):
+    """Pantalla del patrón conectado al flujo LIVE y motores existentes."""
+    return render(
+        request,
+        "estadisticas/patron_oportunidades.html",
+        {"live_poll_ms": 10000, "seccion": "patron_oportunidades"},
+    )
+
+
+def api_simular_patron_oportunidades(request, ecuabet_event_id):
+    """Ejecuta una pasada del patrón con el snapshot LIVE y salidas reales de los motores.
+    No crea experimentos ni apuestas; solo presenta y evalúa sus resultados.
+    """
+    from .live_engine.opportunity_engine import LiveOpportunityEngine
+    from .live_engine.opportunity_engine_v2 import LiveOpportunityEngineV2
+    from .live_engine.opportunity_engine_v11 import LiveOpportunityEngineV11
+    from .live_engine.opportunity_engine_v12 import LiveOpportunityEngineV12
+    from .live_engine.opportunity_engine_v21 import LiveOpportunityEngineV21
+    from .live_engine.opportunity_engine_v22 import LiveOpportunityEngineV22
+    from .live_engine.opportunity_engine_v3 import LiveOpportunityEngineV3
+    from .live_engine.opportunity_engine_v2_ultra import LiveOpportunityEngineV2Ultra
+    from .live_engine.opportunity_engine_v11_ultra import LiveOpportunityEngineV11Ultra
+    from .live_engine.opportunity_engine_vpro import LiveOpportunityEngineVPro
+    from .live_engine.opportunity_engine_vpro11 import LiveOpportunityEngineVPro11
+
+    try:
+        previous = (
+            MatchBehaviorSnapshot.objects
+            .filter(ecuabet_event_id=ecuabet_event_id)
+            .order_by("-observed_at")
+            .first()
+        )
+        match = LiveMatchCollector().construir_automatico(ecuabet_event_id)
+
+        context_data = match.pre_match_context if isinstance(match.pre_match_context, dict) else {}
+        context_has_data = bool(context_data)
+        context_stage = {
+            "status": "CONTEXTO_PREVIO_DISPONIBLE" if context_has_data else "CONTEXTO_PREVIO_INCOMPLETO",
+            "expectativa": (
+                "Se recibió contexto prepartido del proveedor; revisar historial, alineaciones y calidad."
+                if context_has_data else
+                "El proveedor no entregó contexto prepartido utilizable. No se inventa favorito ni expectativa."
+            ),
+            "fuente": context_data.get("provider", "sin proveedor contextual disponible"),
+            "datos": context_data,
+        }
+
+        current_minute = match.minute
+        previous_minute = previous.minute_number if previous else None
+        try:
+            minute_num = int(str(current_minute or "").split("+")[0].replace("'", "").strip())
+        except (ValueError, TypeError):
+            import re
+            found = re.search(r"\d+", str(current_minute or ""))
+            minute_num = int(found.group()) if found else None
+
+        prev_score = [previous.home_score, previous.away_score] if previous else None
+        now_score = [match.home_score, match.away_score]
+        score_delta = None
+        if prev_score and None not in prev_score and None not in now_score:
+            score_delta = (now_score[0] - prev_score[0]) + (now_score[1] - prev_score[1])
+
+        monitoring = {
+            "status": "SIN_BASELINE_PREVIO" if previous is None else "SIN_CAMBIO_DE_GOL",
+            "minuto_anterior": previous.minute if previous else None,
+            "marcador_anterior": prev_score,
+            "minuto_actual": current_minute,
+            "marcador_actual": now_score,
+            "detonante": False,
+            "motivo": (
+                "Es la primera observación guardada. Esta pasada establece la línea base; vuelve a ejecutar para detectar cambios."
+                if previous is None else
+                "No se detectó exactamente un gol nuevo entre los dos snapshots."
+            ),
+        }
+        if previous and score_delta == 1 and minute_num is not None and (
+            previous.minute_number is None or minute_num > previous.minute_number
+        ):
+            monitoring.update({
+                "status": "GOL_NUEVO_DETECTADO",
+                "detonante": True,
+                "motivo": "Se detectó un gol nuevo entre snapshots consecutivos; se activa Acción.",
+            })
+        elif previous and score_delta is not None and score_delta > 1:
+            monitoring.update({
+                "status": "REVISAR_EVENTOS",
+                "motivo": "El marcador aumentó más de un gol entre snapshots; no se atribuye un detonante sin revisar eventos.",
+            })
+        elif previous and score_delta is not None and score_delta < 0:
+            monitoring.update({
+                "status": "ANOMALIA_MARCADOR",
+                "motivo": "El marcador retrocedió. Revisar VAR, proveedor y orden de snapshots.",
+            })
+
+        stage_action = {
+            "status": "PENDIENTE_DE_DETONANTE",
+            "diagnostico": "Acción espera un gol nuevo confirmado entre snapshots.",
+            "datos_evaluados": [],
+        }
+        stage_probability = {"status": "ESPERANDO_ACCION", "motores": []}
+        stage_calculation = {"status": "ESPERANDO_ACCION", "oportunidades": [], "motores_con_senales": 0}
+        stage_reaction = {"status": "ESPERANDO_ACCION", "decision": "SEGUIR_MONITOREANDO", "motivo": "Monitoreo aún no ha confirmado el detonante."}
+
+        if monitoring["detonante"]:
+            home_sot = None
+            away_sot = None
+            performance = match.performance or {}
+            def stat(side, *keys):
+                data = performance.get(side) or {}
+                for key in keys:
+                    val = data.get(key)
+                    if isinstance(val, dict):
+                        val = val.get("value", val.get("raw_value"))
+                    if val is not None:
+                        try: return float(str(val).replace("%", "").replace(",", "."))
+                        except (TypeError, ValueError): pass
+                return None
+            home_sot = stat("home", "shots_on_goal", "shots_on_target", "tiros a puerta")
+            away_sot = stat("away", "shots_on_goal", "shots_on_target", "tiros a puerta")
+            home = int(match.home_score or 0)
+            away = int(match.away_score or 0)
+            if home > away:
+                score_read = f"{match.home_team} va ganando {home}-{away}"
+            elif away > home:
+                score_read = f"{match.away_team} va ganando {away}-{home}"
+            else:
+                score_read = f"el partido está empatado {home}-{away}"
+            if home_sot is None or away_sot is None:
+                stats_read = "Faltan tiros a puerta de uno o ambos equipos; la lectura estadística es parcial."
+            elif home_sot >= away_sot + 2:
+                stats_read = f"{match.home_team} tiene ventaja en tiros a puerta ({home_sot:g} contra {away_sot:g})."
+            elif away_sot >= home_sot + 2:
+                stats_read = f"{match.away_team} tiene ventaja en tiros a puerta ({away_sot:g} contra {home_sot:g})."
+            else:
+                stats_read = f"Los tiros a puerta no muestran una ventaja clara ({home_sot:g} contra {away_sot:g})."
+            stage_action = {
+                "status": "EVALUADA",
+                "diagnostico": f"Tras el gol, {score_read}; {stats_read}",
+                "datos_evaluados": ["contexto prepartido disponible/incompleto", f"minuto {current_minute}", f"marcador {home}-{away}", stats_read],
+            }
+
+            engine_specs = [
+                ("V1", LiveOpportunityEngine, "opportunities"),
+                ("V1.1", LiveOpportunityEngineV11, "opportunities_v11"),
+                ("V1.2", LiveOpportunityEngineV12, "opportunities_v12"),
+                ("V2", LiveOpportunityEngineV2, "opportunities_v2"),
+                ("V2.1", LiveOpportunityEngineV21, "opportunities_v21"),
+                ("V2.2", LiveOpportunityEngineV22, "opportunities_v22"),
+                ("V3", LiveOpportunityEngineV3, "opportunities_v3"),
+                ("V2.Ultra", LiveOpportunityEngineV2Ultra, "opportunities_v2_ultra"),
+                ("V1.1 Ultra", LiveOpportunityEngineV11Ultra, "opportunities_v11_ultra"),
+                ("V.Pro", LiveOpportunityEngineVPro, "opportunities_vpro"),
+                ("V.Pro 1.1", LiveOpportunityEngineVPro11, "opportunities_vpro11"),
+            ]
+            engine_results = []
+            all_opportunities = []
+            for label, engine, attr in engine_specs:
+                opportunities = getattr(match, attr, None)
+                if opportunities is None:
+                    opportunities = engine.evaluate(match)
+                clean = []
+                for op in (opportunities or [])[:5]:
+                    item = {
+                        "mercado": op.get("market", ""),
+                        "seleccion": op.get("selection", ""),
+                        "cuota": op.get("price"),
+                        "probabilidad_modelo": op.get("model_probability"),
+                        "probabilidad_implicita": op.get("implied_probability"),
+                        "edge_pct": op.get("edge_pct"),
+                        "confianza": op.get("confidence"),
+                        "senal": op.get("signal", ""),
+                    }
+                    clean.append(item)
+                    all_opportunities.append({"motor": label, **item})
+                engine_results.append({"motor": label, "senales": len(opportunities or []), "oportunidades": clean})
+            stage_probability = {
+                "status": "SALIDAS_REALES_DE_MOTORES",
+                "motores": engine_results,
+                "motivo": "Se muestran las probabilidades que entregan los motores existentes; el patrón no las fabrica ni modifica.",
+            }
+            stage_calculation = {
+                "status": "CALCULO_CON_SALIDAS_DE_MOTORES",
+                "oportunidades": all_opportunities[:60],
+                "motores_con_senales": sum(1 for item in engine_results if item["senales"]),
+                "motivo": "Cuotas, probabilidades, edge y confianza se toman de las salidas actuales de los motores. No se crean apuestas.",
+            }
+            positive = [x for x in all_opportunities if isinstance(x.get("edge_pct"), (int, float)) and x["edge_pct"] > 0]
+            if not all_opportunities:
+                stage_reaction = {
+                    "status": "SIN_SENALES_DE_MOTORES",
+                    "decision": "SEGUIR_MONITOREANDO",
+                    "motivo": "El detonante llegó a los motores, pero ninguno devolvió oportunidades compatibles en este snapshot.",
+                }
+            elif positive:
+                best = max(positive, key=lambda x: x.get("edge_pct", 0))
+                stage_reaction = {
+                    "status": "SENALES_PARA_REVISION",
+                    "decision": "REVISAR_SENAL_SIN_APUESTA",
+                    "motivo": f"{len(positive)} señales con edge positivo; la mayor reportada es {best['motor']} · {best['mercado']} · {best['seleccion']} (edge {best['edge_pct']}%). Esto no ejecuta una apuesta.",
+                }
+            else:
+                stage_reaction = {
+                    "status": "SIN_EDGE_POSITIVO",
+                    "decision": "DESCARTAR_POR_AHORA",
+                    "motivo": "Los motores no reportaron edge positivo en las oportunidades disponibles.",
+                }
+
+        return JsonResponse({
+            "ok": True,
+            "partido": {
+                "id": match.ecuabet_event_id,
+                "local": match.home_team,
+                "visitante": match.away_team,
+                "liga": match.league,
+                "minuto": current_minute,
+                "marcador": now_score,
+                "calidad_datos": match.data_quality,
+                "confianza_mapeo": match.mapping_confidence,
+            },
+            "etapas": {
+                "contexto": context_stage,
+                "monitoreo": monitoring,
+                "accion": stage_action,
+                "probabilidad": stage_probability,
+                "calculo": stage_calculation,
+                "reaccion": stage_reaction,
+            },
+            "nota": "Simulación del patrón con datos LIVE y motores actuales; no crea apuestas ni modifica capitales.",
+        })
+    except MatchMappingError as exc:
+        return JsonResponse({"ok": False, "error": f"No se pudo vincular el partido con Flashscore: {exc}"}, status=422)
+    except Exception as exc:
+        logger.exception("Error en simulación del Patrón de Oportunidades para %s", ecuabet_event_id)
+        return JsonResponse({"ok": False, "error": str(exc)}, status=502)
