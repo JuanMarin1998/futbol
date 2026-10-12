@@ -1986,6 +1986,10 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
                 "status": "EVALUADA",
                 "diagnostico": f"Tras el cambio LIVE, {score_read}; {stats_read}",
                 "datos_evaluados": [context_stage["status"], f"minuto {current_minute}", f"marcador {home}-{away}", stats_read],
+                "estadisticas_live": performance,
+                "cambios_detectados": changed_stats[:30],
+                "estadisticas_live": performance,
+                "cambios_detectados": changed_stats[:30],
             }
         else:
             stage_action = {
