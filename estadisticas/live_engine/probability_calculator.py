@@ -26,7 +26,8 @@ MARKETS = (
 
 def _norm(value):
     value = unicodedata.normalize("NFKD", str(value or ""))
-    return "".join(c for c in value if not unicodedata.combining(c)).lower().strip()
+    value = "".join(c for c in value if not unicodedata.combining(c)).lower()
+    return re.sub(r"[^a-z0-9]+", " ", value).strip()
 
 
 def _number(value):
