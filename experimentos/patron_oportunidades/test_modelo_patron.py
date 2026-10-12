@@ -36,7 +36,7 @@ class PatronOportunidadesTests(unittest.TestCase):
         anterior = snap(20, gv=1, tpl=4, tpv=1)
         actual = snap(30, gv=1, tpl=4, tpv=3, tl=5, tv=9, rl=1)
         r = analizar_patron(CTX, actual, anterior)
-        self.assertIn("insuficientes o mixtas", r.interpretacion_conjunta.lower())
+        self.assertIn("indicadores contradictorios", r.interpretacion_conjunta.lower())
 
     def test_gol_no_cuestiona_automaticamente_el_dominio(self):
         escenarios = ("victoria España", "empate", "remontada posible", "España genera más peligro")
