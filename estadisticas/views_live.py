@@ -17,10 +17,31 @@ from .live_engine.collector import LiveMatchCollector
 from .live_engine.match_mapper import MatchMappingError
 from .live_engine.experiment import LiveExperimentManager
 from .live_engine.opportunity_levels import enrich
-from .models import LiveExperiment, LiveExperimentEntry, LiveExperimentDailyArchive, MatchBehaviorSnapshot, TeamBehaviorProfile
+from .models import LiveExperiment, LiveExperimentEntry, LiveExperimentDailyArchive, MatchBehaviorSnapshot, TeamBehaviorProfile, EcuabetPreMatchContext
 
 logger = logging.getLogger(__name__)
 
+
+
+def _contexto_guardado_json(context):
+    """Serializa la ficha original sin recalcular ni sobrescribir sus cuotas."""
+    return {
+        "id": context.ecuabet_event_id,
+        "name": context.match_name,
+        "home": context.home_team or "Local no identificado",
+        "away": context.away_team or "Visitante no identificado",
+        "time": timezone.localtime(context.kickoff).strftime("%H:%M") if context.kickoff else "",
+        "championship": context.championship,
+        "home_odds": context.home_odds,
+        "draw_odds": context.draw_odds,
+        "away_odds": context.away_odds,
+        "favorite": context.favorite,
+        "status": context.status,
+        "explanation": context.explanation,
+        "source": context.source,
+        "captured_at": timezone.localtime(context.captured_at).strftime("%H:%M:%S"),
+        "persisted": True,
+    }
 
 
 def calendario_ecuabet(request):
@@ -115,6 +136,15 @@ def api_calendario_ecuabet(request):
             })
 
         events_today.sort(key=lambda item: (item["time"] == "", item["time"], item["name"].lower()))
+        context_ids = [int(item["id"]) for item in events_today if str(item.get("id", "")).isdigit()]
+        saved_contexts = {
+            str(item.ecuabet_event_id): item
+            for item in EcuabetPreMatchContext.objects.filter(ecuabet_event_id__in=context_ids)
+        }
+        for item in events_today:
+            saved = saved_contexts.get(str(item.get("id")))
+            item["context"] = _contexto_guardado_json(saved) if saved else None
+            item["context_available"] = saved is not None
         return JsonResponse({
             "ok": True,
             "date": hoy.isoformat(),
@@ -155,10 +185,21 @@ def api_generar_contexto_ecuabet(request):
     hoy = timezone.localdate()
     cache_key = f"ecuabet_pre_match_context_v1_{hoy.isoformat()}"
     try:
-        # Solo recalcular cuando el usuario pulsa Generar contexto o no hay resultado.
-        generated = cache.get(cache_key)
-        if generated is not None and request.GET.get("force") != "1":
-            return JsonResponse(generated)
+        # Reutilizar fichas persistentes; solo consultar Ecuabet si no existe la ficha solicitada.
+        if request.GET.get("force") != "1":
+            saved = list(EcuabetPreMatchContext.objects.filter(match_date=hoy))
+            requested_event_id = request.GET.get("event_id", "").strip()
+            requested_exists = any(str(item.ecuabet_event_id) == requested_event_id for item in saved)
+            if saved and (not requested_event_id or requested_exists):
+                contexts_saved = [_contexto_guardado_json(item) for item in saved]
+                return JsonResponse({
+                    "ok": True, "date": hoy.isoformat(),
+                    "date_label": hoy.strftime("%d/%m/%Y"),
+                    "count": len(contexts_saved), "contexts": contexts_saved,
+                    "generated_at": timezone.localtime().strftime("%H:%M:%S"),
+                    "source": "Base de datos · fichas previas guardadas",
+                    "note": "Contexto previo persistente. Las cuotas originales se conservan y no se sobrescriben al sincronizar el calendario.",
+                })
 
         client = EcuabetClient()
         payload = client._request(
@@ -295,6 +336,31 @@ def api_generar_contexto_ecuabet(request):
                 "captured_at": timezone.localtime().strftime("%H:%M:%S"),
             })
 
+        # Guardar la primera ficha por ID; get_or_create protege las cuotas originales.
+        persisted_contexts = []
+        events_by_id = {
+            str(ev.get("id") or ev.get("eventId")): ev
+            for ev in raw_events if isinstance(ev, dict)
+        }
+        for item in contexts:
+            event_id = item.get("id")
+            if not str(event_id or "").isdigit():
+                persisted_contexts.append(item)
+                continue
+            source_event = events_by_id.get(str(event_id), {})
+            kickoff_value = parse_event_datetime(source_event) if source_event else None
+            saved, created = EcuabetPreMatchContext.objects.get_or_create(
+                ecuabet_event_id=int(event_id),
+                defaults={
+                    "match_name": item["name"], "home_team": item["home"], "away_team": item["away"],
+                    "championship": item["championship"], "match_date": hoy, "kickoff": kickoff_value,
+                    "home_odds": item["home_odds"], "draw_odds": item["draw_odds"], "away_odds": item["away_odds"],
+                    "favorite": item["favorite"], "status": item["status"], "explanation": item["explanation"],
+                    "source": item["source"], "raw_context": item,
+                },
+            )
+            persisted_contexts.append(_contexto_guardado_json(saved))
+        contexts = persisted_contexts
         contexts.sort(key=lambda item: (item["time"], item["name"].lower()))
         result = {
             "ok": True,
