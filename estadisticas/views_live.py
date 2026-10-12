@@ -2063,8 +2063,10 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
             probabilities = LiveOpportunityEngine._probabilities(home, away, lambda_home, lambda_away)
             probability_keys = {
                 "Victoria local": "home", "Empate": "draw", "Victoria visitante": "away",
-                "Más de 0.5 goles": "over_0_5", "Más de 1.5 goles": "over_1_5",
+                "Más de 0.5 goles": "over_0_5", "Menos de 0.5 goles": "under_0_5",
+                "Más de 1.5 goles": "over_1_5", "Menos de 1.5 goles": "under_1_5",
                 "Más de 2.5 goles": "over_2_5", "Menos de 2.5 goles": "under_2_5",
+                "Más de 3.5 goles": "over_3_5", "Menos de 3.5 goles": "under_3_5",
                 "Ambos marcan: sí": "btts_yes", "Ambos marcan: no": "btts_no",
             }
             total_current = home + away
@@ -2077,8 +2079,10 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
                     target = {"over_0_5": 1, "over_1_5": 2, "over_2_5": 3}[key]
                     if total_current >= target:
                         market_state = "YA_CUMPLIDO"
-                elif key == "under_2_5" and total_current >= 3:
-                    market_state = "YA_NO_CUMPLIBLE"
+                elif key.startswith("under_"):
+                    target = {"under_0_5": 1, "under_1_5": 2, "under_2_5": 3, "under_3_5": 4}.get(key)
+                    if target is not None and total_current >= target:
+                        market_state = "YA_NO_CUMPLIBLE"
                 ranked_probabilities.append({
                     "mercado": label,
                     "clave": key,
@@ -2138,13 +2142,13 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
                 elif any(token in market_text for token in ("total", "over", "under", "mas de", "menos de")):
                     import re
                     raw_line = str(line or "")
-                    found = re.search(r"(0[.,]5|1[.,]5|2[.,]5)", raw_line + " " + market_text)
+                    found = re.search(r"(0[.,]5|1[.,]5|2[.,]5|3[.,]5)", raw_line + " " + market_text)
                     if found:
                         threshold = found.group(1).replace(",", ".")
                         is_over = any(token in selected for token in ("over", "mas", "+"))
                         is_under = any(token in selected for token in ("under", "menos", "-"))
-                        if is_over: key = {"0.5": "over_0_5", "1.5": "over_1_5", "2.5": "over_2_5"}.get(threshold)
-                        elif is_under and threshold == "2.5": key = "under_2_5"
+                        if is_over: key = {"0.5": "over_0_5", "1.5": "over_1_5", "2.5": "over_2_5", "3.5": "over_3_5"}.get(threshold)
+                        elif is_under: key = {"0.5": "under_0_5", "1.5": "under_1_5", "2.5": "under_2_5", "3.5": "under_3_5"}.get(threshold)
             if key in ("dc_1x", "dc_12", "dc_x2"):
                 pair = {"dc_1x": ("home", "draw"), "dc_12": ("home", "away"), "dc_x2": ("draw", "away")}[key]
                 value = sum(float(probabilities.get(part, 0.0)) for part in pair) if probabilities else None
@@ -2177,8 +2181,10 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
                         threshold = {"over_0_5": 1, "over_1_5": 2, "over_2_5": 3}.get(key)
                         if threshold is not None and home + away >= threshold:
                             item["estado_mercado_live"] = "YA_CUMPLIDO"
-                    elif key == "under_2_5" and home + away >= 3:
-                        item["estado_mercado_live"] = "YA_NO_CUMPLIBLE"
+                    elif key and key.startswith("under_"):
+                        target = {"under_0_5": 1, "under_1_5": 2, "under_2_5": 3, "under_3_5": 4}.get(key)
+                        if target is not None and home + away >= target:
+                            item["estado_mercado_live"] = "YA_NO_CUMPLIBLE"
                     if stat_probability is not None:
                         item["probabilidad_estadistica_pct"] = round(float(stat_probability) * 100, 2)
                         try:
