@@ -1868,20 +1868,21 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
             "fixtures": "Resultados/calendario reciente disponible" if source_status["fixtures"] == "available" else "Resultados/calendario reciente no disponibles",
         }
         context_stage = {
-            "status": (
-                "CONTEXTO_PREVIO_DISPONIBLE" if len(available_sources) == len(source_names)
-                else "CONTEXTO_PREVIO_PARCIAL" if context_has_data
-                else "CONTEXTO_PREVIO_INCOMPLETO"
-            ),
-            "expectativa": (
-                "Se validaron fuentes contextuales; revisar los datos concretos antes de establecer una expectativa."
-                if context_has_data else
-                "El proveedor no entregó fuentes contextuales utilizables. No se inventa favorito ni expectativa."
-            ),
-            "fuente": context_data.get("provider", "sin proveedor contextual disponible"),
-            "fuentes": context_summaries,
-            "estados_fuentes": source_status,
-            "datos": context_data,
+            "status": "CONTEXTO_PREVIO_GUARDADO",
+            "expectativa": saved_context.explanation or "Contexto previo persistido disponible; no se interpreta como certeza de resultado.",
+            "fuente": saved_context.source or "Ecuabet · contexto guardado",
+            "partido": saved_context.match_name,
+            "favorito": saved_context.favorite,
+            "cuotas_originales": {
+                "local": saved_context.home_odds,
+                "empate": saved_context.draw_odds,
+                "visitante": saved_context.away_odds,
+            },
+            "fecha_contexto": saved_context.match_date.isoformat(),
+            "capturado_en": timezone.localtime(saved_context.captured_at).isoformat(),
+            "fuentes_complementarias": context_summaries,
+            "estados_fuentes_complementarias": source_status,
+            "datos_complementarios": context_data,
         }
 
         current_minute = match.minute
@@ -1913,7 +1914,7 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
             ),
         }
         if previous and score_delta == 1 and minute_num is not None and (
-            previous.minute_number is None or minute_num > previous.minute_number
+            previous.minute_number is None or minute_num >= previous.minute_number
         ):
             monitoring.update({
                 "status": "GOL_NUEVO_DETECTADO",
