@@ -172,11 +172,13 @@ def analizar_patron(
         and estado.goles_local >= 0
         and estado.goles_visitante >= 0
         and bool(estado.mercados_disponibles)
+        and bool(contexto.expectativa.strip())
     )
     puede_calcular = datos_minimos
     puede_valorar = puede_calcular and any(
-        isinstance(cuota, (int, float)) and cuota > 1
-        for cuota in estado.cuotas.values()
+        isinstance(estado.cuotas.get(mercado), (int, float))
+        and estado.cuotas[mercado] > 1
+        for mercado in estado.mercados_disponibles
     )
     if not puede_calcular:
         faltantes.append("Requisitos mínimos para cálculo: minuto/marcador válidos, tiros a puerta de ambos equipos y mercados")
