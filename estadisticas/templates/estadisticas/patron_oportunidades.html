@@ -14,7 +14,7 @@
    <button id="stopAll" class="btn btn-stop" disabled>■ Detener simulación</button>
   </div>
   <div id="listStatus" class="status">Buscando partidos LIVE con contexto y favorito…</div>
-  <div class="muted">Cuando la simulación está activa, vuelve a consultar los partidos elegibles en ciclos continuos. Si un encuentro deja de estar LIVE, ya no se incluirá en el siguiente ciclo.</div>
+  <div class="muted">Cuando la simulación está activa, vuelve a consultar los partidos elegibles cada 30 segundos después de completar cada ciclo. Si un encuentro deja de estar LIVE, ya no se incluirá en el siguiente ciclo.</div>
  </section>
  <section class="panel">
   <div class="section-title"><h3 style="margin-top:0">Partidos elegibles</h3><span id="candidateCount" class="pill">0 partidos</span></div>
@@ -105,8 +105,8 @@
   finally{
    busy=false;
    if(running){
-    cycleLabel.textContent='Ciclo '+cycle+' finalizado · siguiente ciclo en 10 s';
-    window.setTimeout(simulateCycle,10000);
+    cycleLabel.textContent='Ciclo '+cycle+' finalizado · siguiente ciclo en 30 s';
+    window.setTimeout(simulateCycle,30000);
    }else{
     startBtn.disabled=false;reloadBtn.disabled=false;stopBtn.disabled=true;
     cycleLabel.textContent='Detenido · último ciclo '+cycle;
