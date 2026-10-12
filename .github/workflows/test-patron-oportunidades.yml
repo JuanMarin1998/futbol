@@ -34,3 +34,5 @@ jobs:
         run: python experimentos/patron_oportunidades/prueba_contexto_accion_5_casos.py
       - name: Simular cinco casos de Monitoreo activado por gol
         run: python experimentos/patron_oportunidades/simular_monitoreo_5_casos.py
+      - name: Validar cadena completa de cinco partidos (Contexto a Acción)
+        run: python experimentos/patron_oportunidades/simular_cadena_5_partidos.py
