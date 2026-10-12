@@ -2059,7 +2059,20 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
         # El resultado se inicializa siempre para evitar referencias no definidas.
         from .live_engine.probability_calculator import LiveProbabilityCalculator
         calculator_result = None
-        if match is not None and monitoring["detonante"]:
+        previous_patron = (
+            (previous.performance or {}).get("patron_oportunidades", {})
+            if previous and isinstance(previous.performance, dict) else {}
+        )
+        previous_opportunities = previous_patron.get("oportunidades_persistentes") or (
+            (previous_patron.get("etapas") or {}).get("reaccion", {}).get("senales_recibidas", [])
+        )
+        previous_by_market = {
+            str(item.get("clave") or item.get("mercado")): item
+            for item in previous_opportunities if isinstance(item, dict)
+        }
+
+        # Después de la línea base, recalcular probabilidades en cada ciclo, con o sin gol.
+        if match is not None and previous is not None:
             calculator_result = LiveProbabilityCalculator.calculate(
                 match,
                 pre_match_context={
@@ -2070,66 +2083,62 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
             )
             stage_probability = {
                 **calculator_result,
-                "status": "PROBABILIDAD_ESTADISTICA_ACTUALIZADA",
+                "status": "PROBABILIDAD_ESTADISTICA_ACTUALIZADA" if monitoring["detonante"] else "PROBABILIDAD_ACTUALIZADA_SIN_GOL",
                 "estadisticas_live_recibidas": performance,
-                "criterio": "El calculador central estima los mercados permitidos con marcador/minuto LIVE, estadísticas disponibles y contexto 1X2 prepartido como referencia moderada.",
-                "motivo": "Probabilidades calculadas únicamente por LiveProbabilityCalculator; los motores no intervienen en este apartado.",
+                "criterio": "Recalculado en cada ciclo con marcador/minuto LIVE, estadísticas disponibles y contexto 1X2 prepartido.",
+                "motivo": "Gol nuevo: cadena activada." if monitoring["detonante"] else "Sin gol nuevo: se actualizan probabilidades sin reactivar Acción.",
             }
         else:
             stage_probability = {
-                "status": "ESPERANDO_DETONANTE",
+                "status": "ESTABLECIENDO_LINEA_BASE",
                 "mercados_probables": [],
                 "mas_probable": None,
                 "estadisticas_utilizadas": {},
-                "motivo": "La primera lectura fija la línea base. El cálculo espera un nuevo gol confirmado.",
+                "motivo": "Primera lectura: se guarda marcador y línea base; el cálculo comienza en el siguiente ciclo.",
             }
 
         # Patrón de Oportunidades usa exclusivamente el calculador central.
         # Los motores de estrategias permanecen fuera de este flujo y no se ejecutan aquí.
         mercados_calculados = list((calculator_result or {}).get("mercados_probables") or [])
+        for market in mercados_calculados:
+            key = str(market.get("clave") or market.get("mercado"))
+            old_market = previous_by_market.get(key, {})
+            try:
+                market["variacion_probabilidad_pp"] = round(float(market["probabilidad"]) - float(old_market["probabilidad"]), 2) if old_market.get("probabilidad") is not None else None
+            except (TypeError, ValueError, KeyError):
+                market["variacion_probabilidad_pp"] = None
+            try:
+                market["variacion_cuota_justa"] = round(float(market["cuota_justa"]) - float(old_market["cuota_justa"]), 3) if old_market.get("cuota_justa") is not None else None
+            except (TypeError, ValueError, KeyError):
+                market["variacion_cuota_justa"] = None
+
         stage_calculation = {
-            "status": "CALCULO_COMPLETADO" if monitoring["detonante"] else "ESPERANDO_NUEVO_DETONANTE",
+            "status": "CALCULO_COMPLETADO" if mercados_calculados else "ESTABLECIENDO_LINEA_BASE",
             "fuente": "LiveProbabilityCalculator",
             "motores_ejecutados": [],
             "motores_involucrados": False,
             "mercados": mercados_calculados,
             "cantidad_mercados": len(mercados_calculados),
             "motivo": (
-                "El Calculador central devuelve para cada mercado la probabilidad porcentual y su cuota justa. "
-                "Los motores de estrategias no intervienen en Patrón de Oportunidades."
+                "Cada ciclo actualiza probabilidades y cuotas justas; un gol nuevo también activa Acción."
                 if monitoring["detonante"] else
-                "No se recalculó: se espera un nuevo gol confirmado que active la cadena."
+                "Sin gol nuevo: se actualizan mercados sin reactivar Acción."
+                if previous is not None else "Primera lectura: línea base guardada."
             ),
         }
-
-        # Reacción interpreta exclusivamente la salida del Calculador.
-        # Sin cuota LIVE de Ecuabet verificable, no se declara valor ni se recomienda apostar.
         stage_reaction = {
             "senales_recibidas": mercados_calculados,
             "total_senales_recibidas": len(mercados_calculados),
-            "status": "PROBABILIDADES_LISTAS_PENDIENTE_CUOTA_LIVE" if mercados_calculados else "ESPERANDO_NUEVO_DETONANTE",
-            "decision": "COMPARAR_CUOTA_ECUABET" if mercados_calculados else "SEGUIR_MONITOREANDO",
+            "status": "GOL_NUEVO_CADENA_ACTIVADA" if monitoring["detonante"] else ("OPORTUNIDADES_ACTUALIZADAS_SIN_GOL" if mercados_calculados else "ESTABLECIENDO_LINEA_BASE"),
+            "decision": "ACTUALIZAR_OPORTUNIDADES" if mercados_calculados else "SEGUIR_MONITOREANDO",
+            "ultimo_detonante": last_trigger,
             "motivo": (
-                "Las probabilidades y cuotas justas están calculadas. Para determinar si existe valor, "
-                "Reacción necesita comparar la cuota justa con una cuota actual de Ecuabet del mismo mercado; "
-                "no usa señales de los motores ni presenta cuotas prepartido como si fueran LIVE."
-                if mercados_calculados else
-                "El Calculador espera un nuevo detonante para calcular los mercados."
+                "Gol nuevo confirmado: cadena ejecutada y mercados actualizados."
+                if monitoring["detonante"] else
+                "Sin gol nuevo: se conservan mercados y se actualizan probabilidad y cuota justa."
+                if mercados_calculados else "Primera lectura guardada como línea base."
             ),
         }
-
-        if not monitoring["detonante"]:
-            stage_reaction = {
-                "senales_recibidas": [],
-                "total_senales_recibidas": 0,
-                "status": "ESPERANDO_NUEVO_DETONANTE",
-                "decision": "SEGUIR_MONITOREANDO",
-                "ultimo_detonante": last_trigger,
-                "motivo": (
-                    "La cadena no se volvió a ejecutar porque el marcador no cambió. "
-                    "El último detonante permanece guardado; se espera un nuevo gol."
-                ),
-            }
 
         # Guardar cada observación LIVE para que la siguiente pasada compare marcador/minuto.
         import hashlib
@@ -2144,6 +2153,7 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
         saved_performance = dict(performance) if isinstance(performance, dict) else {}
         saved_performance["patron_oportunidades"] = {
             "ultimo_detonante": last_trigger,
+            "oportunidades_persistentes": mercados_calculados,
             "partido": {
                 "id": int(match.ecuabet_event_id),
                 "local": str(match.home_team or ""),
