@@ -44,9 +44,16 @@ class LiveMatchCollector:
         if not mapping.get("matched"):
             reason = mapping.get("reason", "sin coincidencia")
             confidence = mapping.get("confidence", 0.0)
+            margin = mapping.get("margin", 0.0)
+            candidate = mapping.get("candidate") or {}
+            candidate_name = (
+                f"{candidate.get('home_team', '?')} vs {candidate.get('away_team', '?')}"
+                if candidate else "sin candidato"
+            )
             raise MatchMappingError(
                 f"No se pudo vincular Ecuabet {ecuabet_event_id} con Flashscore "
-                f"(confianza={confidence:.2f}, motivo={reason})."
+                f"(confianza={confidence:.2f}, margen={margin:.2f}, "
+                f"candidato={candidate_name}, motivo={reason})."
             )
 
         return self._construir_desde_evento(
