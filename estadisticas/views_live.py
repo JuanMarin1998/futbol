@@ -2239,13 +2239,17 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
                 engine_results.append({"motor": label, "senales": len(clean), "oportunidades": clean})
 
         stage_calculation = {
-            "status": "CALCULO_COMPLETADO",
+            "status": "CALCULO_COMPLETADO" if monitoring["detonante"] else "ESPERANDO_NUEVO_DETONANTE",
             "motores": engine_results,
             "oportunidades": all_opportunities[:150],
             "motores_con_senales": sum(1 for item in engine_results if item["senales"]),
             "coinciden_con_probabilidad": sum(1 for item in all_opportunities if item.get("consenso_estadistico") == "COINCIDE"),
             "discrepancias_altas": sum(1 for item in all_opportunities if item.get("consenso_estadistico") == "DISCREPANCIA_ALTA"),
-            "motivo": "Cada señal mantiene la salida original del motor y añade contraste estadístico, probabilidad implícita, edge independiente y estado LIVE del mercado.",
+            "motivo": (
+                "Cada señal mantiene la salida original del motor y añade contraste estadístico, probabilidad implícita, edge independiente y estado LIVE del mercado."
+                if monitoring["detonante"] else
+                "No se ejecutó Cálculo: el marcador no cambió con respecto al último snapshot. Se conserva el último detonante registrado y se espera un nuevo gol."
+            ),
         }
         # Registro explícito de todas las señales entregadas a Reacción.
         # Se conserva en la respuesta LIVE y en el historial persistido.
@@ -2290,6 +2294,19 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
                 "status": "SIN_CONSENSO_ESTADISTICO_SUFICIENTE",
                 "decision": "SEGUIR_MONITOREANDO",
                 "motivo": "No hay señales abiertas con edge estadístico positivo y contraste suficiente. Las señales de edge del motor, por sí solas, no bastan para recomendar una acción.",
+            }
+
+        if not monitoring["detonante"]:
+            stage_reaction = {
+                "senales_recibidas": [],
+                "total_senales_recibidas": 0,
+                "status": "ESPERANDO_NUEVO_DETONANTE",
+                "decision": "SEGUIR_MONITOREANDO",
+                "ultimo_detonante": last_trigger,
+                "motivo": (
+                    "La cadena no se volvió a ejecutar porque el marcador no cambió. "
+                    "El último detonante permanece guardado; se espera un nuevo gol."
+                ),
             }
 
         # Guardar cada observación LIVE para que la siguiente pasada compare marcador/minuto.
