@@ -106,6 +106,7 @@ def _runner_state():
         "runners": runner_rows,
         "bets": recent_bets,
         "evaluations": recent_evaluations,
+        "last_cycle": cache.get("betting_runner_lab_last_cycle") or {},
         "updated_at": timezone.localtime().isoformat(),
     }
 
@@ -269,5 +270,4 @@ def api_corredores_reiniciar(request):
             status="CANCELLED", pnl=0, settled_at=timezone.now()
         )
         # No se borran apuestas ni evaluaciones; el saldo diario vuelve a 100 por el libro del día.
-        BettingRunnerEvaluation.objects.filter(evaluated_at__date=today).delete()
     return JsonResponse({"ok": True, "message": "Experimento reiniciado: se cancelaron las abiertas de hoy y se conservó el historial."})
