@@ -2,7 +2,7 @@
 {% block titulo %}🎯 Simulación del Patrón de Oportunidades{% endblock %}
 {% block contenido %}
 <style>
-.patron-page{max-width:1450px;margin:auto}.panel{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:1.1rem;margin-bottom:1rem}.muted{color:#94a3b8}.matches{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:.8rem}.match-card{background:#0f172a;border:1px solid #334155;border-radius:10px;padding:1rem;min-width:0}.match-card h3{margin:.1rem 0 .6rem;font-size:1rem}.btn{border:0;border-radius:8px;background:#2563eb;color:#fff;padding:.7rem 1rem;cursor:pointer;font-weight:700}.btn:disabled{opacity:.5;cursor:wait}.btn-secondary{background:#334155}.btn-stop{background:#991b1b}.status{padding:.65rem .8rem;border-radius:8px;background:#0f172a;margin:.7rem 0;white-space:pre-wrap}.pill{display:inline-block;border-radius:999px;background:#334155;padding:.2rem .55rem;font-size:.75rem;margin:.12rem}.good{border-color:#15803d}.warn{border-color:#a16207}.bad{border-color:#b91c1c}.match-meta{line-height:1.65;font-size:.9rem}.result-title{font-weight:800;margin-bottom:.35rem}.result-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:.45rem;margin-top:.7rem}.stage-mini{background:#172033;border:1px solid #334155;border-radius:7px;padding:.55rem;font-size:.82rem;overflow-wrap:anywhere}.stage-mini strong{display:block;margin-bottom:.25rem}.op-list{font-size:.82rem;line-height:1.5;margin:.5rem 0 0;padding-left:1.1rem}.section-title{display:flex;gap:.8rem;align-items:center;justify-content:space-between;flex-wrap:wrap}.tabs{display:flex;gap:.5rem;flex-wrap:wrap;margin:1rem 0 0}.tab-btn{border:1px solid #475569;border-radius:8px;background:#0f172a;color:#cbd5e1;padding:.65rem .95rem;cursor:pointer;font-weight:700}.tab-btn.active{background:#2563eb;border-color:#2563eb;color:#fff}.tab-panel[hidden]{display:none!important}@media(max-width:600px){.matches{grid-template-columns:1fr}.tab-btn{flex:1}}
+.patron-page{max-width:1450px;margin:auto}.panel{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:1.1rem;margin-bottom:1rem}.muted{color:#94a3b8}.matches{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:.8rem}.match-card{background:#0f172a;border:1px solid #334155;border-radius:10px;padding:1rem;min-width:0}.match-card h3{margin:.1rem 0 .6rem;font-size:1rem}.btn{border:0;border-radius:8px;background:#2563eb;color:#fff;padding:.7rem 1rem;cursor:pointer;font-weight:700}.btn:disabled{opacity:.5;cursor:wait}.btn-secondary{background:#334155}.btn-stop{background:#991b1b}.status{padding:.65rem .8rem;border-radius:8px;background:#0f172a;margin:.7rem 0;white-space:pre-wrap}.pill{display:inline-block;border-radius:999px;background:#334155;padding:.2rem .55rem;font-size:.75rem;margin:.12rem}.good{border-color:#15803d}.warn{border-color:#a16207}.bad{border-color:#b91c1c}.match-meta{line-height:1.65;font-size:.9rem}.result-title{font-weight:800;margin-bottom:.35rem}.result-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:.45rem;margin-top:.7rem}.stage-mini{background:#172033;border:1px solid #334155;border-radius:7px;padding:.55rem;font-size:.82rem;overflow-wrap:anywhere}.stage-mini strong{display:block;margin-bottom:.25rem}.op-list{font-size:.82rem;line-height:1.5;margin:.5rem 0 0;padding-left:1.1rem}.best-opportunity{background:linear-gradient(135deg,#422006,#713f12);border:2px solid #facc15;border-radius:12px;padding:1rem;margin:.65rem 0;color:#fef3c7;box-shadow:0 0 0 2px #facc1530,0 8px 24px #0004}.best-opportunity .best-badge{display:inline-block;background:#facc15;color:#422006;border-radius:999px;padding:.22rem .6rem;font-weight:900;font-size:.75rem}.best-opportunity .best-prob{font-size:1.8rem;font-weight:900;color:#fde047}.fav-market{background:#172033;border:1px solid #475569;border-radius:9px;padding:.7rem;margin:.5rem 0}.fav-market.best{border-color:#facc15}.market-row{display:flex;justify-content:space-between;gap:.7rem;flex-wrap:wrap}.market-note{font-size:.82rem;color:#cbd5e1;margin-top:.4rem}.no-value{color:#fecaca;font-weight:700}.section-title{display:flex;gap:.8rem;align-items:center;justify-content:space-between;flex-wrap:wrap}.tabs{display:flex;gap:.5rem;flex-wrap:wrap;margin:1rem 0 0}.tab-btn{border:1px solid #475569;border-radius:8px;background:#0f172a;color:#cbd5e1;padding:.65rem .95rem;cursor:pointer;font-weight:700}.tab-btn.active{background:#2563eb;border-color:#2563eb;color:#fff}.tab-panel[hidden]{display:none!important}@media(max-width:600px){.matches{grid-template-columns:1fr}.tab-btn{flex:1}}
 </style>
 <div class="patron-page">
  <section class="panel">
@@ -132,16 +132,45 @@
   card.classList.remove('bad');
   const stages=data.etapas||{}, calc=stages.calculo||{}, monitor=stages.monitoreo||{}, reaction=stages.reaccion||{};
   const ops=calc.mercados||[];
-  const opsHtml=ops.length?'<ul class="op-list">'+ops.map(op=>{
-   const probability=Number(op.probabilidad);
-   const impossible=Number.isFinite(probability)&&(probability<=0.01||probability>=99.99);
-   const fair=op.cuota_justa==null?'No aplicable':(Number.isFinite(Number(op.cuota_justa))&&Number(op.cuota_justa)<1000?Number(op.cuota_justa).toFixed(3):'No aplicable (probabilidad extrema)');
-   const live=op.cuota_ecuabet==null?'No disponible':op.cuota_ecuabet;
-   const selection=op.seleccion||op.resultado||'';
-   const settled=String(op.estado_live||'').startsWith('CERRADO');
-   const variation=op.variacion_cuota_justa==null||fair==='No aplicable'?'No disponible':(op.variacion_cuota_justa>0?'+':'')+op.variacion_cuota_justa;
-   return '<li><strong>'+esc(op.mercado||op.nombre||'Mercado')+'</strong>'+(selection?' · Selección: '+esc(selection):'')+' '+(settled?'<span class="pill">Mercado determinado</span>':'')+'<br>Probabilidad estimada: '+esc(op.probabilidad==null?'—':op.probabilidad+'%')+' · Cuota justa: '+esc(fair)+' · Cuota Ecuabet LIVE: '+esc(live)+(impossible?'<br><span class="muted">Probabilidad extrema: no tratar como oportunidad abierta.</span>':'')+'<br>Variación probabilidad: '+esc(op.variacion_probabilidad_pp==null?'línea base':(op.variacion_probabilidad_pp>0?'+':'')+op.variacion_probabilidad_pp+' pp')+' · Variación cuota justa: '+esc(variation)+'</li>';
-  }).join('')+'</ul>':'<p class="muted">Sin mercados calculados en esta lectura. Se conserva la última oportunidad válida si existía.</p>';
+  // Vista resumida: mostrar solo los mercados relacionados con el favorito.
+  const favorite=card.querySelector('.static-favorite')?.textContent?.trim()||'';
+  const home=String(data.partido?.local||'').trim();
+  const away=String(data.partido?.visitante||'').trim();
+  const norm=s=>String(s||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+  const favNorm=norm(favorite), homeNorm=norm(home), awayNorm=norm(away);
+  const favoriteIsAway=!!favNorm&&!!awayNorm&&(favNorm===awayNorm||favNorm.includes(awayNorm)||awayNorm.includes(favNorm));
+  const favoriteIsHome=!!favNorm&&!!homeNorm&&(favNorm===homeNorm||favNorm.includes(homeNorm)||homeNorm.includes(favNorm));
+  const preferredKeys=favoriteIsAway?['away','dc_x2']:favoriteIsHome?['home','dc_1x']:[];
+  const preferred=ops.filter(op=>preferredKeys.includes(String(op.clave||''))&&!String(op.estado_live||'').startsWith('CERRADO'));
+  const candidates=preferred.map(op=>{
+   const p=Number(op.probabilidad);
+   const odd=op.cuota_ecuabet==null?null:Number(op.cuota_ecuabet);
+   const fair=op.cuota_justa==null?null:Number(op.cuota_justa);
+   const ev=Number.isFinite(p)&&odd!=null&&Number.isFinite(odd)&&odd>1?(p/100*odd-1)*100:null;
+   return {...op,_p:p,_odd:odd,_fair:fair,_ev:ev};
+  }).filter(op=>Number.isFinite(op._p));
+  candidates.sort((a,b)=>{
+   const av=a._ev==null?-Infinity:a._ev, bv=b._ev==null?-Infinity:b._ev;
+   if(av!==bv)return bv-av;
+   return b._p-a._p;
+  });
+  const best=candidates[0]||null;
+  const labelFor=op=>op.mercado||op.nombre||'Mercado del favorito';
+  const marketHtml=op=>{
+   const evText=op._ev==null?'Valor no evaluable: falta una cuota LIVE válida':('Valor esperado estimado: '+(op._ev>0?'+':'')+op._ev.toFixed(2)+'% por unidad');
+   const fairText=op._fair!=null&&Number.isFinite(op._fair)?op._fair.toFixed(3):'—';
+   const oddText=op._odd!=null&&Number.isFinite(op._odd)?op._odd.toFixed(3):'No disponible';
+   return '<div class="fav-market'+(best&&op.clave===best.clave?' best':'')+'"><div class="market-row"><strong>'+esc(labelFor(op))+'</strong><strong>'+esc(op._p.toFixed(2))+'%</strong></div><div class="market-note">Cuota LIVE: '+esc(oddText)+' · Cuota justa: '+esc(fairText)+'</div><div class="market-note">'+esc(evText)+'</div></div>';
+  };
+  let opsHtml='';
+  if(best){
+   const positive=best._ev!=null&&best._ev>0;
+   const heading=positive?'MEJOR OPORTUNIDAD':'MEJOR ALTERNATIVA EVALUADA';
+   const sub=best._ev==null?'Falta la cuota LIVE para confirmar si existe valor.':positive?'La cuota LIVE supera la cuota justa estimada.':'Ningún mercado evaluado ofrece valor esperado positivo con las cuotas actuales.';
+   opsHtml='<div class="best-opportunity"><span class="best-badge">★ '+heading+'</span><div style="font-size:1.05rem;font-weight:800;margin-top:.65rem">'+esc(labelFor(best))+'</div><div class="best-prob">'+esc(best._p.toFixed(2))+'%</div><div>'+esc(sub)+'</div></div>'+candidates.map(marketHtml).join('');
+  }else{
+   opsHtml='<p class="muted">No hay una oportunidad evaluable para el favorito en esta lectura. Se necesita identificar al favorito y calcular su victoria o la doble oportunidad que lo protege.</p>';
+  }
   if(ops.length&&opp)opp.innerHTML=opsHtml;
   const triggerLabel=monitor.gol_nuevo?'GOL NUEVO DETECTADO':(monitor.status==='SIN_BASELINE_PREVIO'?'ESTABLECIENDO LÍNEA BASE':'Sin gol nuevo · monitoreando');
   const triggerText=monitor.motivo||reaction.motivo||'Se conserva el estado anterior y se compara en el siguiente ciclo.';
