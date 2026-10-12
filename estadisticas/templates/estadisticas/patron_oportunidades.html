@@ -177,7 +177,13 @@
   if(status)status.textContent=running?'Simulando':'Última lectura';
   if(trigger)trigger.innerHTML='<strong>Detonante / último estado</strong>'+esc(triggerLabel)+' · '+esc(triggerText)+'<br><span class="muted">Marcador anterior: '+esc(scoreText(monitor.marcador_anterior))+' · Marcador guardado: '+esc(scoreText(monitor.marcador_actual||data.partido.marcador))+'</span>';
   if(updated)updated.textContent='Última actualización: '+new Date().toLocaleTimeString()+' · Próxima comparación en el siguiente ciclo.';
-  if(errEl)errEl.innerHTML='';
+  const sourceWarning=data.partido?.advertencia_fuente||'';
+  const sourceLabel=data.partido?.fuente_datos||'Ecuabet + Flashscore';
+  if(errEl){
+   errEl.innerHTML=sourceWarning
+    ? '<div class="status warn"><strong>⚠️ '+esc(sourceLabel)+'</strong><br>'+esc(sourceWarning)+'</div>'
+    : '';
+  }
   card.classList.toggle('good',!!monitor.gol_nuevo);
   // El contexto previo (favorito, cuotas iniciales y captura) no se reemplaza con datos LIVE.
   const score=card.querySelector('.live-score'), minute=card.querySelector('.live-minute');
