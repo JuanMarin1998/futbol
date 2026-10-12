@@ -84,7 +84,7 @@ main:has(.runner-page){max-width:1600px}.runner-page{max-width:1500px;margin:aut
    const r=await fetch(stateUrl,{cache:'no-store'});const d=await r.json();if(!r.ok||!d.ok)throw new Error(d.error||'No se pudo leer el estado.');
    document.getElementById('runnerDate').textContent='Fecha del libro de vidas: '+d.today;
    renderRunners(d.runners||[]);renderBets(d.bets||[]);renderEvaluations(d.evaluations||[]);
-   if(!busy)statusEl.textContent='Estado: '+(d.running?'ACTIVO':'PAUSADO')+(d.busy?' · ciclo procesándose':'')+' · Actualizado: '+time(d.updated_at);
+   if(!busy){const c=d.last_cycle||{};const cycleInfo=c.live_count!=null?(' · Último ciclo: '+c.live_count+' partidos, '+(c.bets_placed||0)+' apuestas, '+(c.settled||0)+' liquidaciones'):(c.error?' · Error último ciclo: '+c.error:'');statusEl.textContent='Estado: '+(d.running?'ACTIVO':'PAUSADO')+(d.busy?' · ciclo procesándose':'')+cycleInfo+' · Actualizado: '+time(d.updated_at);}
   }catch(e){if(!busy)statusEl.textContent='Error consultando estado: '+e.message;}
  }
  document.getElementById('startRunner').addEventListener('click',()=>post(startUrl));
