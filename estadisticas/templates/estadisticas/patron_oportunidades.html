@@ -27,7 +27,7 @@
  <div class="tab-panel" data-tab-panel="oportunidades" hidden>
  <section class="panel" id="opportunitiesPanel">
   <div class="section-title"><h3 style="margin-top:0">🎯 Oportunidades · señales recibidas por Reacción</h3><span id="opportunityCount" class="pill">0 señales</span></div>
-  <p class="muted">Registro de mercados calculados por el Patrón, con partido, marcador, minuto, probabilidad estimada, cuota justa y variaciones entre ciclos. Las oportunidades se conservan y actualizan mientras el partido siga en seguimiento.</p>
+  <p class="muted">Registro de mercados calculados por el Patrón: resultado, doble oportunidad, ambos marcan y goles, con marcador, minuto, probabilidad estimada, cuota justa y variaciones entre ciclos. Las oportunidades se conservan y actualizan mientras el partido siga en seguimiento.</p>
   <div id="opportunitiesResults" class="matches"><p class="muted">Inicia la simulación para que aparezcan los mercados calculados y sus cambios.</p></div>
  </section>
  </div>
@@ -132,19 +132,10 @@
   card.classList.remove('bad');
   const stages=data.etapas||{}, calc=stages.calculo||{}, monitor=stages.monitoreo||{}, reaction=stages.reaccion||{};
   const ops=calc.mercados||[];
-  // Vista resumida: mostrar solo los mercados relacionados con el favorito.
-  const favorite=card.querySelector('.static-favorite')?.textContent?.trim()||'';
-  const home=String(data.partido?.local||'').trim();
-  const away=String(data.partido?.visitante||'').trim();
-  const norm=s=>String(s||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
-  const favNorm=norm(favorite), homeNorm=norm(home), awayNorm=norm(away);
-  const favoriteIsAway=!!favNorm&&!!awayNorm&&(favNorm===awayNorm||favNorm.includes(awayNorm)||awayNorm.includes(favNorm));
-  const favoriteIsHome=!!favNorm&&!!homeNorm&&(favNorm===homeNorm||favNorm.includes(homeNorm)||homeNorm.includes(favNorm));
-  const preferredKeys=favoriteIsAway?['away','dc_x2']:favoriteIsHome?['home','dc_1x']:[];
-  const preferred=ops.filter(op=>preferredKeys.includes(String(op.clave||''))&&!String(op.estado_live||'').startsWith('CERRADO'));
+  // Mostrar todos los mercados calculados: resultado, doble oportunidad, ambos marcan y goles.
   const probabilityQuality=Number(stages.probabilidad?.calidad_datos??0);
   const fallbackOnly=!!data.partido?.advertencia_fuente||String(data.partido?.fuente_datos||'').includes('respaldo sin Flashscore');
-  const candidates=preferred.map(op=>{
+  const candidates=ops.filter(op=>!String(op.estado_live||'').startsWith('CERRADO')).map(op=>{
    const p=Number(op.probabilidad);
    const odd=op.cuota_ecuabet==null?null:Number(op.cuota_ecuabet);
    const fair=op.cuota_justa==null?null:Number(op.cuota_justa);
@@ -178,7 +169,7 @@
    const sub=!evaluable?'No se declara una oportunidad: '+(best._evReason||'faltan datos fiables')+'.':positive?'La estimación y los datos disponibles sugieren valor; no garantiza un resultado.':'Ningún mercado evaluado ofrece valor esperado positivo con las cuotas actuales.';
    opsHtml='<div class="best-opportunity"><span class="best-badge">★ '+heading+'</span><div style="font-size:1.05rem;font-weight:800;margin-top:.65rem">'+esc(labelFor(best))+'</div><div class="best-prob">'+esc(probabilityText(best._p))+'</div><div>'+esc(sub)+'</div></div>'+candidates.map(marketHtml).join('');
   }else{
-   opsHtml='<p class="muted">No hay una oportunidad evaluable para el favorito en esta lectura. Se necesita identificar al favorito y calcular su victoria o la doble oportunidad que lo protege.</p>';
+   opsHtml='<p class="muted">No hay mercados abiertos en esta lectura. Se mostrarán resultado, doble oportunidad, ambos marcan y goles cuando el cálculo esté disponible.</p>';
   }
   if(ops.length&&opp)opp.innerHTML=opsHtml;
   const triggerLabel=monitor.gol_nuevo?'GOL NUEVO DETECTADO':(monitor.status==='SIN_BASELINE_PREVIO'?'ESTABLECIENDO LÍNEA BASE':'Sin gol nuevo · monitoreando');
@@ -269,12 +260,8 @@
       resultById[String(event.id)]={event,data};
       const reaction=data.etapas&&data.etapas.reaccion||{};
       const allSignals=reaction.senales_recibidas||[];
-      const normTeam=s=>String(s||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
-      const favName=normTeam(event.favorite), homeName=normTeam(data.partido?.local), awayName=normTeam(data.partido?.visitante);
-      const favAway=!!favName&&!!awayName&&(favName===awayName||favName.includes(awayName)||awayName.includes(favName));
-      const favHome=!!favName&&!!homeName&&(favName===homeName||favName.includes(homeName)||homeName.includes(favName));
-      const focusKeys=favAway?['away','dc_x2']:favHome?['home','dc_1x']:[];
-      const signals=allSignals.filter(signal=>focusKeys.includes(String(signal.clave||'')));
+      // Registrar todos los mercados abiertos, incluidos BTTS y totales de goles.
+      const signals=allSignals.filter(signal=>!String(signal.estado_live||'').startsWith('CERRADO'));
       signals.forEach(signal=>{
        const key=String(event.id)+'::'+String(signal.clave||signal.mercado);
        const existingIndex=opportunityRecords.findIndex(record=>record.key===key);
