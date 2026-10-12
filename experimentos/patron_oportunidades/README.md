@@ -7,7 +7,13 @@ Desde la raíz del repositorio:
 
     python experimentos/patron_oportunidades/simular_contexto.py
     python experimentos/patron_oportunidades/simular_patron.py
+    python experimentos/patron_oportunidades/simular_partido_completo.py
     python -m unittest discover -s experimentos/patron_oportunidades -p "test_*.py" -v
+
+## Simulación integral sintética
+`simular_partido_completo.py` recorre el flujo completo: contexto previo con resultados inventados, tres observaciones LIVE ficticias, comparación con el estado anterior, reevaluación de escenarios y cálculo ilustrativo con probabilidades/cuotas también ficticias. La reacción no emite apuestas automáticas. El aviso de datos ficticios forma parte del informe para evitar confundirlo con un análisis real.
+
+Las pruebas automáticas verifican que la expectativa previa se conserve durante el LIVE, que un gol aislado no se trate como prueba de pérdida de dominio, que los datos insuficientes bloqueen el cálculo y que una probabilidad ausente impida calcular valor.
 
 ## Punto 1: Contexto previo
 El módulo `contexto_prepartido.py` resume los últimos cinco resultados disponibles de cada equipo (requiere al menos tres): puntos por partido, goles a favor/en contra y muestra de local/visitante. Expone las evidencias, expectativas iniciales, señales que habrá que observar y limitaciones.
