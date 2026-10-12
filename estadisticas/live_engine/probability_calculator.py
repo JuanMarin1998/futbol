@@ -203,10 +203,32 @@ class LiveProbabilityCalculator:
             "btts_no": 1.0 - both_yes,
         }
         probabilities = {key: max(0.0, min(1.0, value)) for key, value in probabilities.items()}
-        ranked = [
-            {"mercado": label, "clave": key, "probabilidad": round(probabilities[key] * 100, 2), "probabilidad_decimal": round(probabilities[key], 6), "cuota_justa": round(1.0 / probabilities[key], 3) if probabilities[key] > 0 else None, "cuota_ecuabet": None, "estado_live": "ABIERTO"}
-            for label, key in MARKETS
-        ]
+        ranked = []
+        for label, key in MARKETS:
+            probability_pct = round(probabilities[key] * 100, 2)
+            # No mostrar cuotas justas astronómicas por residuos de coma flotante.
+            # Una probabilidad redondeada a 0% o 100% no es una cuota útil para comparar.
+            fair_odds = (
+                round(100.0 / probability_pct, 3)
+                if 0.01 <= probability_pct <= 99.99 else None
+            )
+            # Ambos marcan queda matemáticamente decidido en cuanto ambos anotan;
+            # no debe mostrarse como una oportunidad abierta.
+            market_settled = (
+                key == "btts_yes" and home_score > 0 and away_score > 0
+            ) or (
+                key == "btts_no" and (home_score == 0 or away_score == 0)
+                and minute >= 90
+            )
+            ranked.append({
+                "mercado": label,
+                "clave": key,
+                "probabilidad": probability_pct,
+                "probabilidad_decimal": round(probabilities[key], 6),
+                "cuota_justa": fair_odds,
+                "cuota_ecuabet": None,
+                "estado_live": "CERRADO_RESULTADO_DETERMINADO" if market_settled else "ABIERTO",
+            })
         ranked.sort(key=lambda item: item["probabilidad"], reverse=True)
         available_stats = sum(
             value is not None
