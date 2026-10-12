@@ -2002,38 +2002,58 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
         ]
         engine_results = []
         all_opportunities = []
-        for label, engine, attr in engine_specs:
-            opportunities = getattr(match, attr, None)
-            if opportunities is None:
-                opportunities = engine.evaluate(match)
-            clean = []
-            for op in (opportunities or [])[:5]:
-                item = {
-                    "mercado": op.get("market", ""),
-                    "seleccion": op.get("selection", ""),
-                    "cuota": op.get("price"),
-                    "probabilidad_modelo": op.get("model_probability"),
-                    "probabilidad_implicita": op.get("implied_probability"),
-                    "edge_pct": op.get("edge_pct"),
-                    "confianza": op.get("confidence"),
-                    "senal": op.get("signal", ""),
-                }
-                clean.append(item)
-                all_opportunities.append({"motor": label, **item})
-            engine_results.append({"motor": label, "senales": len(opportunities or []), "oportunidades": clean})
-        stage_probability = {
-            "status": "SALIDAS_REALES_DE_MOTORES",
-            "motores": engine_results,
-            "motivo": "Se muestran las probabilidades que entregan los motores existentes; el patrón no las fabrica ni modifica.",
-        }
-        stage_calculation = {
-            "status": "CALCULO_CON_SALIDAS_DE_MOTORES",
-            "oportunidades": all_opportunities[:60],
-            "motores_con_senales": sum(1 for item in engine_results if item["senales"]),
-            "motivo": "Cuotas, probabilidades, edge y confianza se toman de las salidas actuales de los motores. No se crean apuestas.",
-        }
+        if monitoring["detonante"]:
+            # Solo avanzar a Probabilidad y Cálculo cuando Monitoreo activa Acción.
+            for label, engine, attr in engine_specs:
+                opportunities = getattr(match, attr, None)
+                if opportunities is None:
+                    opportunities = engine.evaluate(match)
+                clean = []
+                for op in (opportunities or [])[:5]:
+                    item = {
+                        "mercado": op.get("market", ""),
+                        "seleccion": op.get("selection", ""),
+                        "cuota": op.get("price"),
+                        "probabilidad_modelo": op.get("model_probability"),
+                        "probabilidad_implicita": op.get("implied_probability"),
+                        "edge_pct": op.get("edge_pct"),
+                        "confianza": op.get("confidence"),
+                        "senal": op.get("signal", ""),
+                    }
+                    clean.append(item)
+                    all_opportunities.append({"motor": label, **item})
+                engine_results.append({"motor": label, "senales": len(opportunities or []), "oportunidades": clean})
+            stage_probability = {
+                "status": "EVALUADA_TRAS_ACCION",
+                "motores": engine_results,
+                "motivo": "Acción activada por un gol nuevo confirmado; se consultan las probabilidades que entregan los motores existentes sin alterar sus fórmulas.",
+            }
+            stage_calculation = {
+                "status": "CALCULO_TRAS_ACCION",
+                "oportunidades": all_opportunities[:60],
+                "motores_con_senales": sum(1 for item in engine_results if item["senales"]),
+                "motivo": "Se calculan y ordenan las señales recibidas de los motores después de activar Acción. No se crean apuestas.",
+            }
+        else:
+            stage_probability = {
+                "status": "PENDIENTE_DE_ACCION",
+                "motores": [],
+                "motivo": "Preparada, pero espera el detonante de Monitoreo para consultar los motores en esta cadena.",
+            }
+            stage_calculation = {
+                "status": "PENDIENTE_DE_PROBABILIDAD",
+                "oportunidades": [],
+                "motores_con_senales": 0,
+                "motivo": "Se ejecutará después de Acción y Probabilidad; no se calculan oportunidades antes del detonante.",
+            }
         positive = [x for x in all_opportunities if isinstance(x.get("edge_pct"), (int, float)) and x["edge_pct"] > 0]
-        if not all_opportunities:
+        if not monitoring["detonante"]:
+            stage_reaction = {
+                "status": "PENDIENTE_DE_CALCULO",
+                "decision": "SEGUIR_MONITOREANDO",
+                "motivo": "Reacción queda preparada y espera a que Monitoreo active Acción; no recomienda una decisión antes de completar la cadena.",
+            }
+        elif not all_opportunities:
             stage_reaction = {
                 "status": "SIN_SENALES_DE_MOTORES",
                 "decision": "SEGUIR_MONITOREANDO",
