@@ -2382,6 +2382,12 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
                 "marcador": now_score,
                 "calidad_datos": match.data_quality,
                 "confianza_mapeo": match.mapping_confidence,
+                "fuente_datos": (
+                    "Ecuabet · respaldo sin Flashscore"
+                    if (match.performance or {}).get("source") == "ecuabet_fallback"
+                    else "Ecuabet + Flashscore"
+                ),
+                "advertencia_fuente": (match.performance or {}).get("warning", ""),
             },
             "etapas": {
                 "contexto": context_stage,
