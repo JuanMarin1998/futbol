@@ -30,7 +30,7 @@ class PatronOportunidadesTests(unittest.TestCase):
     def test_perdida_dominio_sin_gol_y_con_tendencia(self):
         s10, s18, s25 = snap(10, tpl=3, tpv=0, apl=10, apv=15), snap(18, tpl=3, tpv=2, tl=6, tv=7, apl=11, apv=25), snap(25, tpl=3, tpv=5, tl=7, tv=12, apl=12, apv=35)
         r = analizar_patron(CTX, s25, s18, historial=[s10, s18])
-        self.assertIn("cambio de control", r.interpretacion_conjunta.lower())
+        self.assertIn("acelera claramente", r.interpretacion_conjunta.lower())
 
     def test_impulso_reciente_del_rival_cuestiona_dominio_acumulado_del_favorito(self):
         s28 = snap(28, gl=0, gv=1, tpl=5, tpv=1, tl=10, tv=4, apl=29, apv=12)
