@@ -147,6 +147,7 @@
             <a href="{% url 'estadisticas:experimento_live' %}" class="{% if seccion == 'experimento_live' %}activo{% endif %}">🧪 Experimento</a>
             <a href="{% url 'estadisticas:laboratorio_patrones' %}" class="{% if seccion == 'patrones' %}activo{% endif %}">🧠 Patrones</a>
             <a href="{% url 'estadisticas:patron_oportunidades' %}" class="{% if seccion == 'patron_oportunidades' %}activo{% endif %}">🎯 Patrón de oportunidades</a>
+            <a href="{% url 'estadisticas:corredores_apuestas' %}" class="{% if seccion == 'corredores_apuestas' %}activo{% endif %}">🏁 Corredores</a>
             {% for codigo, nombre in ligas.items %}
                 <a href="{% url 'estadisticas:partidos_liga' codigo %}" class="{% if codigo_liga == codigo %}activo{% endif %}">{{ nombre }}</a>
             {% endfor %}
