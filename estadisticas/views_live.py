@@ -2053,11 +2053,11 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
             ("V.Pro", LiveOpportunityEngineVPro, "opportunities_vpro"),
             ("V.Pro 1.1", LiveOpportunityEngineVPro11, "opportunities_vpro11"),
         ]
-        # Probabilidad: referencia estadística independiente de las cuotas.
-        # Se calcula cuando hay un detonante confirmado; el primer snapshot solo fija la línea base.
+        # Probabilidad se calcula en CADA pasada LIVE, no solo cuando cambia el marcador.
+        # El gol nuevo activa la etapa Acción; no debe bloquear el análisis de mercados existentes.
         probabilities = {}
         elapsed = None
-        if monitoring["detonante"]:
+        if match is not None:
             elapsed = LiveOpportunityEngine._elapsed_minutes(current_minute, match.period)
             lambda_home, lambda_away = LiveOpportunityEngine._remaining_lambda(performance, elapsed)
             probabilities = LiveOpportunityEngine._probabilities(home, away, lambda_home, lambda_away)
@@ -2112,6 +2112,7 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
 
         # Cálculo conserva las señales originales de cada motor y las contrasta
         # con la probabilidad estadística del mismo mercado, sin alterar sus fórmulas.
+        # Se ejecuta en cada ciclo LIVE, incluso si no hubo gol nuevo desde el snapshot anterior.
         engine_results = []
         all_opportunities = []
 
@@ -2156,7 +2157,7 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
                 value = probabilities.get(key) if probabilities and key else None
             return key, value
 
-        if monitoring["detonante"]:
+        if match is not None:
             for label, engine, attr in engine_specs:
                 opportunities = getattr(match, attr, None)
                 if opportunities is None:
@@ -2219,7 +2220,7 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
                 engine_results.append({"motor": label, "senales": len(opportunities or []), "oportunidades": clean})
 
         stage_calculation = {
-            "status": "CALCULO_COMPLETADO" if monitoring["detonante"] else "ESPERANDO_DETONANTE",
+            "status": "CALCULO_COMPLETADO",
             "motores": engine_results,
             "oportunidades": all_opportunities[:150],
             "motores_con_senales": sum(1 for item in engine_results if item["senales"]),
@@ -2234,13 +2235,7 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
             and item["edge_estadistico_pct"] > 0
             and item.get("consenso_estadistico") != "DISCREPANCIA_ALTA"
         ]
-        if not monitoring["detonante"]:
-            stage_reaction = {
-                "status": "PENDIENTE_DE_CALCULO",
-                "decision": "SEGUIR_MONITOREANDO",
-                "motivo": "Reacción espera el detonante confirmado; todavía no emite una recomendación.",
-            }
-        elif positive:
+        if positive:
             best = max(positive, key=lambda item: (item.get("edge_estadistico_pct", 0), item.get("probabilidad_estadistica_pct", 0)))
             stage_reaction = {
                 "status": "SENALES_CON_RESPALDO_ESTADISTICO",
