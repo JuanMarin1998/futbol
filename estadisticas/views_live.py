@@ -1960,6 +1960,20 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
             and None not in prev_score and None not in now_score
             and (now_score[0] > prev_score[0] or now_score[1] > prev_score[1])
         )
+        previous_patron = (
+            (previous.performance or {}).get("patron_oportunidades", {})
+            if previous and isinstance(previous.performance, dict) else {}
+        )
+        previous_last_trigger = previous_patron.get("ultimo_detonante") if isinstance(previous_patron, dict) else None
+        last_trigger = (
+            {
+                "marcador": list(now_score),
+                "minuto": str(current_minute or ""),
+                "registrado_en": timezone.localtime().isoformat(),
+                "motivo": "Aumento confirmado del marcador LIVE.",
+            }
+            if goal_scored else previous_last_trigger
+        )
         stats_changed = bool(previous and changed_stats)
         monitoring = {
             "status": "SIN_BASELINE_PREVIO" if previous is None else (
@@ -1973,6 +1987,7 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
             "cambios_estadisticos": changed_stats[:30],
             "gol_nuevo": goal_scored,
             "detonante": goal_scored,
+            "ultimo_detonante": last_trigger,
             "motivo": (
                 "Primera lectura: establece la línea base de marcador y estadísticas LIVE; todavía no activa Acción."
                 if previous is None else
@@ -2057,32 +2072,24 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
         # El gol nuevo activa la etapa Acción; no debe bloquear el análisis de mercados existentes.
         probabilities = {}
         elapsed = None
-        if match is not None:
+        if match is not None and monitoring["detonante"]:
             elapsed = LiveOpportunityEngine._elapsed_minutes(current_minute, match.period)
             lambda_home, lambda_away = LiveOpportunityEngine._remaining_lambda(performance, elapsed)
             probabilities = LiveOpportunityEngine._probabilities(home, away, lambda_home, lambda_away)
             probability_keys = {
                 "Victoria local": "home", "Empate": "draw", "Victoria visitante": "away",
-                "Más de 0.5 goles": "over_0_5", "Menos de 0.5 goles": "under_0_5",
-                "Más de 1.5 goles": "over_1_5", "Menos de 1.5 goles": "under_1_5",
-                "Más de 2.5 goles": "over_2_5", "Menos de 2.5 goles": "under_2_5",
-                "Más de 3.5 goles": "over_3_5", "Menos de 3.5 goles": "under_3_5",
+                "Doble oportunidad 1X": "dc_1x", "Doble oportunidad 12": "dc_12",
+                "Doble oportunidad X2": "dc_x2",
                 "Ambos marcan: sí": "btts_yes", "Ambos marcan: no": "btts_no",
             }
-            total_current = home + away
+            probabilities["dc_1x"] = probabilities["home"] + probabilities["draw"]
+            probabilities["dc_12"] = probabilities["home"] + probabilities["away"]
+            probabilities["dc_x2"] = probabilities["draw"] + probabilities["away"]
             ranked_probabilities = []
             for label, key in probability_keys.items():
                 if key not in probabilities:
                     continue
                 market_state = "ABIERTO"
-                if key.startswith("over_"):
-                    target = {"over_0_5": 1, "over_1_5": 2, "over_2_5": 3, "over_3_5": 4}[key]
-                    if total_current >= target:
-                        market_state = "YA_CUMPLIDO"
-                elif key.startswith("under_"):
-                    target = {"under_0_5": 1, "under_1_5": 2, "under_2_5": 3, "under_3_5": 4}.get(key)
-                    if target is not None and total_current >= target:
-                        market_state = "YA_NO_CUMPLIBLE"
                 ranked_probabilities.append({
                     "mercado": label,
                     "clave": key,
@@ -2133,9 +2140,9 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
                 if any(token in market_text for token in ("ambos marcan", "both teams", "btts")):
                     key = "btts_yes" if any(token in selected for token in ("si", "yes", "ambos")) else "btts_no"
                 elif any(token in market_text for token in ("doble oportunidad", "double chance")):
-                    if "1x" in selected: key = "dc_1x"
-                    elif "x2" in selected: key = "dc_x2"
-                    elif "12" in selected: key = "dc_12"
+                    if "1x" in selected or ("empate" in selected and home_name and home_name in selected): key = "dc_1x"
+                    elif "x2" in selected or ("empate" in selected and away_name and away_name in selected): key = "dc_x2"
+                    elif "12" in selected or (home_name and home_name in selected and away_name and away_name in selected): key = "dc_12"
                 elif any(token in market_text for token in ("1x2", "resultado", "ganador", "match result")):
                     if selected in ("x", "draw", "empate"): key = "draw"
                     elif selected in ("1", "home", "local") or (home_name and home_name in selected): key = "home"
@@ -2157,13 +2164,25 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
                 value = probabilities.get(key) if probabilities and key else None
             return key, value
 
-        if match is not None:
+        if match is not None and monitoring["detonante"]:
             for label, engine, attr in engine_specs:
                 opportunities = getattr(match, attr, None)
                 if opportunities is None:
                     opportunities = engine.evaluate(match)
                 clean = []
+                def _mercado_permitido(op):
+                    import unicodedata
+                    market = unicodedata.normalize("NFKD", str(op.get("market") or "")).encode("ascii", "ignore").decode("ascii").lower()
+                    selection = unicodedata.normalize("NFKD", str(op.get("selection") or "")).encode("ascii", "ignore").decode("ascii").lower()
+                    text = market + " " + selection
+                    if any(token in text for token in ("doble oportunidad", "double chance", "both teams", "ambos marcan", "btts")):
+                        return True
+                    if any(token in market for token in ("1x2", "match result", "resultado", "ganador")):
+                        return True
+                    return False
                 for op in (opportunities or [])[:10]:
+                    if not _mercado_permitido(op):
+                        continue
                     item = {
                         "mercado": op.get("market", ""),
                         "seleccion": op.get("selection", ""),
@@ -2217,7 +2236,7 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
                         item["consenso_estadistico"] = "SIN_REFERENCIA_COMPARABLE"
                     clean.append(item)
                     all_opportunities.append({"motor": label, **item})
-                engine_results.append({"motor": label, "senales": len(opportunities or []), "oportunidades": clean})
+                engine_results.append({"motor": label, "senales": len(clean), "oportunidades": clean})
 
         stage_calculation = {
             "status": "CALCULO_COMPLETADO",
@@ -2285,6 +2304,7 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
         # Persistir también el resultado completo del Patrón para poder auditarlo después.
         saved_performance = dict(performance) if isinstance(performance, dict) else {}
         saved_performance["patron_oportunidades"] = {
+            "ultimo_detonante": last_trigger,
             "partido": {
                 "id": int(match.ecuabet_event_id),
                 "local": str(match.home_team or ""),
