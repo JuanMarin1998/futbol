@@ -204,7 +204,7 @@ class LiveProbabilityCalculator:
         }
         probabilities = {key: max(0.0, min(1.0, value)) for key, value in probabilities.items()}
         ranked = [
-            {"mercado": label, "clave": key, "probabilidad": round(probabilities[key] * 100, 2), "estado_live": "ABIERTO"}
+            {"mercado": label, "clave": key, "probabilidad": round(probabilities[key] * 100, 2), "probabilidad_decimal": round(probabilities[key], 6), "cuota_justa": round(1.0 / probabilities[key], 3) if probabilities[key] > 0 else None, "cuota_ecuabet": None, "estado_live": "ABIERTO"}
             for label, key in MARKETS
         ]
         ranked.sort(key=lambda item: item["probabilidad"], reverse=True)
