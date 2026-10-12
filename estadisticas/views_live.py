@@ -1969,26 +1969,79 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
         )
 
         def _red_card_count(stats, side):
+            """Lee tarjetas rojas aunque Flashscore cambie la clave o etiqueta.
+
+            El feed puede entregar red_cards, red_card, tarjetas_rojas o
+            yellow_red_cards (doble amarilla/roja), y cada valor puede venir
+            como escalar o como objeto {value, raw_value, label, name}.
+            No suma métricas equivalentes para evitar contar dos veces la misma roja.
+            """
+            import re
+            import unicodedata
+
             side_stats = stats.get(side) if isinstance(stats, dict) else {}
             if not isinstance(side_stats, dict):
                 return None
-            for key, item in side_stats.items():
-                normalized = str(key).lower().replace("-", "_").replace(" ", "_")
-                label = str(item.get("label") or item.get("name") or "").lower() if isinstance(item, dict) else ""
-                if normalized in {"red_cards", "red_card", "tarjetas_rojas"} or label in {"red cards", "tarjetas rojas", "red card"}:
-                    value = item.get("value", item.get("raw_value")) if isinstance(item, dict) else item
-                    try:
-                        return int(float(str(value).replace(",", ".")))
-                    except (TypeError, ValueError):
-                        continue
-            return None
+
+            def norm(value):
+                value = unicodedata.normalize("NFKD", str(value or ""))
+                value = "".join(ch for ch in value if not unicodedata.combining(ch))
+                return re.sub(r"[^a-z0-9]+", "", value.casefold())
+
+            red_keys = {
+                "redcards", "redcard", "tarjetasrojas", "tarjetaroja",
+                "yellowredcards", "yellowredcard", "dobleamarillaroja",
+                "dobleamarillayroja", "segundatarjetaamarilla",
+            }
+            found = []
+
+            def walk(node, inherited_key="", depth=0):
+                if depth > 6:
+                    return
+                if isinstance(node, dict):
+                    labels = [inherited_key]
+                    labels.extend(node.get(k) for k in ("key", "type", "stat_type", "name", "label", "displayName"))
+                    matches = any(norm(label) in red_keys for label in labels if label is not None)
+                    if matches:
+                        value = node.get("value")
+                        if value is None:
+                            value = node.get("raw_value")
+                        if value is None:
+                            value = node.get("current")
+                        try:
+                            parsed = int(float(str(value).replace(",", ".").replace("%", "").strip()))
+                            if parsed >= 0:
+                                found.append(parsed)
+                        except (TypeError, ValueError):
+                            pass
+                    for key, child in node.items():
+                        if isinstance(child, (dict, list)):
+                            walk(child, str(key), depth + 1)
+                elif isinstance(node, list):
+                    for child in node:
+                        walk(child, inherited_key, depth + 1)
+                else:
+                    if norm(inherited_key) in red_keys:
+                        try:
+                            parsed = int(float(str(node).replace(",", ".").replace("%", "").strip()))
+                            if parsed >= 0:
+                                found.append(parsed)
+                        except (TypeError, ValueError):
+                            pass
+
+            walk(side_stats)
+            return max(found) if found else None
 
         red_card_changes = []
         for side, team in (("home", match.home_team), ("away", match.away_team)):
             current_red = _red_card_count(performance, side)
             previous_red = _red_card_count(previous_performance, side)
             if current_red is not None and current_red > (previous_red if previous_red is not None else 0):
-                red_card_changes.append({"equipo": team, "anterior": previous_red if previous_red is not None else 0, "actual": current_red})
+                red_card_changes.append({
+                    "equipo": team,
+                    "anterior": previous_red if previous_red is not None else 0,
+                    "actual": current_red,
+                })
         red_card_detected = bool(red_card_changes)
         previous_patron = (
             (previous.performance or {}).get("patron_oportunidades", {})
@@ -2093,7 +2146,7 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
         else:
             stage_action = {
                 "status": "PENDIENTE_DE_DETONANTE",
-                "diagnostico": f"No se activa Acción porque no se detectó un gol nuevo. Estado observado: {score_read}; {stats_read}",
+                "diagnostico": f"No se activa Acción porque no se detectó un gol ni una tarjeta roja nueva. Estado observado: {score_read}; {stats_read}",
                 "datos_evaluados": [context_stage["status"], f"minuto {current_minute}", f"marcador {home}-{away}", stats_read],
                 "estadisticas_live": performance,
                 "cambios_detectados": changed_stats[:30],
