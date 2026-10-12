@@ -7,25 +7,22 @@
 <div class="patron-page">
  <section class="panel">
   <h2 style="margin:.1rem 0 .5rem">🎯 Patrón de Oportunidades · Simulación LIVE</h2>
-  <p class="muted">Solo entran partidos que tienen contexto previo guardado, favorito por cuota entre 1.05 y 2.00 y presencia confirmada en LIVE de Ecuabet. La simulación usa una cadena independiente de seis etapas y el calculador central de probabilidades. No interviene en los motores de apuestas.</p>
+  <p class="muted">Cada tarjeta reúne el contexto previo, el estado LIVE, las oportunidades calculadas y el detonante detectado. Al pulsar Simular, las seis etapas se ejecutan internamente; no se muestran como un panel separado ni intervienen los motores de apuestas.</p>
   <div style="display:flex;gap:.6rem;flex-wrap:wrap">
    <button id="reloadMatches" class="btn btn-secondary">↻ Actualizar candidatos</button>
    <button id="startAll" class="btn">▶ Simular todos los partidos elegibles</button>
    <button id="stopAll" class="btn btn-stop" disabled>■ Detener simulación</button>
   </div>
   <div id="listStatus" class="status">Buscando partidos LIVE con contexto y favorito…</div>
-  <div class="muted">Cuando la simulación está activa, vuelve a consultar los partidos elegibles cada 30 segundos después de completar cada ciclo. Si un encuentro deja de estar LIVE, ya no se incluirá en el siguiente ciclo.</div>
-  <nav class="tabs" aria-label="Secciones del Patrón de Oportunidades"><button type="button" class="tab-btn active" data-tab="principal">① Principal · Partidos y etapas</button><button type="button" class="tab-btn" data-tab="oportunidades">③ Oportunidades</button><button type="button" class="tab-btn" data-tab="historial">④ Historial y cuadro</button></nav>
+  <div class="muted">La simulación consulta los partidos elegibles en ciclos de 30 segundos. Cada tarjeta conserva el último marcador observado y muestra si detectó un gol nuevo o sigue monitoreando.</div>
+  <nav class="tabs" aria-label="Secciones del Patrón de Oportunidades"><button type="button" class="tab-btn active" data-tab="principal">① Partidos elegibles</button><button type="button" class="tab-btn" data-tab="oportunidades">③ Oportunidades</button><button type="button" class="tab-btn" data-tab="historial">④ Historial y cuadro</button></nav>
  </section>
  <div class="tab-panel" data-tab-panel="principal">
  <section class="panel">
   <div class="section-title"><h3 style="margin-top:0">1. Partidos elegibles</h3><span id="candidateCount" class="pill">0 partidos</span></div>
   <div id="matches" class="matches"><p class="muted">Cargando…</p></div>
  </section>
- <section class="panel">
-  <div class="section-title"><h3 style="margin-top:0">2. Cadena de análisis por partido · seis etapas</h3><span id="cycleLabel" class="pill">Sin iniciar</span></div>
-  <div id="results" class="matches"><p class="muted">Pulsa «Simular todos los partidos elegibles» para iniciar.</p></div>
- </section>
+ <span id="cycleLabel" class="pill" hidden>Sin iniciar</span>
  </div>
  <div class="tab-panel" data-tab-panel="oportunidades" hidden>
  <section class="panel" id="opportunitiesPanel">
@@ -55,7 +52,7 @@
  tabButtons.forEach(button=>button.addEventListener('click',()=>activateTab(button.dataset.tab)));
  activateTab('principal');
  const matchesEl=document.getElementById('matches');
- const resultsEl=document.getElementById('results');
+ const resultsEl=matchesEl;
  const listStatus=document.getElementById('listStatus');
  const candidateCount=document.getElementById('candidateCount');
  const cycleLabel=document.getElementById('cycleLabel');
@@ -89,7 +86,7 @@
    if(!events.length){
     matchesEl.innerHTML='<p class="muted">No hay partidos que cumplan los tres requisitos: contexto guardado, favorito 1.05–2.00 y partido actualmente LIVE.</p>';
    }else{
-    matchesEl.innerHTML=events.map(e=>'<article class="match-card"><h3>'+esc(e.name)+'</h3><div class="match-meta"><div><strong>Favorito:</strong> '+esc(e.favorite)+'</div><div><strong>Cuotas iniciales:</strong> '+esc(e.home_odds)+' / '+esc(e.draw_odds)+' / '+esc(e.away_odds)+'</div><div><strong>Marcador LIVE:</strong> '+esc(scoreText(e.score))+'</div><div><strong>Minuto/estado:</strong> '+esc(pretty(e.live_time))+'</div><div class="muted"><strong>Contexto capturado:</strong> '+esc(e.captured_at||'—')+'</div></div><span class="pill">Contexto guardado</span><span class="pill">LIVE</span><span class="pill">Favorito válido</span></article>').join('');
+    matchesEl.innerHTML=events.map(e=>candidateCard(e)).join('');
    }
    return events;
   }catch(err){
@@ -98,12 +95,21 @@
    return [];
   }
  }
+ function candidateCard(e){
+  return '<article class="match-card" id="pattern-result-'+esc(e.id)+'"><h3>'+esc(e.name)+'</h3><div class="match-meta"><div><strong>Favorito:</strong> '+esc(e.favorite)+'</div><div><strong>Cuotas iniciales (1X2):</strong> '+esc(e.home_odds)+' / '+esc(e.draw_odds)+' / '+esc(e.away_odds)+'</div><div><strong>Marcador LIVE:</strong> '+esc(scoreText(e.score))+'</div><div><strong>Minuto/estado:</strong> '+esc(pretty(e.live_time))+'</div><div class="muted"><strong>Contexto capturado:</strong> '+esc(e.captured_at||'—')+'</div></div><span class="pill">Contexto guardado</span><span class="pill">LIVE</span><span class="pill">Esperando simulación</span></article>';
+ }
  function resultCard(e,data,error){
   const name=(data&&data.partido)?(data.partido.local+' vs '+data.partido.visitante):e.name;
-  if(error)return '<article class="match-card bad"><h3>'+esc(name)+'</h3><span class="pill">Error</span><p>'+esc(error)+'</p></article>';
+  if(error)return '<article class="match-card bad" id="pattern-result-'+esc(e.id)+'"><h3>'+esc(name)+'</h3><div class="match-meta"><strong>Favorito:</strong> '+esc(e.favorite)+'<br><strong>Cuotas iniciales (1X2):</strong> '+esc(e.home_odds)+' / '+esc(e.draw_odds)+' / '+esc(e.away_odds)+'<br><strong>Marcador LIVE:</strong> '+esc(scoreText(e.score))+'<br><strong>Minuto/estado:</strong> '+esc(pretty(e.live_time))+'<br><strong>Contexto capturado:</strong> '+esc(e.captured_at||'—')+'</div><span class="pill">Error de simulación</span><p>'+esc(error)+'</p></article>';
   const stages=data.etapas||{}, calc=stages.calculo||{}, monitor=stages.monitoreo||{}, reaction=stages.reaccion||{};
   const ops=calc.mercados||[];
-  const opsHtml=ops.length?'<ul class="op-list">'+ops.map(op=>'<li><strong>'+esc(op.mercado||'Mercado')+'</strong> · Probabilidad '+esc(op.probabilidad==null?'—':op.probabilidad+'%')+' · Cuota justa '+esc(op.cuota_justa==null?'—':op.cuota_justa)+' · Ecuabet LIVE '+esc(op.cuota_ecuabet==null?'no disponible':op.cuota_ecuabet)+'<br>Variación probabilidad: '+esc(op.variacion_probabilidad_pp==null?'línea base':(op.variacion_probabilidad_pp>0?'+':'')+op.variacion_probabilidad_pp+' pp')+' · Variación cuota justa: '+esc(op.variacion_cuota_justa==null?'línea base':(op.variacion_cuota_justa>0?'+':'')+op.variacion_cuota_justa)+'</li>').join('')+'</ul>':'<p class="muted">Primera lectura: línea base guardada; los mercados se calcularán en el siguiente ciclo.</p>';
+  const opsHtml=ops.length?'<ul class="op-list">'+ops.map(op=>'<li><strong>'+esc(op.mercado||op.nombre||'Mercado')+'</strong> · Selección: '+esc(op.seleccion||op.resultado||'—')+'<br>Probabilidad: '+esc(op.probabilidad==null?'—':op.probabilidad+'%')+' · Cuota justa: '+esc(op.cuota_justa==null?'—':op.cuota_justa)+' · Cuota Ecuabet LIVE: '+esc(op.cuota_ecuabet==null?'no disponible':op.cuota_ecuabet)+'<br>Variación probabilidad: '+esc(op.variacion_probabilidad_pp==null?'línea base':(op.variacion_probabilidad_pp>0?'+':'')+op.variacion_probabilidad_pp+' pp')+' · Variación cuota justa: '+esc(op.variacion_cuota_justa==null?'línea base':(op.variacion_cuota_justa>0?'+':'')+op.variacion_cuota_justa)+'</li>').join('')+'</ul>':'<p class="muted">Línea base guardada; todavía no hay mercados calculados para mostrar. Se actualizarán en el siguiente ciclo.</p>';
+  const liveScore=scoreText(data.partido.marcador||e.score);
+  const liveMinute=data.partido.minuto||e.live_time||'—';
+  const captured=e.captured_at||'—';
+  const trigger=monitor.gol_nuevo?'GOL NUEVO DETECTADO':(monitor.status==='SIN_BASELINE_PREVIO'?'Estableciendo línea base':'Sin gol nuevo · monitoreando');
+  const triggerText=monitor.motivo||reaction.motivo||'Se conserva el último estado para compararlo con el siguiente ciclo.';
+  return '<article class="match-card '+(monitor.gol_nuevo?'good':'')+'" id="pattern-result-'+esc(e.id)+'"><h3>'+esc(name)+'</h3><div class="match-meta"><div><strong>Favorito:</strong> '+esc(e.favorite)+'</div><div><strong>Cuotas iniciales (1X2):</strong> '+esc(e.home_odds)+' / '+esc(e.draw_odds)+' / '+esc(e.away_odds)+'</div><div><strong>Marcador LIVE:</strong> '+esc(liveScore)+'</div><div><strong>Minuto/estado:</strong> '+esc(pretty(liveMinute))+'</div><div class="muted"><strong>Contexto capturado:</strong> '+esc(captured)+'</div></div><p><span class="pill">'+(running?'Simulando':'Última lectura')+'</span> <span class="pill">'+esc(trigger)+'</span></p><div class="result-title">Oportunidades y cuotas</div>'+opsHtml+'<div class="stage-mini"><strong>Detonante / último estado</strong>'+esc(triggerText)+'<br><span class="muted">Marcador anterior: '+esc(scoreText(monitor.marcador_anterior))+' · Marcador guardado: '+esc(scoreText(monitor.marcador_actual||data.partido.marcador))+'</span></div><div class="muted" style="margin-top:.6rem;font-size:.78rem">Última actualización: '+esc(new Date().toLocaleTimeString())+' · Próxima comparación en el siguiente ciclo.</div></article>';
  }
  function renderOpportunities(){
   opportunityCount.textContent=opportunityRecords.length+' mercados activos';
@@ -161,10 +167,10 @@
    }else{
     const resultById={};
     // Lanzar todas las simulaciones del ciclo en paralelo: ningún partido espera a que termine otro.
-    resultsEl.innerHTML=events.map(e=>'<article class="match-card" id="pattern-result-'+esc(e.id)+'"><h3>'+esc(e.name)+'</h3><p class="muted">Preparando simulación concurrente…</p></article>').join('');
+    resultsEl.innerHTML=events.map(e=>candidateCard(e)).join('');
     const jobs=events.map(async(event,idx)=>{
      const target=document.getElementById('pattern-result-'+String(event.id));
-     if(target)target.innerHTML='<h3>'+esc(event.name)+'</h3><p class="muted">Simulando en paralelo · '+(idx+1)+' de '+events.length+' partidos iniciados…</p>';
+     if(target)target.innerHTML='<h3>'+esc(event.name)+'</h3><div class="match-meta"><strong>Favorito:</strong> '+esc(event.favorite)+'<br><strong>Cuotas iniciales (1X2):</strong> '+esc(event.home_odds)+' / '+esc(event.draw_odds)+' / '+esc(event.away_odds)+'<br><strong>Marcador LIVE:</strong> '+esc(scoreText(event.score))+'<br><strong>Minuto/estado:</strong> '+esc(pretty(event.live_time))+'<br><strong>Contexto capturado:</strong> '+esc(event.captured_at||'—')+'</div><span class="pill">Simulando internamente · '+(idx+1)+' de '+events.length+'</span>';
      try{
       const url=simulationUrl.replace('/0/','/'+encodeURIComponent(event.id)+'/');
       const res=await fetch(url,{cache:'no-store'});
@@ -182,10 +188,10 @@
       });
       renderOpportunities();
       const current=document.getElementById('pattern-result-'+String(event.id));
-      if(current)current.outerHTML=resultCard(event,data,null).replace('<article class="match-card','<article id="pattern-result-'+esc(event.id)+'" class="match-card');
+      if(current)current.outerHTML=resultCard(event,data,null);
      }catch(err){
       const current=document.getElementById('pattern-result-'+String(event.id));
-      if(current)current.outerHTML=resultCard(event,null,err.message).replace('<article class="match-card','<article id="pattern-result-'+esc(event.id)+'" class="match-card');
+      if(current)current.outerHTML=resultCard(event,null,err.message);
      }
     });
     cycleLabel.textContent='Ciclo '+cycle+' · '+events.length+' partidos ejecutándose en paralelo';
