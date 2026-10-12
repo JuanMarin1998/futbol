@@ -3,6 +3,7 @@ from django.shortcuts import render
 from django.core.cache import cache
 from django.conf import settings
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 from django.db import transaction
 from django.db.models import Count, Sum
 import logging
@@ -19,6 +20,124 @@ from .live_engine.opportunity_levels import enrich
 from .models import LiveExperiment, LiveExperimentEntry, LiveExperimentDailyArchive, MatchBehaviorSnapshot, TeamBehaviorProfile
 
 logger = logging.getLogger(__name__)
+
+
+
+def calendario_ecuabet(request):
+    """Página de programación de Ecuabet limitada al día actual."""
+    return render(
+        request,
+        "estadisticas/calendario_ecuabet.html",
+        {"seccion": "calendario_ecuabet", "fecha_hoy": timezone.localdate()},
+    )
+
+
+def api_calendario_ecuabet(request):
+    """Obtiene los eventos de fútbol de Ecuabet y devuelve solo los de hoy."""
+    hoy = timezone.localdate()
+    cache_key = f"ecuabet_calendar_today_v1_{hoy.isoformat()}"
+    try:
+        payload = cache.get(cache_key)
+        if payload is None:
+            payload = EcuabetClient()._request(
+                "GET",
+                "GetEvents",
+                {"eventCount": 0, "sportId": 66, "champIds": 0},
+            )
+            cache.set(cache_key, payload, 60)
+
+        raw_events = payload.get("events", []) if isinstance(payload, dict) else []
+        champs = payload.get("champs", []) or payload.get("availableChamps", []) or []
+        champs_by_id = {}
+        for champ in champs:
+            if isinstance(champ, dict):
+                champ_id = champ.get("id") or champ.get("champId") or champ.get("LI") or champ.get("I")
+                if champ_id is not None:
+                    champs_by_id[str(champ_id)] = champ.get("name") or champ.get("champName") or champ.get("L") or champ.get("LE") or ""
+
+        def fecha_evento(event):
+            value = event.get("startDate") or event.get("start_date") or event.get("date")
+            if value is None:
+                return None, None
+            parsed = None
+            if isinstance(value, (int, float)):
+                try:
+                    # Ecuabet puede entregar marcas de tiempo en segundos o milisegundos.
+                    stamp = value / 1000 if value > 10**11 else value
+                    parsed = datetime.fromtimestamp(stamp, tz=timezone.get_current_timezone())
+                except (OverflowError, OSError, ValueError):
+                    parsed = None
+            elif isinstance(value, str):
+                parsed = parse_datetime(value)
+                if parsed is None:
+                    try:
+                        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+                    except (TypeError, ValueError):
+                        parsed = None
+            if parsed is not None:
+                if timezone.is_naive(parsed):
+                    parsed = timezone.make_aware(parsed, timezone.get_current_timezone())
+                local_dt = timezone.localtime(parsed)
+                return local_dt.date(), local_dt
+            if isinstance(value, str) and len(value) >= 10:
+                try:
+                    from datetime import date as date_type
+                    return date_type.fromisoformat(value[:10]), None
+                except ValueError:
+                    pass
+            return None, None
+
+        from datetime import datetime
+        events_today = []
+        without_date = 0
+        for event in raw_events:
+            if not isinstance(event, dict):
+                continue
+            event_date, event_dt = fecha_evento(event)
+            if event_date is None:
+                without_date += 1
+                continue
+            if event_date != hoy:
+                continue
+            champ_id = event.get("champId") or event.get("champ_id")
+            champ_name = (
+                event.get("champName")
+                or event.get("champ")
+                or champs_by_id.get(str(champ_id), "")
+            )
+            events_today.append({
+                "id": event.get("id") or event.get("eventId"),
+                "name": event.get("name") or event.get("eventName") or "Partido sin nombre",
+                "start_date": event.get("startDate") or event.get("start_date") or event.get("date"),
+                "time": timezone.localtime(event_dt).strftime("%H:%M") if event_dt else "",
+                "championship": champ_name.get("name", "") if isinstance(champ_name, dict) else str(champ_name or ""),
+                "status": event.get("status") or event.get("eventStatus") or "",
+            })
+
+        events_today.sort(key=lambda item: (item["time"] == "", item["time"], item["name"].lower()))
+        return JsonResponse({
+            "ok": True,
+            "date": hoy.isoformat(),
+            "date_label": hoy.strftime("%d/%m/%Y"),
+            "count": len(events_today),
+            "events": events_today,
+            "events_returned_by_ecuabet": len(raw_events),
+            "events_without_recognized_date": without_date,
+            "source": "Ecuabet GetEvents",
+            "updated_at": timezone.localtime().strftime("%H:%M:%S"),
+            "note": "" if events_today else "Ecuabet no devolvió eventos identificables para la fecha de hoy en esta consulta. Puede que GetEvents requiera consultar campeonatos por separado.",
+        })
+    except Exception as exc:
+        logger.exception("Error cargando calendario diario de Ecuabet")
+        return JsonResponse({
+            "ok": False,
+            "date": hoy.isoformat(),
+            "date_label": hoy.strftime("%d/%m/%Y"),
+            "count": 0,
+            "events": [],
+            "error": str(exc),
+            "source": "Ecuabet GetEvents",
+        }, status=502)
 
 
 def partidos_en_vivo(request):
