@@ -5,16 +5,16 @@ CTX = ContextoPrevio(local="España", visitante="Croacia", favorito="España",
     expectativa="España es favorita y se espera que genere más peligro.",
     escenarios_esperados=("victoria España", "España genera más peligro", "remontada posible"))
 
-def snap(minuto, gl=0, gv=0, tpl=3, tpv=1, tl=7, tv=4, rl=0, cuota=2.0):
+def snap(minuto, gl=0, gv=0, tpl=3, tpv=1, tl=7, tv=4, rl=0, cuota=2.0, apl=15, apv=12):
     return EstadoPartido(minuto=minuto, goles_local=gl, goles_visitante=gv, posesion_local=58,
         tiros_local=tl, tiros_visitante=tv, tiros_puerta_local=tpl, tiros_puerta_visitante=tpv,
-        ataques_peligrosos_local=15, ataques_peligrosos_visitante=12, rojas_local=rl,
+        ataques_peligrosos_local=apl, ataques_peligrosos_visitante=apv, rojas_local=rl,
         mercados_disponibles=("resultado_1x2",), cuotas={"resultado_1x2": cuota})
 
 class PatronOportunidadesTests(unittest.TestCase):
     def test_gol_aislado_no_significa_perdida_de_dominio(self):
         r = analizar_patron(CTX, snap(15, gv=1, tpl=5, tpv=1), snap(10, tpl=2, tpv=0))
-        self.assertIn("gol parece aislado", r.interpretacion_conjunta.lower())
+        self.assertIn("gol no demuestra por sí solo un cambio de dominio", r.interpretacion_conjunta.lower())
         self.assertFalse(r.puede_evaluar_valor)
 
     def test_cuota_sola_no_habilita_valor(self):
@@ -28,7 +28,7 @@ class PatronOportunidadesTests(unittest.TestCase):
         self.assertAlmostEqual(r.escenarios[0]["valor_esperado_estimado"], 0.1)
 
     def test_perdida_dominio_sin_gol_y_con_tendencia(self):
-        s10, s18, s25 = snap(10, tpl=3, tpv=0), snap(18, tpl=3, tpv=2, tl=6, tv=7), snap(25, tpl=3, tpv=5, tl=7, tv=12)
+        s10, s18, s25 = snap(10, tpl=3, tpv=0, apl=10, apv=15), snap(18, tpl=3, tpv=2, tl=6, tv=7, apl=11, apv=25), snap(25, tpl=3, tpv=5, tl=7, tv=12, apl=12, apv=35)
         r = analizar_patron(CTX, s25, s18, historial=[s10, s18])
         self.assertIn("cambio de control", r.interpretacion_conjunta.lower())
 
