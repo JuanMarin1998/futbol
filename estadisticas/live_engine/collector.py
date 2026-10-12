@@ -39,7 +39,15 @@ class LiveMatchCollector:
     def construir_automatico(self, ecuabet_event_id: int) -> LiveMatch:
         """Encuentra automáticamente el ID Flashscore y construye el LiveMatch."""
         ecuabet = self._obtener_ecuabet_evento(ecuabet_event_id)
-        mapping = self.mapper.mapear(ecuabet, self.flashscore)
+        try:
+            mapping = self.mapper.mapear(ecuabet, self.flashscore)
+        except MatchMappingError as exc:
+            logger.warning(
+                "No se pudo consultar/vincular Flashscore para Ecuabet %s; usando respaldo Ecuabet: %s",
+                ecuabet_event_id,
+                exc,
+            )
+            return self._construir_solo_ecuabet(ecuabet)
 
         if not mapping.get("matched"):
             # Respaldo seguro: si Flashscore no tiene una coincidencia fiable,
