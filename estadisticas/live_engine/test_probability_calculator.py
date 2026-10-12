@@ -46,6 +46,17 @@ class LiveProbabilityCalculatorTimeTests(unittest.TestCase):
         markets = {item["clave"]: item for item in result["mercados_probables"]}
         self.assertEqual(markets["btts_yes"]["estado_live"], "CERRADO_RESULTADO_DETERMINADO")
 
+    def test_red_card_changes_live_goal_context(self):
+        match = self.make_match(70, home_score=1, away_score=1)
+        match.performance = {
+            "home": {"red_cards": {"value": 1, "label": "Tarjetas rojas"}},
+            "away": {"red_cards": {"value": 0, "label": "Tarjetas rojas"}},
+        }
+        result = LiveProbabilityCalculator.calculate(
+            match, pre_match_context={"home_odds": 2.0, "draw_odds": 3.4, "away_odds": 3.5}
+        )
+        self.assertTrue(any("inferioridad numérica local" in item for item in result["estadisticas_utilizadas"]))
+
     def test_minute_97_does_not_force_draw_to_certain_x2(self):
         result = LiveProbabilityCalculator.calculate(
             self.make_match("97'", home_score=2, away_score=2),
