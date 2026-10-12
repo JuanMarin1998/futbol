@@ -50,8 +50,12 @@ def main():
     print("\n" + "=" * 96 + "\nE. Datos incompletos")
     print(json.dumps(resultado_a_dict(analizar_patron(ctx_incompleto, incompleto)), ensure_ascii=False, indent=2))
 
-    solo_cuota = estado(40, gl=1, cuotas={"resultado_1x2": 1.4}, mercados=("resultado_1x2",))
-    mostrar("F. Cuota sin probabilidad: no hay valor calculable", solo_cuota, s32)
+    previo_f = estado(30, gl=0, gv=0, tl=6, tv=5, tpl=2, tpv=1)
+    solo_cuota = estado(40, gl=1, gv=0, tl=8, tv=5, tpl=3, tpv=1, cuotas={"resultado_1x2": 1.4}, mercados=("resultado_1x2",))
+    mostrar("F. Cuota sin probabilidad: no hay valor calculable", solo_cuota, previo_f)
+
+    marcador_erroneo = estado(50, gl=0, gv=1, cuotas={"resultado_1x2": 1.8}, mercados=("resultado_1x2",))
+    mostrar("G. Marcador retrocede: bloquear y verificar dato", marcador_erroneo, solo_cuota)
 
 if __name__ == "__main__":
     main()
