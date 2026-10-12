@@ -90,7 +90,6 @@ def analizar_patron(contexto: ContextoPrevio, estado: EstadoPartido) -> Resultad
             f"{contexto.visitante} tiene {estado.rojas_visitante} tarjeta(s) roja(s)."
         )
 
-    # Solo se interpreta una diferencia si hay datos para ambos equipos.
     if estado.tiros_puerta_local is None or estado.tiros_puerta_visitante is None:
         faltantes.append("Tiros a puerta de ambos equipos")
     elif abs(estado.tiros_puerta_local - estado.tiros_puerta_visitante) >= 3:
@@ -134,18 +133,30 @@ def analizar_patron(contexto: ContextoPrevio, estado: EstadoPartido) -> Resultad
             "No se detecta todavía una contradicción fuerte con los datos recibidos."
         )
 
-    # La lista se genera según mercados que el proveedor indique disponibles.
-    escenarios = []
-    for mercado in estado.mercados_disponibles:
-        escenarios.append({
+    escenarios = [
+        {
             "mercado": mercado,
             "cuota_disponible": estado.cuotas.get(mercado),
             "probabilidad": None,
             "estado": "PENDIENTE_DE_CALCULO_POR_MOTOR",
-        })
+        }
+        for mercado in estado.mercados_disponibles
+    ]
 
-    # Solo se puede avanzar si hay datos mínimos de partido y al menos un mercado.
-    puede_calcular = estado.minuto >= 0 and bool(estado.mercados_disponibles)
+    # El marcador/minuto y al menos un mercado no bastan para estimar:
+    # exigimos tiros a puerta comparables de ambos equipos como señal mínima.
+    estadistica_minima_disponible = (
+        estado.tiros_puerta_local is not None
+        and estado.tiros_puerta_visitante is not None
+    )
+    puede_calcular = (
+        0 <= estado.minuto <= 130
+        and bool(estado.mercados_disponibles)
+        and estadistica_minima_disponible
+    )
+    if not estadistica_minima_disponible:
+        faltantes.append("Datos mínimos para cálculo: tiros a puerta de ambos equipos")
+
     return ResultadoPatron(
         partido=partido,
         etapa="ESCENARIOS_GENERADOS" if puede_calcular else "DATOS_INSUFICIENTES",
