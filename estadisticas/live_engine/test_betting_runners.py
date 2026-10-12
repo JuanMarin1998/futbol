@@ -143,3 +143,14 @@ class BettingRunnerLabTests(TestCase):
         self.assertFalse(BettingRunnerBet.objects.filter(
             runner__key="validador", ecuabet_event_id=555555
         ).exists())
+
+    def test_settlement_updates_pnl_and_is_idempotent(self):
+        BettingRunnerLab.process_payload(123456, self.payload)
+        settled = BettingRunnerLab.settle_event(123456, 4, 0, True)
+        self.assertEqual(settled, 6)
+        self.assertEqual(BettingRunnerBet.objects.filter(
+            ecuabet_event_id=123456, status="LOST"
+        ).count(), 6)
+        for runner in BettingRunner.objects.all():
+            self.assertEqual(BettingRunnerLab.lives(runner), Decimal("90.0000"))
+        self.assertEqual(BettingRunnerLab.settle_event(123456, 4, 0, True), 0)
