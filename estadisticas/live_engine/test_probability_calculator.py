@@ -29,6 +29,23 @@ class LiveProbabilityCalculatorTimeTests(unittest.TestCase):
         self.assertLess(result["probabilidades"]["home"], 1.0)
         self.assertLess(result["minutos_restantes_estimados"], 90)
 
+    def test_calculates_both_teams_to_score_and_goal_totals(self):
+        result = LiveProbabilityCalculator.calculate(
+            self.make_match(45, home_score=1, away_score=0),
+            pre_match_context={"home_odds": 1.65, "draw_odds": 3.8, "away_odds": 4.2},
+        )
+        markets = {item["clave"]: item for item in result["mercados_probables"]}
+        for key in ("btts_yes", "btts_no", "over_0_5", "under_0_5", "over_1_5", "under_1_5", "over_2_5", "under_2_5", "over_3_5", "under_3_5"):
+            self.assertIn(key, markets)
+            self.assertGreaterEqual(markets[key]["probabilidad"], 0)
+            self.assertLessEqual(markets[key]["probabilidad"], 100)
+        self.assertAlmostEqual(markets["over_1_5"]["probabilidad"] + markets["under_1_5"]["probabilidad"], 100.0, places=2)
+
+    def test_btts_yes_is_closed_once_both_teams_have_scored(self):
+        result = LiveProbabilityCalculator.calculate(self.make_match(70, home_score=1, away_score=1))
+        markets = {item["clave"]: item for item in result["mercados_probables"]}
+        self.assertEqual(markets["btts_yes"]["estado_live"], "CERRADO_RESULTADO_DETERMINADO")
+
     def test_minute_97_does_not_force_draw_to_certain_x2(self):
         result = LiveProbabilityCalculator.calculate(
             self.make_match("97'", home_score=2, away_score=2),
