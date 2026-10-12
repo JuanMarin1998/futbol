@@ -2051,8 +2051,10 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
             ("V.Pro", LiveOpportunityEngineVPro, "opportunities_vpro"),
             ("V.Pro 1.1", LiveOpportunityEngineVPro11, "opportunities_vpro11"),
         ]
-        # Probabilidad: modelo estadístico basado en minuto, marcador y estadísticas LIVE.
-        # No consulta motores de oportunidades ni utiliza cuotas en esta etapa.
+        # Probabilidad: referencia estadística independiente de las cuotas.
+        # Se calcula cuando hay un detonante confirmado; el primer snapshot solo fija la línea base.
+        probabilities = {}
+        elapsed = None
         if monitoring["detonante"]:
             elapsed = LiveOpportunityEngine._elapsed_minutes(current_minute, match.period)
             lambda_home, lambda_away = LiveOpportunityEngine._remaining_lambda(performance, elapsed)
@@ -2063,32 +2065,91 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
                 "Más de 2.5 goles": "over_2_5", "Menos de 2.5 goles": "under_2_5",
                 "Ambos marcan: sí": "btts_yes", "Ambos marcan: no": "btts_no",
             }
-            ranked_probabilities = [
-                {"mercado": label, "probabilidad": round(float(probabilities[key]) * 100, 2)}
-                for label, key in probability_keys.items() if key in probabilities
-            ]
+            total_current = home + away
+            ranked_probabilities = []
+            for label, key in probability_keys.items():
+                if key not in probabilities:
+                    continue
+                market_state = "ABIERTO"
+                if key.startswith("over_"):
+                    target = {"over_0_5": 1, "over_1_5": 2, "over_2_5": 3}[key]
+                    if total_current >= target:
+                        market_state = "YA_CUMPLIDO"
+                elif key == "under_2_5" and total_current >= 3:
+                    market_state = "YA_NO_CUMPLIBLE"
+                ranked_probabilities.append({
+                    "mercado": label,
+                    "clave": key,
+                    "probabilidad": round(float(probabilities[key]) * 100, 2),
+                    "estado_live": market_state,
+                })
             ranked_probabilities.sort(key=lambda item: item["probabilidad"], reverse=True)
+            open_probabilities = [item for item in ranked_probabilities if item["estado_live"] == "ABIERTO"]
+            best_open = max(open_probabilities, key=lambda item: item["probabilidad"]) if open_probabilities else None
             stage_probability = {
                 "status": "PROBABILIDAD_ESTADISTICA_ACTUALIZADA",
                 "mercados_probables": ranked_probabilities,
-                "mas_probable": ranked_probabilities[0] if ranked_probabilities else None,
+                "mas_probable": best_open,
                 "estadisticas_utilizadas": performance,
                 "minutos_restantes_estimados": round(max(0.0, 90.0 - elapsed), 1),
-                "motivo": "Probabilidad se ejecuta después de un gol nuevo; estima mercados con estadísticas LIVE, minuto y marcador, sin comparar cuotas.",
+                "criterio": "Las probabilidades de resultado final incorporan el marcador actual. Los mercados ya cumplidos o imposibles se identifican y no se presentan como oportunidades futuras.",
+                "motivo": "Referencia estadística LIVE calculada tras el detonante; todavía no incorpora cuotas.",
             }
         else:
             stage_probability = {
-                "status": "ESPERANDO_GOL",
+                "status": "ESPERANDO_DETONANTE",
                 "mercados_probables": [],
                 "mas_probable": None,
                 "estadisticas_utilizadas": {},
-                "motivo": "Probabilidad no se ejecuta: no se detectó un gol nuevo desde la observación anterior.",
+                "motivo": "La primera lectura fija la línea base. Acción y las etapas siguientes esperan un gol nuevo confirmado.",
             }
 
-        # Acción y las etapas posteriores solo avanzan cuando Monitoreo confirma un gol nuevo.
-        # Los cambios estadísticos sin gol se guardan como observación, pero no son detonante.
+        # Cálculo conserva las señales originales de cada motor y las contrasta
+        # con la probabilidad estadística del mismo mercado, sin alterar sus fórmulas.
         engine_results = []
         all_opportunities = []
+
+        def _normalizar_texto(value):
+            import unicodedata
+            return unicodedata.normalize("NFKD", str(value or "")).encode("ascii", "ignore").decode("ascii").lower().strip()
+
+        def _probability_for_opportunity(op):
+            market = str(op.get("mercado") or "")
+            selection = str(op.get("seleccion") or "")
+            line = op.get("line")
+            key = LiveOpportunityEngine._market_key(market, selection, line)
+            market_text = _normalizar_texto(market + " " + selection)
+            selected = _normalizar_texto(selection)
+            home_name = _normalizar_texto(match.home_team)
+            away_name = _normalizar_texto(match.away_team)
+            if key is None:
+                if any(token in market_text for token in ("ambos marcan", "both teams", "btts")):
+                    key = "btts_yes" if any(token in selected for token in ("si", "yes", "ambos")) else "btts_no"
+                elif any(token in market_text for token in ("doble oportunidad", "double chance")):
+                    if "1x" in selected: key = "dc_1x"
+                    elif "x2" in selected: key = "dc_x2"
+                    elif "12" in selected: key = "dc_12"
+                elif any(token in market_text for token in ("1x2", "resultado", "ganador", "match result")):
+                    if selected in ("x", "draw", "empate"): key = "draw"
+                    elif selected in ("1", "home", "local") or (home_name and home_name in selected): key = "home"
+                    elif selected in ("2", "away", "visitante") or (away_name and away_name in selected): key = "away"
+                elif any(token in market_text for token in ("total", "over", "under", "mas de", "menos de")):
+                    import re
+                    raw_line = str(line or "")
+                    found = re.search(r"(0[.,]5|1[.,]5|2[.,]5)", raw_line + " " + market_text)
+                    if found:
+                        threshold = found.group(1).replace(",", ".")
+                        is_over = any(token in selected for token in ("over", "mas", "+"))
+                        is_under = any(token in selected for token in ("under", "menos", "-"))
+                        if is_over: key = {"0.5": "over_0_5", "1.5": "over_1_5", "2.5": "over_2_5"}.get(threshold)
+                        elif is_under and threshold == "2.5": key = "under_2_5"
+            if key in ("dc_1x", "dc_12", "dc_x2"):
+                pair = {"dc_1x": ("home", "draw"), "dc_12": ("home", "away"), "dc_x2": ("draw", "away")}[key]
+                value = sum(float(probabilities.get(part, 0.0)) for part in pair) if probabilities else None
+            else:
+                value = probabilities.get(key) if probabilities and key else None
+            return key, value
+
         if monitoring["detonante"]:
             for label, engine, attr in engine_specs:
                 opportunities = getattr(match, attr, None)
@@ -2099,6 +2160,7 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
                     item = {
                         "mercado": op.get("market", ""),
                         "seleccion": op.get("selection", ""),
+                        "line": op.get("line"),
                         "cuota": op.get("price"),
                         "probabilidad_modelo": op.get("model_probability"),
                         "probabilidad_implicita": op.get("implied_probability"),
@@ -2106,43 +2168,83 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
                         "confianza": op.get("confidence"),
                         "senal": op.get("signal", ""),
                     }
+                    key, stat_probability = _probability_for_opportunity(item)
+                    item["mercado_probabilidad_ref"] = key
+                    item["estado_mercado_live"] = "ABIERTO"
+                    if key and key.startswith("over_"):
+                        threshold = {"over_0_5": 1, "over_1_5": 2, "over_2_5": 3}.get(key)
+                        if threshold is not None and home + away >= threshold:
+                            item["estado_mercado_live"] = "YA_CUMPLIDO"
+                    elif key == "under_2_5" and home + away >= 3:
+                        item["estado_mercado_live"] = "YA_NO_CUMPLIBLE"
+                    if stat_probability is not None:
+                        item["probabilidad_estadistica_pct"] = round(float(stat_probability) * 100, 2)
+                        try:
+                            raw_model = float(item["probabilidad_modelo"])
+                            model_pct = raw_model * 100 if 0 <= raw_model <= 1 else raw_model
+                            item["probabilidad_motor_pct"] = round(model_pct, 2)
+                            difference = model_pct - item["probabilidad_estadistica_pct"]
+                            item["diferencia_motor_vs_estadistica_pp"] = round(difference, 2)
+                            item["consenso_estadistico"] = (
+                                "COINCIDE" if abs(difference) <= 10 else
+                                "DISCREPANCIA_MODERADA" if abs(difference) <= 20 else
+                                "DISCREPANCIA_ALTA"
+                            )
+                        except (TypeError, ValueError):
+                            item["consenso_estadistico"] = "SIN_PROBABILIDAD_DEL_MOTOR"
+                        try:
+                            price = float(item["cuota"])
+                            if price > 1 and item["estado_mercado_live"] == "ABIERTO":
+                                item["edge_estadistico_pct"] = round((float(stat_probability) - 1.0 / price) * 100, 2)
+                            else:
+                                item["edge_estadistico_pct"] = None
+                        except (TypeError, ValueError):
+                            item["edge_estadistico_pct"] = None
+                    else:
+                        item["probabilidad_estadistica_pct"] = None
+                        item["probabilidad_motor_pct"] = None
+                        item["diferencia_motor_vs_estadistica_pp"] = None
+                        item["edge_estadistico_pct"] = None
+                        item["consenso_estadistico"] = "SIN_REFERENCIA_COMPARABLE"
                     clean.append(item)
                     all_opportunities.append({"motor": label, **item})
                 engine_results.append({"motor": label, "senales": len(opportunities or []), "oportunidades": clean})
+
         stage_calculation = {
-            "status": "CALCULO_COMPLETADO" if monitoring["detonante"] else "ESPERANDO_CAMBIO_LIVE",
+            "status": "CALCULO_COMPLETADO" if monitoring["detonante"] else "ESPERANDO_DETONANTE",
             "motores": engine_results,
             "oportunidades": all_opportunities[:100],
             "motores_con_senales": sum(1 for item in engine_results if item["senales"]),
-            "motivo": "Solo compara señales/probabilidades con cuotas después de detectar un gol nuevo; en otro caso espera.",
+            "coinciden_con_probabilidad": sum(1 for item in all_opportunities if item.get("consenso_estadistico") == "COINCIDE"),
+            "discrepancias_altas": sum(1 for item in all_opportunities if item.get("consenso_estadistico") == "DISCREPANCIA_ALTA"),
+            "motivo": "Cada señal mantiene la salida original del motor y añade contraste estadístico, probabilidad implícita, edge independiente y estado LIVE del mercado.",
         }
-        if not monitoring["detonante"]:
-            all_opportunities = []
-        positive = [x for x in all_opportunities if isinstance(x.get("edge_pct"), (int, float)) and x["edge_pct"] > 0]
+        positive = [
+            item for item in all_opportunities
+            if item.get("estado_mercado_live") == "ABIERTO"
+            and isinstance(item.get("edge_estadistico_pct"), (int, float))
+            and item["edge_estadistico_pct"] > 0
+            and item.get("consenso_estadistico") != "DISCREPANCIA_ALTA"
+        ]
         if not monitoring["detonante"]:
             stage_reaction = {
                 "status": "PENDIENTE_DE_CALCULO",
                 "decision": "SEGUIR_MONITOREANDO",
-                "motivo": "Reacción queda preparada y espera a que Monitoreo active Acción; no recomienda una decisión antes de completar la cadena.",
-            }
-        elif not all_opportunities:
-            stage_reaction = {
-                "status": "SIN_SENALES_DE_MOTORES",
-                "decision": "SEGUIR_MONITOREANDO",
-                "motivo": "Ningún motor devolvió oportunidades compatibles en este snapshot. No se crea una apuesta.",
+                "motivo": "Reacción espera el detonante confirmado; todavía no emite una recomendación.",
             }
         elif positive:
-            best = max(positive, key=lambda x: x.get("edge_pct", 0))
+            best = max(positive, key=lambda item: (item.get("edge_estadistico_pct", 0), item.get("probabilidad_estadistica_pct", 0)))
             stage_reaction = {
-                "status": "SENALES_PARA_REVISION",
-                "decision": "REVISAR_SENAL_SIN_APUESTA",
-                "motivo": f"{len(positive)} señales con edge positivo; la mayor reportada es {best['motor']} · {best['mercado']} · {best['seleccion']} (edge {best['edge_pct']}%). Esto no ejecuta una apuesta.",
+                "status": "SENALES_CON_RESPALDO_ESTADISTICO",
+                "decision": "REVISAR_SENAL_CON_RESPALDO",
+                "motivo": f"{len(positive)} señales tienen edge estadístico positivo y no presentan discrepancia alta con la referencia. La mejor por edge estadístico: {best['motor']} · {best['mercado']} · {best['seleccion']} (probabilidad estadística {best.get('probabilidad_estadistica_pct', '—')}%, edge estadístico {best.get('edge_estadistico_pct', '—')}%). No se ejecuta una apuesta.",
+                "senal_destacada": best,
             }
         else:
             stage_reaction = {
-                "status": "SIN_EDGE_POSITIVO",
-                "decision": "DESCARTAR_POR_AHORA",
-                "motivo": "Los motores no reportaron edge positivo en las oportunidades disponibles.",
+                "status": "SIN_CONSENSO_ESTADISTICO_SUFICIENTE",
+                "decision": "SEGUIR_MONITOREANDO",
+                "motivo": "No hay señales abiertas con edge estadístico positivo y contraste suficiente. Las señales de edge del motor, por sí solas, no bastan para recomendar una acción.",
             }
 
         # Guardar cada observación LIVE para que la siguiente pasada compare marcador/minuto.
