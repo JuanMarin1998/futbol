@@ -2076,7 +2076,7 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
                     continue
                 market_state = "ABIERTO"
                 if key.startswith("over_"):
-                    target = {"over_0_5": 1, "over_1_5": 2, "over_2_5": 3}[key]
+                    target = {"over_0_5": 1, "over_1_5": 2, "over_2_5": 3, "over_3_5": 4}[key]
                     if total_current >= target:
                         market_state = "YA_CUMPLIDO"
                 elif key.startswith("under_"):
@@ -2179,7 +2179,7 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
                     item["mercado_probabilidad_ref"] = key
                     item["estado_mercado_live"] = "ABIERTO"
                     if key and key.startswith("over_"):
-                        threshold = {"over_0_5": 1, "over_1_5": 2, "over_2_5": 3}.get(key)
+                        threshold = {"over_0_5": 1, "over_1_5": 2, "over_2_5": 3, "over_3_5": 4}.get(key)
                         if threshold is not None and home + away >= threshold:
                             item["estado_mercado_live"] = "YA_CUMPLIDO"
                     elif key and key.startswith("under_"):
