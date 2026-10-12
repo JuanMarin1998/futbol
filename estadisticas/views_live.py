@@ -2160,6 +2160,10 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
                             mapped_prices["away"] = (price, live_market.get("name"), selection.get("name"))
                         elif label in {"x", "draw", "empate", "tie", "the draw"}:
                             mapped_prices["draw"] = (price, live_market.get("name"), selection.get("name"))
+                        elif label and _odd_label(match.home_team) in label:
+                            mapped_prices["home"] = (price, live_market.get("name"), selection.get("name"))
+                        elif label and _odd_label(match.away_team) in label:
+                            mapped_prices["away"] = (price, live_market.get("name"), selection.get("name"))
 
                 # Mercados compatibles adicionales, siempre por etiquetas explícitas.
                 is_double_chance = "double chance" in market_name or "doble oportunidad" in market_name
