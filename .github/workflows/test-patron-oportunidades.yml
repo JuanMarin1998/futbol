@@ -1,0 +1,28 @@
+name: Validar Patrón de Oportunidades
+
+on:
+  push:
+    branches:
+      - experimento/patron-oportunidades
+  pull_request:
+    branches:
+      - experimento/patron-oportunidades
+    paths:
+      - "experimentos/patron_oportunidades/**"
+      - ".github/workflows/test-patron-oportunidades.yml"
+
+jobs:
+  validar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v4
+      - name: Preparar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Ejecutar pruebas automáticas
+        working-directory: experimentos/patron_oportunidades
+        run: python -m unittest -q
+      - name: Simular escenarios y mostrar informe
+        run: python experimentos/patron_oportunidades/simular_patron.py
