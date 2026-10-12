@@ -142,7 +142,7 @@ def _run_cycle():
         events = candidate_payload.get("events") or []
         outcomes = []
         live_ids = set()
-        for event in events[:60]:
+        for event in events:
             event_id = event.get("id")
             if not event_id:
                 continue
@@ -166,7 +166,7 @@ def _run_cycle():
         from .live_engine.collector import LiveMatchCollector
         open_event_ids = list(
             BettingRunnerBet.objects.filter(status="OPEN")
-            .values_list("ecuabet_event_id", flat=True).distinct()[:100]
+            .values_list("ecuabet_event_id", flat=True).distinct()
         )
         for event_id in open_event_ids:
             if int(event_id) in live_ids:
@@ -247,7 +247,7 @@ def api_corredores_liquidar(request):
     """Intenta liquidar apuestas abiertas usando el marcador final del proveedor."""
     from .live_engine.collector import LiveMatchCollector
     checked, settled, errors = 0, 0, []
-    event_ids = list(BettingRunnerBet.objects.filter(status="OPEN").values_list("ecuabet_event_id", flat=True).distinct()[:100])
+    event_ids = list(BettingRunnerBet.objects.filter(status="OPEN").values_list("ecuabet_event_id", flat=True).distinct())
     for event_id in event_ids:
         checked += 1
         try:
