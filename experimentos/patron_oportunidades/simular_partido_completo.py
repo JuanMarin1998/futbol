@@ -83,9 +83,14 @@ def ejecutar() -> list:
     anterior = None
     historial = []
     resultados = []
+    probabilidades_por_minuto = {
+        15: {"resultado_1x2": 0.48, "total_goles": 0.57, "proximo_gol": 0.44},
+        28: {"resultado_1x2": 0.42, "total_goles": 0.65, "proximo_gol": 0.49},
+        40: {"resultado_1x2": 0.31, "total_goles": 0.59, "proximo_gol": 0.55},
+    }
     for titulo, actual in secuencia:
-        # Probabilidad inventada solo para comprobar la tubería de cálculo.
-        probs_ficticias = {"resultado_1x2": 0.48, "total_goles": 0.57, "proximo_gol": 0.44}
+        # Valores inventados distintos por escenario: no proceden de un motor real.
+        probs_ficticias = probabilidades_por_minuto[actual.minuto]
         resultado = analizar_patron(previo, actual, estado_anterior=anterior,
                                     historial=historial, probabilidades_motor=probs_ficticias)
         print("\n" + "=" * 76)
@@ -96,7 +101,7 @@ def ejecutar() -> list:
               (", ".join(resultado.expectativas_cuestionadas) or "ninguna por ahora"))
         print("Mercados a reevaluar: " + ", ".join(x["mercado"] for x in resultado.escenarios_a_reevaluar))
         print(f"Puede evaluar escenarios: {'sí' if resultado.puede_pasar_a_calculo else 'no, faltan datos o hay anomalías'}")
-        print("Reacción: NO EMITIR APUESTA AUTOMÁTICA; las probabilidades son ficticias y solo prueban el flujo.")
+        print("Reacción: NO EMITIR APUESTA AUTOMÁTICA; probabilidades y cuotas son ficticias, no predicciones de un motor.")
         for escenario in resultado.escenarios:
             ev = escenario["valor_esperado_estimado"]
             ev_txt = f"{ev:+.1%}" if ev is not None else "no calculable"
