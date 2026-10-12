@@ -1,0 +1,94 @@
+{% extends "estadisticas/base.html" %}
+{% block titulo %}Contexto previo | Fútbol Stats{% endblock %}
+{% block contenido %}
+<style>
+.ctx-head{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}
+.ctx-sub{color:#94a3b8;font-size:.92rem;margin:.4rem 0 1rem}
+.ctx-btn{border:1px solid #0e7490;background:#0e7490;color:#fff;padding:.75rem 1rem;border-radius:8px;font-weight:700;cursor:pointer}
+.ctx-btn:disabled{opacity:.6;cursor:wait}
+.ctx-meta{display:flex;gap:.6rem;flex-wrap:wrap;margin:1rem 0}
+.ctx-pill{border:1px solid #334155;background:#111c30;border-radius:999px;padding:.4rem .75rem;color:#cbd5e1;font-size:.84rem}
+.ctx-list{display:grid;gap:.8rem}
+.ctx-card{background:#111c30;border:1px solid #334155;border-radius:10px;padding:1rem}
+.ctx-title{font-weight:750;font-size:1.05rem;margin-bottom:.35rem}
+.ctx-muted{color:#94a3b8;font-size:.85rem}
+.ctx-odds{display:flex;gap:.6rem;flex-wrap:wrap;margin:.85rem 0}
+.ctx-odd{background:#1e293b;border:1px solid #334155;border-radius:8px;padding:.55rem .7rem;font-size:.9rem}
+.ctx-status{font-weight:700;margin:.5rem 0}
+.ctx-good{color:#86efac}.ctx-warn{color:#fcd34d}
+.ctx-empty{border:1px dashed #475569;border-radius:10px;padding:1.5rem;text-align:center;color:#cbd5e1}
+.ctx-note{background:#172554;border:1px solid #1d4ed8;border-radius:8px;padding:.85rem;color:#dbeafe;font-size:.9rem;margin-top:1rem}
+@media(max-width:560px){.ctx-card{padding:.8rem}}
+</style>
+<section class="tarjeta">
+  <div class="ctx-head">
+    <div>
+      <h2 style="margin:0">🧭 Contexto previo de partidos</h2>
+      <p class="ctx-sub">Genera una ficha para cada partido del calendario de Ecuabet de hoy · {{ fecha_hoy|date:"d/m/Y" }}</p>
+    </div>
+    <button id="ctx-generate" class="ctx-btn" type="button">🧭 Generar contexto</button>
+  </div>
+  <div class="ctx-meta">
+    <span class="ctx-pill">Partidos analizados: <strong id="ctx-count">—</strong></span>
+    <span class="ctx-pill">Última generación: <strong id="ctx-time">—</strong></span>
+    <span class="ctx-pill">Regla favorito: cuota de victoria entre 1.05 y 2.00</span>
+  </div>
+  <div id="ctx-message" class="ctx-sub">Pulsa “Generar contexto” para analizar los partidos de hoy.</div>
+  <div id="ctx-list" class="ctx-list"><div class="ctx-empty">Todavía no se ha generado el contexto de hoy.</div></div>
+  <div class="ctx-note">Este contexto inicial utiliza solo localía y cuotas 1X2 de Ecuabet. Una cuota entre 1.05 y 2.00 identifica al favorito según la regla definida; una cuota superior a 2.00 no califica. Esto no garantiza quién ganará. Si no se pueden identificar las cuotas correctamente, el sistema lo deja pendiente en vez de inventar un favorito.</div>
+</section>
+<script>
+(() => {
+  const button = document.getElementById("ctx-generate");
+  const list = document.getElementById("ctx-list");
+  const count = document.getElementById("ctx-count");
+  const time = document.getElementById("ctx-time");
+  const message = document.getElementById("ctx-message");
+  const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const odd = value => value == null ? "No disponible" : Number(value).toFixed(2);
+  function render(data) {
+    count.textContent = data.count ?? 0;
+    time.textContent = data.generated_at || "—";
+    message.textContent = data.note || "";
+    if (!data.contexts || !data.contexts.length) {
+      list.innerHTML = '<div class="ctx-empty">Ecuabet no devolvió partidos de hoy que se puedan analizar.</div>';
+      return;
+    }
+    list.innerHTML = data.contexts.map(item => {
+      const hasOdds = item.home_odds != null && item.away_odds != null;
+      const statusClass = hasOdds && item.favorite ? "ctx-good" : "ctx-warn";
+      return '<article class="ctx-card">' +
+        '<div class="ctx-title">' + escapeHtml(item.home) + ' <span class="ctx-muted">vs</span> ' + escapeHtml(item.away) + '</div>' +
+        '<div class="ctx-muted">' + escapeHtml(item.time || "Hora no disponible") + ' · ' + escapeHtml(item.championship || "Competición no identificada") + ' · ID ' + escapeHtml(item.id ?? "—") + '</div>' +
+        '<div class="ctx-odds">' +
+          '<span class="ctx-odd">Local: <strong>' + escapeHtml(odd(item.home_odds)) + '</strong></span>' +
+          '<span class="ctx-odd">Empate: <strong>' + escapeHtml(odd(item.draw_odds)) + '</strong></span>' +
+          '<span class="ctx-odd">Visitante: <strong>' + escapeHtml(odd(item.away_odds)) + '</strong></span>' +
+        '</div>' +
+        '<div class="ctx-status ' + statusClass + '">' + escapeHtml(item.status || "Contexto pendiente") + '</div>' +
+        '<div>' + escapeHtml(item.explanation || "") + '</div>' +
+        '<div class="ctx-muted" style="margin-top:.65rem">Localía: ' + escapeHtml(item.home) + ' juega en casa · Fuente: ' + escapeHtml(item.source || "Ecuabet") + ' · Capturado: ' + escapeHtml(item.captured_at || "—") + '</div>' +
+      '</article>';
+    }).join("");
+  }
+  button.addEventListener("click", async () => {
+    button.disabled = true;
+    button.textContent = "Generando...";
+    message.textContent = "Consultando el calendario y las cuotas 1X2 de Ecuabet...";
+    list.innerHTML = '<div class="ctx-empty">Analizando partidos...</div>';
+    try {
+      const response = await fetch("{% url 'estadisticas:api_generar_contexto_ecuabet' %}?force=1", {headers: {"Accept":"application/json"}, cache:"no-store"});
+      const data = await response.json();
+      if (!response.ok || !data.ok) throw new Error(data.error || "No se pudo generar el contexto.");
+      render(data);
+    } catch (e) {
+      message.textContent = "No se pudo generar el contexto.";
+      list.innerHTML = '<div class="ctx-empty">' + escapeHtml(e.message || "Error de conexión") + '</div>';
+    } finally {
+      button.disabled = false;
+      button.textContent = "🧭 Generar contexto";
+    }
+  });
+})();
+</script>
+{% endblock %}
