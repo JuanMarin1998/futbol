@@ -24,7 +24,7 @@
   <div class="ctx-head">
     <div>
       <h2 style="margin:0">🧭 Contexto previo de partidos</h2>
-      <p class="ctx-sub">Genera una ficha para cada partido del calendario de Ecuabet de hoy · {{ fecha_hoy|date:"d/m/Y" }}</p>
+      <p class="ctx-sub">Consulta las fichas previas guardadas por partido · {{ fecha_hoy|date:"d/m/Y" }}</p>
     </div>
     <button id="ctx-generate" class="ctx-btn" type="button">🧭 Generar contexto</button>
   </div>
@@ -33,8 +33,8 @@
     <span class="ctx-pill">Última generación: <strong id="ctx-time">—</strong></span>
     <span class="ctx-pill">Regla favorito: cuota de victoria entre 1.05 y 2.00</span>
   </div>
-  <div id="ctx-message" class="ctx-sub">Pulsa “Generar contexto” para analizar los partidos de hoy.</div>
-  <div id="ctx-list" class="ctx-list"><div class="ctx-empty">Todavía no se ha generado el contexto de hoy.</div></div>
+  <div id="ctx-message" class="ctx-sub">Cargando fichas previas guardadas...</div>
+  <div id="ctx-list" class="ctx-list"><div class="ctx-empty">Consultando la base de datos...</div></div>
   <div class="ctx-note">Este contexto inicial utiliza solo localía y cuotas 1X2 de Ecuabet. Una cuota entre 1.05 y 2.00 identifica al favorito según la regla definida; una cuota superior a 2.00 no califica. Esto no garantiza quién ganará. Si no se pueden identificar las cuotas correctamente, el sistema lo deja pendiente en vez de inventar un favorito.</div>
 </section>
 <script>
@@ -50,11 +50,13 @@
     count.textContent = data.count ?? 0;
     time.textContent = data.generated_at || "—";
     message.textContent = data.note || "";
-    if (!data.contexts || !data.contexts.length) {
-      list.innerHTML = '<div class="ctx-empty">Ecuabet no devolvió partidos de hoy que se puedan analizar.</div>';
+    const requestedId = new URLSearchParams(window.location.search).get("event_id");
+    const visibleContexts = requestedId ? (data.contexts || []).filter(item => String(item.id) === String(requestedId)) : (data.contexts || []);
+    if (!visibleContexts.length) {
+      list.innerHTML = '<div class="ctx-empty">' + (requestedId ? 'Este partido todavía no tiene una ficha previa guardada. Pulsa “Generar contexto” para intentar crearla.' : 'Ecuabet no devolvió partidos de hoy que se puedan analizar.') + '</div>';
       return;
     }
-    list.innerHTML = data.contexts.map(item => {
+    list.innerHTML = visibleContexts.map(item => {
       const hasOdds = item.home_odds != null && item.away_odds != null;
       const statusClass = hasOdds && item.favorite ? "ctx-good" : "ctx-warn";
       return '<article class="ctx-card">' +
@@ -71,13 +73,18 @@
       '</article>';
     }).join("");
   }
-  button.addEventListener("click", async () => {
+  async function loadContext(force = false) {
     button.disabled = true;
     button.textContent = "Generando...";
     message.textContent = "Consultando el calendario y las cuotas 1X2 de Ecuabet...";
     list.innerHTML = '<div class="ctx-empty">Analizando partidos...</div>';
     try {
-      const response = await fetch("{% url 'estadisticas:api_generar_contexto_ecuabet' %}?force=1", {headers: {"Accept":"application/json"}, cache:"no-store"});
+      const params = new URLSearchParams();
+      if (force) params.set("force", "1");
+      const requestedId = new URLSearchParams(window.location.search).get("event_id");
+      if (requestedId) params.set("event_id", requestedId);
+      const url = "{% url 'estadisticas:api_generar_contexto_ecuabet' %}" + (params.toString() ? "?" + params.toString() : "");
+      const response = await fetch(url, {headers: {"Accept":"application/json"}, cache:"no-store"});
       const data = await response.json();
       if (!response.ok || !data.ok) throw new Error(data.error || "No se pudo generar el contexto.");
       render(data);
@@ -88,7 +95,9 @@
       button.disabled = false;
       button.textContent = "🧭 Generar contexto";
     }
-  });
+  }
+  button.addEventListener("click", () => loadContext(true));
+  loadContext(false);
 })();
 </script>
 {% endblock %}
