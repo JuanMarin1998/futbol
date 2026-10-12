@@ -82,24 +82,27 @@
     resultsEl.innerHTML='<p class="muted">No hay partidos elegibles en este ciclo. Se volverán a buscar mientras la simulación permanezca activa.</p>';
    }else{
     const resultById={};
-    resultsEl.innerHTML=events.map(e=>'<article class="match-card" id="pattern-result-'+esc(e.id)+'"><h3>'+esc(e.name)+'</h3><p class="muted">En cola para simular…</p></article>').join('');
-    for(let idx=0;idx<events.length;idx++){
-     if(!running)break;
-     const event=events[idx];
+    // Lanzar todas las simulaciones del ciclo en paralelo: ningún partido espera a que termine otro.
+    resultsEl.innerHTML=events.map(e=>'<article class="match-card" id="pattern-result-'+esc(e.id)+'"><h3>'+esc(e.name)+'</h3><p class="muted">Preparando simulación concurrente…</p></article>').join('');
+    const jobs=events.map(async(event,idx)=>{
      const target=document.getElementById('pattern-result-'+String(event.id));
-     if(target)target.innerHTML='<h3>'+esc(event.name)+'</h3><p class="muted">Simulando '+(idx+1)+' de '+events.length+'…</p>';
+     if(target)target.innerHTML='<h3>'+esc(event.name)+'</h3><p class="muted">Simulando en paralelo · '+(idx+1)+' de '+events.length+' partidos iniciados…</p>';
      try{
       const url=simulationUrl.replace('/0/','/'+encodeURIComponent(event.id)+'/');
       const res=await fetch(url,{cache:'no-store'});
       const data=await res.json();
       if(!res.ok||!data.ok)throw new Error(data.error||'Falló la simulación.');
       resultById[String(event.id)]={event,data};
-      if(target)target.outerHTML=resultCard(event,data,null).replace('<article class="match-card','<article id="pattern-result-'+esc(event.id)+'" class="match-card');
+      const current=document.getElementById('pattern-result-'+String(event.id));
+      if(current)current.outerHTML=resultCard(event,data,null).replace('<article class="match-card','<article id="pattern-result-'+esc(event.id)+'" class="match-card');
      }catch(err){
-      if(target)target.outerHTML=resultCard(event,null,err.message).replace('<article class="match-card','<article id="pattern-result-'+esc(event.id)+'" class="match-card');
+      const current=document.getElementById('pattern-result-'+String(event.id));
+      if(current)current.outerHTML=resultCard(event,null,err.message).replace('<article class="match-card','<article id="pattern-result-'+esc(event.id)+'" class="match-card');
      }
-    }
-    cycleLabel.textContent='Ciclo '+cycle+' · '+events.length+' partidos procesados';
+    });
+    cycleLabel.textContent='Ciclo '+cycle+' · '+events.length+' partidos ejecutándose en paralelo';
+    await Promise.all(jobs);
+    cycleLabel.textContent='Ciclo '+cycle+' · '+events.length+' partidos procesados en paralelo';
    }
   }catch(err){listStatus.textContent='Error del ciclo: '+err.message;}
   finally{
