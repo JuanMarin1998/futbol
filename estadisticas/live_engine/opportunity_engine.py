@@ -142,9 +142,13 @@ class LiveOpportunityEngine:
             "draw": draw,
             "away": away_win,
             "over_0_5": over_05,
+            "under_0_5": 1.0 - over_05,
             "over_1_5": over_15,
+            "under_1_5": 1.0 - over_15,
             "over_2_5": over_25,
             "under_2_5": under_25,
+            "over_3_5": probability_over(4),
+            "under_3_5": 1.0 - probability_over(4),
             "btts_yes": btts,
             "btts_no": 1.0 - btts,
             "remaining_goals": lam_total,
@@ -176,13 +180,15 @@ class LiveOpportunityEngine:
             if not line_match:
                 return None
             line_value = float(line_match.group(1).replace(",", "."))
-            if abs(line_value - 2.5) > 0.01:
+            line_key = next((value for value in (0.5, 1.5, 2.5, 3.5) if abs(line_value - value) <= 0.01), None)
+            if line_key is None:
                 return None
+            suffix = str(line_key).replace(".", "_")
             sel = selection_name.lower()
             if any(x in sel for x in ("over", "más", "mas", "+")):
-                return "over_2_5"
+                return f"over_{suffix}"
             if any(x in sel for x in ("under", "menos", "-")):
-                return "under_2_5"
+                return f"under_{suffix}"
         return None
 
     @classmethod
