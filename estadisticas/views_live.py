@@ -201,6 +201,59 @@ def api_generar_contexto_ecuabet(request):
                     "note": "Contexto previo persistente. Las cuotas originales se conservan y no se sobrescriben al sincronizar el calendario.",
                 })
 
+        # Migrar al almacenamiento persistente el contexto que ya estaba en caché,
+        # conservando las cuotas originales en lugar de recalcularlas al primer acceso.
+        cached_result = cache.get(cache_key)
+        if cached_result and cached_result.get("contexts"):
+            from datetime import datetime, time as time_type
+            migrated = []
+            for item in cached_result.get("contexts", []):
+                event_id = item.get("id")
+                if not str(event_id or "").isdigit():
+                    continue
+                kickoff_value = None
+                time_value = item.get("time")
+                if time_value:
+                    try:
+                        kickoff_value = timezone.make_aware(
+                            datetime.combine(hoy, time_type.fromisoformat(time_value)),
+                            timezone.get_current_timezone(),
+                        )
+                    except (TypeError, ValueError):
+                        kickoff_value = None
+                captured_value = timezone.now()
+                try:
+                    if item.get("captured_at"):
+                        captured_value = timezone.make_aware(
+                            datetime.combine(hoy, time_type.fromisoformat(item["captured_at"])),
+                            timezone.get_current_timezone(),
+                        )
+                except (TypeError, ValueError):
+                    pass
+                saved, created = EcuabetPreMatchContext.objects.get_or_create(
+                    ecuabet_event_id=int(event_id),
+                    defaults={
+                        "match_name": item.get("name") or "Partido sin nombre",
+                        "home_team": item.get("home") or "",
+                        "away_team": item.get("away") or "",
+                        "championship": item.get("championship") or "",
+                        "match_date": hoy, "kickoff": kickoff_value,
+                        "home_odds": item.get("home_odds"), "draw_odds": item.get("draw_odds"),
+                        "away_odds": item.get("away_odds"), "favorite": item.get("favorite") or "",
+                        "status": item.get("status") or "", "explanation": item.get("explanation") or "",
+                        "source": item.get("source") or "Ecuabet · mercado 1X2",
+                        "captured_at": captured_value, "raw_context": item,
+                    },
+                )
+                migrated.append(_contexto_guardado_json(saved))
+            if migrated:
+                cached_result = dict(cached_result)
+                cached_result["contexts"] = migrated
+                cached_result["count"] = len(migrated)
+                cached_result["source"] = "Contexto anterior recuperado y guardado"
+                cached_result["note"] = "Se recuperó la ficha previa existente y se guardó sin recalcular ni sobrescribir las cuotas iniciales."
+                return JsonResponse(cached_result)
+
         client = EcuabetClient()
         payload = client._request(
             "GET", "GetEvents",
