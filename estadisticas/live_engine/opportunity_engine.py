@@ -97,26 +97,30 @@ class LiveOpportunityEngine:
 
     @classmethod
     def _probabilities(cls, home_goals: int, away_goals: int, lh: float, la: float) -> Dict[str, float]:
+        """Estima probabilidades finales teniendo en cuenta el marcador LIVE actual."""
         max_goals = 8
         home_dist = [cls._poisson_pmf(i, lh) for i in range(max_goals + 1)]
         away_dist = [cls._poisson_pmf(i, la) for i in range(max_goals + 1)]
 
+        current_home = max(0, int(home_goals or 0))
+        current_away = max(0, int(away_goals or 0))
         home_win = draw = away_win = 0.0
-        for i, hp in enumerate(home_dist):
-            for j, ap in enumerate(away_dist):
-                if i > j:
-                    home_win += hp * ap
-                elif i == j:
-                    draw += hp * ap
+        for future_home, hp in enumerate(home_dist):
+            for future_away, ap in enumerate(away_dist):
+                probability = hp * ap
+                final_home = current_home + future_home
+                final_away = current_away + future_away
+                if final_home > final_away:
+                    home_win += probability
+                elif final_home == final_away:
+                    draw += probability
                 else:
-                    away_win += hp * ap
+                    away_win += probability
 
-        total_current = max(0, int(home_goals)) + max(0, int(away_goals))
+        total_current = current_home + current_away
         lam_total = max(0.0, lh) + max(0.0, la)
 
-        # Una línea de goles que ya se ha superado en el marcador tiene
-        # probabilidad 1.0; no debe seguir dependiendo de los goles futuros.
-        # Si aún falta superar la línea, calculamos la cola Poisson necesaria.
+        # Las líneas ya superadas son eventos cumplidos, no pronósticos futuros.
         def probability_over(target_total: int) -> float:
             if total_current >= target_total:
                 return 1.0
@@ -128,20 +132,25 @@ class LiveOpportunityEngine:
         over_25 = probability_over(3)
         under_25 = 1.0 - over_25
 
-        home_scores = 1 - cls._poisson_cdf(0, lh)
-        away_scores = 1 - cls._poisson_cdf(0, la)
-        btts = home_scores * away_scores
+        # Si un equipo ya anotó, su condición de marcar al menos una vez ya se cumple.
+        home_scores = 1.0 if current_home > 0 else 1.0 - cls._poisson_cdf(0, lh)
+        away_scores = 1.0 if current_away > 0 else 1.0 - cls._poisson_cdf(0, la)
+        btts = min(1.0, max(0.0, home_scores * away_scores))
 
         return {
             "home": home_win,
             "draw": draw,
             "away": away_win,
             "over_0_5": over_05,
+            "under_0_5": 1.0 - over_05,
             "over_1_5": over_15,
+            "under_1_5": 1.0 - over_15,
             "over_2_5": over_25,
             "under_2_5": under_25,
+            "over_3_5": probability_over(4),
+            "under_3_5": 1.0 - probability_over(4),
             "btts_yes": btts,
-            "btts_no": 1 - btts,
+            "btts_no": 1.0 - btts,
             "remaining_goals": lam_total,
         }
 
@@ -171,13 +180,15 @@ class LiveOpportunityEngine:
             if not line_match:
                 return None
             line_value = float(line_match.group(1).replace(",", "."))
-            if abs(line_value - 2.5) > 0.01:
+            line_key = next((value for value in (0.5, 1.5, 2.5, 3.5) if abs(line_value - value) <= 0.01), None)
+            if line_key is None:
                 return None
+            suffix = str(line_key).replace(".", "_")
             sel = selection_name.lower()
             if any(x in sel for x in ("over", "más", "mas", "+")):
-                return "over_2_5"
+                return f"over_{suffix}"
             if any(x in sel for x in ("under", "menos", "-")):
-                return "under_2_5"
+                return f"under_{suffix}"
         return None
 
     @classmethod

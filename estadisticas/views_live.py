@@ -3,6 +3,7 @@ from django.shortcuts import render
 from django.core.cache import cache
 from django.conf import settings
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 from django.db import transaction
 from django.db.models import Count, Sum
 import logging
@@ -16,10 +17,419 @@ from .live_engine.collector import LiveMatchCollector
 from .live_engine.match_mapper import MatchMappingError
 from .live_engine.experiment import LiveExperimentManager
 from .live_engine.opportunity_levels import enrich
-from .models import LiveExperiment, LiveExperimentEntry, LiveExperimentDailyArchive, MatchBehaviorSnapshot, TeamBehaviorProfile
+from .models import LiveExperiment, LiveExperimentEntry, LiveExperimentDailyArchive, MatchBehaviorSnapshot, TeamBehaviorProfile, EcuabetPreMatchContext
 
 logger = logging.getLogger(__name__)
 
+
+
+def _contexto_guardado_json(context):
+    """Serializa la ficha original sin recalcular ni sobrescribir sus cuotas."""
+    return {
+        "id": context.ecuabet_event_id,
+        "name": context.match_name,
+        "home": context.home_team or "Local no identificado",
+        "away": context.away_team or "Visitante no identificado",
+        "time": timezone.localtime(context.kickoff).strftime("%H:%M") if context.kickoff else "",
+        "championship": context.championship,
+        "home_odds": context.home_odds,
+        "draw_odds": context.draw_odds,
+        "away_odds": context.away_odds,
+        "favorite": context.favorite,
+        "status": context.status,
+        "explanation": context.explanation,
+        "source": context.source,
+        "captured_at": timezone.localtime(context.captured_at).strftime("%H:%M:%S"),
+        "persisted": True,
+    }
+
+
+def calendario_ecuabet(request):
+    """Página de programación de Ecuabet limitada al día actual."""
+    return render(
+        request,
+        "estadisticas/calendario_ecuabet.html",
+        {"seccion": "calendario_ecuabet", "fecha_hoy": timezone.localdate()},
+    )
+
+
+def api_calendario_ecuabet(request):
+    """Obtiene los eventos de fútbol de Ecuabet y devuelve solo los de hoy."""
+    hoy = timezone.localdate()
+    cache_key = f"ecuabet_calendar_today_v1_{hoy.isoformat()}"
+    try:
+        payload = cache.get(cache_key)
+        if payload is None:
+            payload = EcuabetClient()._request(
+                "GET",
+                "GetEvents",
+                {"eventCount": 0, "sportId": 66, "champIds": 0},
+            )
+            cache.set(cache_key, payload, 60)
+
+        raw_events = payload.get("events", []) if isinstance(payload, dict) else []
+        champs = payload.get("champs", []) or payload.get("availableChamps", []) or []
+        champs_by_id = {}
+        for champ in champs:
+            if isinstance(champ, dict):
+                champ_id = champ.get("id") or champ.get("champId") or champ.get("LI") or champ.get("I")
+                if champ_id is not None:
+                    champs_by_id[str(champ_id)] = champ.get("name") or champ.get("champName") or champ.get("L") or champ.get("LE") or ""
+
+        def fecha_evento(event):
+            value = event.get("startDate") or event.get("start_date") or event.get("date")
+            if value is None:
+                return None, None
+            parsed = None
+            if isinstance(value, (int, float)):
+                try:
+                    # Ecuabet puede entregar marcas de tiempo en segundos o milisegundos.
+                    stamp = value / 1000 if value > 10**11 else value
+                    parsed = datetime.fromtimestamp(stamp, tz=timezone.get_current_timezone())
+                except (OverflowError, OSError, ValueError):
+                    parsed = None
+            elif isinstance(value, str):
+                parsed = parse_datetime(value)
+                if parsed is None:
+                    try:
+                        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+                    except (TypeError, ValueError):
+                        parsed = None
+            if parsed is not None:
+                if timezone.is_naive(parsed):
+                    parsed = timezone.make_aware(parsed, timezone.get_current_timezone())
+                local_dt = timezone.localtime(parsed)
+                return local_dt.date(), local_dt
+            if isinstance(value, str) and len(value) >= 10:
+                try:
+                    from datetime import date as date_type
+                    return date_type.fromisoformat(value[:10]), None
+                except ValueError:
+                    pass
+            return None, None
+
+        from datetime import datetime
+        events_today = []
+        without_date = 0
+        for event in raw_events:
+            if not isinstance(event, dict):
+                continue
+            event_date, event_dt = fecha_evento(event)
+            if event_date is None:
+                without_date += 1
+                continue
+            if event_date != hoy:
+                continue
+            champ_id = event.get("champId") or event.get("champ_id")
+            champ_name = (
+                event.get("champName")
+                or event.get("champ")
+                or champs_by_id.get(str(champ_id), "")
+            )
+            events_today.append({
+                "id": event.get("id") or event.get("eventId"),
+                "name": event.get("name") or event.get("eventName") or "Partido sin nombre",
+                "start_date": event.get("startDate") or event.get("start_date") or event.get("date"),
+                "time": timezone.localtime(event_dt).strftime("%H:%M") if event_dt else "",
+                "championship": champ_name.get("name", "") if isinstance(champ_name, dict) else str(champ_name or ""),
+                "status": event.get("status") or event.get("eventStatus") or "",
+            })
+
+        events_today.sort(key=lambda item: (item["time"] == "", item["time"], item["name"].lower()))
+        context_ids = [int(item["id"]) for item in events_today if str(item.get("id", "")).isdigit()]
+        saved_contexts = {
+            str(item.ecuabet_event_id): item
+            for item in EcuabetPreMatchContext.objects.filter(ecuabet_event_id__in=context_ids)
+        }
+        for item in events_today:
+            saved = saved_contexts.get(str(item.get("id")))
+            item["context"] = _contexto_guardado_json(saved) if saved else None
+            item["context_available"] = saved is not None
+        return JsonResponse({
+            "ok": True,
+            "date": hoy.isoformat(),
+            "date_label": hoy.strftime("%d/%m/%Y"),
+            "count": len(events_today),
+            "events": events_today,
+            "events_returned_by_ecuabet": len(raw_events),
+            "events_without_recognized_date": without_date,
+            "source": "Ecuabet GetEvents",
+            "updated_at": timezone.localtime().strftime("%H:%M:%S"),
+            "note": "" if events_today else "Ecuabet no devolvió eventos identificables para la fecha de hoy en esta consulta. Puede que GetEvents requiera consultar campeonatos por separado.",
+        })
+    except Exception as exc:
+        logger.exception("Error cargando calendario diario de Ecuabet")
+        return JsonResponse({
+            "ok": False,
+            "date": hoy.isoformat(),
+            "date_label": hoy.strftime("%d/%m/%Y"),
+            "count": 0,
+            "events": [],
+            "error": str(exc),
+            "source": "Ecuabet GetEvents",
+        }, status=502)
+
+
+
+def contexto_ecuabet(request):
+    """Página para generar y revisar el contexto previo de los partidos de hoy."""
+    return render(
+        request,
+        "estadisticas/contexto_ecuabet.html",
+        {"seccion": "contexto_ecuabet", "fecha_hoy": timezone.localdate()},
+    )
+
+
+def api_generar_contexto_ecuabet(request):
+    """Genera contexto previo usando localía y cuotas 1X2 de Ecuabet."""
+    hoy = timezone.localdate()
+    cache_key = f"ecuabet_pre_match_context_v1_{hoy.isoformat()}"
+    try:
+        # Reutilizar fichas persistentes; solo consultar Ecuabet si no existe la ficha solicitada.
+        if request.GET.get("force") != "1":
+            saved = list(EcuabetPreMatchContext.objects.filter(match_date=hoy))
+            requested_event_id = request.GET.get("event_id", "").strip()
+            requested_exists = any(str(item.ecuabet_event_id) == requested_event_id for item in saved)
+            if saved and (not requested_event_id or requested_exists):
+                contexts_saved = [_contexto_guardado_json(item) for item in saved]
+                return JsonResponse({
+                    "ok": True, "date": hoy.isoformat(),
+                    "date_label": hoy.strftime("%d/%m/%Y"),
+                    "count": len(contexts_saved), "contexts": contexts_saved,
+                    "generated_at": timezone.localtime().strftime("%H:%M:%S"),
+                    "source": "Base de datos · fichas previas guardadas",
+                    "note": "Contexto previo persistente. Las cuotas originales se conservan y no se sobrescriben al sincronizar el calendario.",
+                })
+
+        # Migrar al almacenamiento persistente el contexto que ya estaba en caché,
+        # conservando las cuotas originales en lugar de recalcularlas al primer acceso.
+        cached_result = cache.get(cache_key)
+        if cached_result and cached_result.get("contexts"):
+            from datetime import datetime, time as time_type
+            migrated = []
+            for item in cached_result.get("contexts", []):
+                event_id = item.get("id")
+                if not str(event_id or "").isdigit():
+                    continue
+                kickoff_value = None
+                time_value = item.get("time")
+                if time_value:
+                    try:
+                        kickoff_value = timezone.make_aware(
+                            datetime.combine(hoy, time_type.fromisoformat(time_value)),
+                            timezone.get_current_timezone(),
+                        )
+                    except (TypeError, ValueError):
+                        kickoff_value = None
+                captured_value = timezone.now()
+                try:
+                    if item.get("captured_at"):
+                        captured_value = timezone.make_aware(
+                            datetime.combine(hoy, time_type.fromisoformat(item["captured_at"])),
+                            timezone.get_current_timezone(),
+                        )
+                except (TypeError, ValueError):
+                    pass
+                saved, created = EcuabetPreMatchContext.objects.get_or_create(
+                    ecuabet_event_id=int(event_id),
+                    defaults={
+                        "match_name": item.get("name") or "Partido sin nombre",
+                        "home_team": item.get("home") or "",
+                        "away_team": item.get("away") or "",
+                        "championship": item.get("championship") or "",
+                        "match_date": hoy, "kickoff": kickoff_value,
+                        "home_odds": item.get("home_odds"), "draw_odds": item.get("draw_odds"),
+                        "away_odds": item.get("away_odds"), "favorite": item.get("favorite") or "",
+                        "status": item.get("status") or "", "explanation": item.get("explanation") or "",
+                        "source": item.get("source") or "Ecuabet · mercado 1X2",
+                        "captured_at": captured_value, "raw_context": item,
+                    },
+                )
+                migrated.append(_contexto_guardado_json(saved))
+            if migrated:
+                cached_result = dict(cached_result)
+                cached_result["contexts"] = migrated
+                cached_result["count"] = len(migrated)
+                cached_result["source"] = "Contexto anterior recuperado y guardado"
+                cached_result["note"] = "Se recuperó la ficha previa existente y se guardó sin recalcular ni sobrescribir las cuotas iniciales."
+                return JsonResponse(cached_result)
+
+        client = EcuabetClient()
+        payload = client._request(
+            "GET", "GetEvents",
+            {"eventCount": 0, "sportId": 66, "champIds": 0},
+        )
+        raw_events = payload.get("events", []) if isinstance(payload, dict) else []
+        champs = payload.get("champs", []) or payload.get("availableChamps", []) or []
+        champs_by_id = {
+            str(item.get("id") or item.get("champId") or item.get("LI") or item.get("I")):
+                (item.get("name") or item.get("champName") or item.get("L") or item.get("LE") or "")
+            for item in champs if isinstance(item, dict)
+        }
+        competitors = payload.get("competitors", []) or []
+        competitors_by_id = {
+            str(item.get("id")): item.get("name", "")
+            for item in competitors if isinstance(item, dict) and item.get("id") is not None
+        }
+
+        def parse_event_datetime(event):
+            value = event.get("startDate") or event.get("start_date") or event.get("date")
+            if value is None:
+                return None
+            if isinstance(value, (int, float)):
+                try:
+                    stamp = value / 1000 if value > 10**11 else value
+                    return timezone.localtime(datetime.fromtimestamp(stamp, tz=timezone.get_current_timezone()))
+                except (OverflowError, OSError, ValueError):
+                    return None
+            if isinstance(value, str):
+                parsed = parse_datetime(value)
+                if parsed is None:
+                    try:
+                        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+                    except (TypeError, ValueError):
+                        return None
+                if timezone.is_naive(parsed):
+                    parsed = timezone.make_aware(parsed, timezone.get_current_timezone())
+                return timezone.localtime(parsed)
+            return None
+
+        def numeric_price(value):
+            try:
+                price = float(value)
+                return price if price > 1 else None
+            except (TypeError, ValueError):
+                return None
+
+        from datetime import datetime
+        contexts = []
+        for event in raw_events:
+            if not isinstance(event, dict):
+                continue
+            kickoff = parse_event_datetime(event)
+            if kickoff is None or kickoff.date() != hoy:
+                continue
+
+            event_name = event.get("name") or event.get("eventName") or "Partido sin nombre"
+            competitor_ids = event.get("competitorIds") or []
+            home = competitors_by_id.get(str(competitor_ids[0]), "") if competitor_ids else ""
+            away = competitors_by_id.get(str(competitor_ids[1]), "") if len(competitor_ids) > 1 else ""
+            if not home or not away:
+                for separator in (" - ", " vs ", " VS ", " v "):
+                    if separator in event_name:
+                        pieces = event_name.split(separator, 1)
+                        home = home or pieces[0].strip()
+                        away = away or pieces[1].strip()
+                        break
+
+            normalized = client.normalizar_mercados_evento(event, payload)
+            market = next(
+                (item for item in normalized.get("markets", [])
+                 if str(item.get("market_type_id") or item.get("type_id") or "") == "1"),
+                None,
+            )
+            home_price = away_price = draw_price = None
+            if market:
+                for selection in market.get("selections", []):
+                    price = numeric_price(selection.get("price"))
+                    if price is None:
+                        continue
+                    selection_name = str(selection.get("name") or "").strip().lower()
+                    competitor_id = selection.get("competitor_id")
+                    if competitor_id is not None and competitor_ids:
+                        if str(competitor_id) == str(competitor_ids[0]):
+                            home_price = price
+                            continue
+                        if len(competitor_ids) > 1 and str(competitor_id) == str(competitor_ids[1]):
+                            away_price = price
+                            continue
+                    if selection_name in {"x", "draw", "empate", "tie"}:
+                        draw_price = price
+                    elif selection_name and home and selection_name == home.lower():
+                        home_price = price
+                    elif selection_name and away and selection_name == away.lower():
+                        away_price = price
+
+            favorite = ""
+            status = "Cuotas 1X2 no identificadas"
+            explanation = "No se pudo identificar con seguridad la cuota de victoria de ambos equipos; no se asigna favorito."
+            if home_price is not None and away_price is not None:
+                eligible = []
+                if 1.05 <= home_price <= 2.00:
+                    eligible.append((home_price, home, "local"))
+                if 1.05 <= away_price <= 2.00:
+                    eligible.append((away_price, away, "visitante"))
+                if len(eligible) == 1:
+                    _, favorite, side = eligible[0]
+                    status = "Favorito según la regla"
+                    explanation = f"{favorite} es el favorito según la regla de cuotas (1.05–2.00), jugando como {side}."
+                elif len(eligible) == 2:
+                    _, favorite, side = min(eligible, key=lambda item: item[0])
+                    status = "Favorito según la regla · cuotas parejas"
+                    explanation = f"Ambos equipos están en el rango definido; {favorite} tiene la cuota menor y queda como favorito relativo."
+                else:
+                    status = "Sin favorito según la regla"
+                    explanation = "Ninguna cuota de victoria está entre 1.05 y 2.00; no se asigna favorito."
+            champ_id = event.get("champId") or event.get("champ_id")
+            champ = event.get("champName") or event.get("champ") or champs_by_id.get(str(champ_id), "")
+            contexts.append({
+                "id": event.get("id") or event.get("eventId"),
+                "name": event_name,
+                "home": home or "Local no identificado",
+                "away": away or "Visitante no identificado",
+                "time": kickoff.strftime("%H:%M"),
+                "championship": champ.get("name", "") if isinstance(champ, dict) else str(champ or ""),
+                "home_odds": home_price,
+                "draw_odds": draw_price,
+                "away_odds": away_price,
+                "favorite": favorite,
+                "status": status,
+                "explanation": explanation,
+                "source": "Ecuabet · mercado 1X2",
+                "captured_at": timezone.localtime().strftime("%H:%M:%S"),
+            })
+
+        # Guardar la primera ficha por ID; get_or_create protege las cuotas originales.
+        persisted_contexts = []
+        events_by_id = {
+            str(ev.get("id") or ev.get("eventId")): ev
+            for ev in raw_events if isinstance(ev, dict)
+        }
+        for item in contexts:
+            event_id = item.get("id")
+            if not str(event_id or "").isdigit():
+                persisted_contexts.append(item)
+                continue
+            source_event = events_by_id.get(str(event_id), {})
+            kickoff_value = parse_event_datetime(source_event) if source_event else None
+            saved, created = EcuabetPreMatchContext.objects.get_or_create(
+                ecuabet_event_id=int(event_id),
+                defaults={
+                    "match_name": item["name"], "home_team": item["home"], "away_team": item["away"],
+                    "championship": item["championship"], "match_date": hoy, "kickoff": kickoff_value,
+                    "home_odds": item["home_odds"], "draw_odds": item["draw_odds"], "away_odds": item["away_odds"],
+                    "favorite": item["favorite"], "status": item["status"], "explanation": item["explanation"],
+                    "source": item["source"], "raw_context": item,
+                },
+            )
+            persisted_contexts.append(_contexto_guardado_json(saved))
+        contexts = persisted_contexts
+        contexts.sort(key=lambda item: (item["time"], item["name"].lower()))
+        result = {
+            "ok": True,
+            "date": hoy.isoformat(),
+            "date_label": hoy.strftime("%d/%m/%Y"),
+            "count": len(contexts),
+            "contexts": contexts,
+            "generated_at": timezone.localtime().strftime("%H:%M:%S"),
+            "source": "Ecuabet GetEvents",
+            "note": "Contexto previo basado únicamente en localía y cuotas 1X2. Es una clasificación según la regla definida, no una predicción segura del resultado.",
+        }
+        cache.set(cache_key, result, 60 * 60 * 12)
+        return JsonResponse(result)
+    except Exception as exc:
+        logger.exception("Error generando contexto previo de Ecuabet")
+        return JsonResponse({"ok": False, "error": str(exc), "contexts": []}, status=502)
 
 def partidos_en_vivo(request):
     poll_seconds = getattr(settings, "LIVE_POLL_SECONDS", 60)
@@ -878,9 +1288,16 @@ def _crear_experimento_desde_evento(event):
         collector = LiveMatchCollector()
         mapping = collector.mapper.mapear(event, collector.flashscore)
         if not mapping.get("matched"):
+            candidate = mapping.get("candidate") or {}
+            candidate_name = (
+                f"{candidate.get('home_team', '?')} vs {candidate.get('away_team', '?')}"
+                if candidate else "sin candidato"
+            )
             raise MatchMappingError(
                 f"No se pudo vincular Ecuabet {event_id} con Flashscore "
                 f"(confianza={float(mapping.get('confidence', 0.0)):.2f}, "
+                f"margen={float(mapping.get('margin', 0.0)):.2f}, "
+                f"candidato={candidate_name}, "
                 f"motivo={mapping.get('reason', 'sin coincidencia')})."
             )
         match = collector.construir_desde_evento(
@@ -1326,3 +1743,754 @@ def laboratorio_patrones(request):
         "seccion": "patrones",
     }
     return render(request, "estadisticas/laboratorio_patrones.html", context)
+
+
+def api_patron_oportunidades_partidos(request):
+    """Devuelve únicamente partidos LIVE con contexto previo guardado y favorito por cuota."""
+    try:
+        hoy = timezone.localdate()
+        contexts = list(EcuabetPreMatchContext.objects.filter(match_date=hoy).order_by("kickoff", "match_name"))
+        def cuota_valida(value):
+            try:
+                value = float(value)
+                return 1.05 <= value <= 2.00
+            except (TypeError, ValueError):
+                return False
+
+        eligible_contexts = []
+        for ctx in contexts:
+            if not ctx.favorite:
+                continue
+            if not (cuota_valida(ctx.home_odds) or cuota_valida(ctx.away_odds)):
+                continue
+            eligible_contexts.append(ctx)
+
+        if not eligible_contexts:
+            return JsonResponse({
+                "ok": True, "count": 0, "events": [],
+                "contexts_found": len(contexts), "live_found": 0,
+                "note": "No hay fichas previas de hoy con favorito dentro de la regla de cuota 1.05–2.00.",
+                "updated_at": timezone.localtime().strftime("%H:%M:%S"),
+            })
+
+        payload = EcuabetClient()._request("GET", "GetLivenow", {"eventCount": 0, "sportId": 66})
+        live_events = payload.get("events", []) if isinstance(payload, dict) else []
+        live_by_id = {
+            str(event.get("id") or event.get("eventId")): event
+            for event in live_events if isinstance(event, dict)
+        }
+        result = []
+        for ctx in eligible_contexts:
+            event = live_by_id.get(str(ctx.ecuabet_event_id))
+            if not event:
+                continue
+            result.append({
+                "id": ctx.ecuabet_event_id,
+                "name": ctx.match_name,
+                "home": ctx.home_team,
+                "away": ctx.away_team,
+                "favorite": ctx.favorite,
+                "home_odds": ctx.home_odds,
+                "draw_odds": ctx.draw_odds,
+                "away_odds": ctx.away_odds,
+                "captured_at": timezone.localtime(ctx.captured_at).strftime("%H:%M:%S"),
+                "live_time": event.get("liveTime") or event.get("timer") or event.get("status") or "LIVE",
+                "score": event.get("score"),
+                "championship": ctx.championship,
+            })
+        return JsonResponse({
+            "ok": True, "count": len(result), "events": result,
+            "contexts_found": len(contexts), "favorite_contexts": len(eligible_contexts),
+            "live_found": len(live_by_id),
+            "source": "Ecuabet GetLivenow + contexto previo persistente",
+            "updated_at": timezone.localtime().strftime("%H:%M:%S"),
+            "note": "Solo se incluyen partidos actualmente LIVE, con contexto guardado y favorito por cuota entre 1.05 y 2.00.",
+        })
+    except Exception as exc:
+        logger.exception("Error filtrando partidos del Patrón de Oportunidades")
+        return JsonResponse({"ok": False, "error": str(exc), "events": []}, status=502)
+
+
+
+
+def api_historial_patron_oportunidades(request):
+    """Devuelve resultados persistidos del Patrón, con filtros opcionales por partido."""
+    try:
+        event_id = request.GET.get("event_id", "").strip()
+        qs = MatchBehaviorSnapshot.objects.all().order_by("-observed_at")
+        if event_id.isdigit():
+            qs = qs.filter(ecuabet_event_id=int(event_id))
+        records = []
+        # Iterar en orden reciente y solo devolver snapshots que contienen resultado del Patrón.
+        for snap in qs[:1000]:
+            stored = snap.performance if isinstance(snap.performance, dict) else {}
+            patron = stored.get("patron_oportunidades")
+            if not isinstance(patron, dict):
+                continue
+            records.append({
+                "id": snap.id,
+                "event_id": snap.ecuabet_event_id,
+                "partido": patron.get("partido") or {
+                    "local": snap.home_team, "visitante": snap.away_team,
+                    "liga": snap.league, "minuto": snap.minute,
+                    "marcador": [snap.home_score, snap.away_score],
+                },
+                "etapas": patron.get("etapas") or {},
+                "guardado_en": patron.get("guardado_en") or timezone.localtime(snap.observed_at).isoformat(),
+                "observed_at": timezone.localtime(snap.observed_at).isoformat(),
+            })
+            if len(records) >= 200:
+                break
+        return JsonResponse({"ok": True, "count": len(records), "results": records})
+    except Exception as exc:
+        logger.exception("Error consultando historial del Patrón de Oportunidades")
+        return JsonResponse({"ok": False, "error": str(exc), "results": []}, status=500)
+
+def patron_oportunidades(request):
+    """Pantalla del patrón conectado al flujo LIVE y motores existentes."""
+    return render(
+        request,
+        "estadisticas/patron_oportunidades.html",
+        {"live_poll_ms": 30000, "seccion": "patron_oportunidades"},
+    )
+
+
+def api_simular_patron_oportunidades(request, ecuabet_event_id):
+    """Ejecuta una pasada del patrón con el snapshot LIVE y salidas reales de los motores.
+    No crea experimentos ni apuestas; solo presenta y evalúa sus resultados.
+    """
+    from .live_engine.opportunity_engine import LiveOpportunityEngine
+    from .live_engine.opportunity_engine_v2 import LiveOpportunityEngineV2
+    from .live_engine.opportunity_engine_v11 import LiveOpportunityEngineV11
+    from .live_engine.opportunity_engine_v12 import LiveOpportunityEngineV12
+    from .live_engine.opportunity_engine_v21 import LiveOpportunityEngineV21
+    from .live_engine.opportunity_engine_v22 import LiveOpportunityEngineV22
+    from .live_engine.opportunity_engine_v3 import LiveOpportunityEngineV3
+    from .live_engine.opportunity_engine_v2_ultra import LiveOpportunityEngineV2Ultra
+    from .live_engine.opportunity_engine_v11_ultra import LiveOpportunityEngineV11Ultra
+    from .live_engine.opportunity_engine_vpro import LiveOpportunityEngineVPro
+    from .live_engine.opportunity_engine_vpro11 import LiveOpportunityEngineVPro11
+
+    try:
+        saved_context = EcuabetPreMatchContext.objects.filter(
+            ecuabet_event_id=ecuabet_event_id, match_date=timezone.localdate()
+        ).first()
+        if not saved_context or not saved_context.favorite:
+            return JsonResponse({"ok": False, "error": "El partido no tiene un contexto previo guardado con favorito identificado."}, status=409)
+        valid_favorite_odds = []
+        for value in (saved_context.home_odds, saved_context.away_odds):
+            try:
+                odd_value = float(value)
+                if 1.05 <= odd_value <= 2.00:
+                    valid_favorite_odds.append(odd_value)
+            except (TypeError, ValueError):
+                pass
+        if not valid_favorite_odds:
+            return JsonResponse({"ok": False, "error": "La cuota del favorito no cumple el rango de 1.05 a 2.00."}, status=409)
+
+        previous = (
+            MatchBehaviorSnapshot.objects
+            .filter(ecuabet_event_id=ecuabet_event_id)
+            .order_by("-observed_at")
+            .first()
+        )
+        match = LiveMatchCollector().construir_automatico(ecuabet_event_id)
+
+        context_data = match.pre_match_context if isinstance(match.pre_match_context, dict) else {}
+        source_names = ("lineups", "history", "fixtures")
+        source_status = {
+            name: (context_data.get(name) or {}).get("status", "unavailable")
+            for name in source_names
+        }
+        available_sources = [name for name, status in source_status.items() if status == "available"]
+        context_has_data = bool(available_sources)
+        context_summaries = {
+            "lineups": "Alineaciones disponibles" if source_status["lineups"] == "available" else "Alineaciones no disponibles",
+            "history": "Enfrentamientos directos disponibles" if source_status["history"] == "available" else "Historial directo no disponible",
+            "fixtures": "Resultados/calendario reciente disponible" if source_status["fixtures"] == "available" else "Resultados/calendario reciente no disponibles",
+        }
+        context_stage = {
+            "status": "CONTEXTO_PREVIO_GUARDADO",
+            "expectativa": saved_context.explanation or "Contexto previo persistido disponible; no se interpreta como certeza de resultado.",
+            "fuente": saved_context.source or "Ecuabet · contexto guardado",
+            "partido": saved_context.match_name,
+            "favorito": saved_context.favorite,
+            "cuotas_originales": {
+                "local": saved_context.home_odds,
+                "empate": saved_context.draw_odds,
+                "visitante": saved_context.away_odds,
+            },
+            "fecha_contexto": saved_context.match_date.isoformat(),
+            "capturado_en": timezone.localtime(saved_context.captured_at).isoformat(),
+            "fuentes_complementarias": context_summaries,
+            "estados_fuentes_complementarias": source_status,
+            "datos_complementarios": context_data,
+        }
+
+        current_minute = match.minute
+        previous_minute = previous.minute_number if previous else None
+        try:
+            minute_num = int(str(current_minute or "").split("+")[0].replace("'", "").strip())
+        except (ValueError, TypeError):
+            import re
+            found = re.search(r"\d+", str(current_minute or ""))
+            minute_num = int(found.group()) if found else None
+
+        prev_score = [previous.home_score, previous.away_score] if previous else None
+        now_score = [match.home_score, match.away_score]
+        score_delta = None
+        if prev_score and None not in prev_score and None not in now_score:
+            score_delta = (now_score[0] - prev_score[0]) + (now_score[1] - prev_score[1])
+
+        performance = match.performance or {}
+        previous_performance = dict(previous.performance) if previous and isinstance(previous.performance, dict) else {}
+        # El bloque de auditoría del Patrón no es una estadística LIVE; no debe aparecer como cambio falso.
+        previous_performance.pop("patron_oportunidades", None)
+        def _flatten_stats(value, prefix=""):
+            flattened = {}
+            if isinstance(value, dict):
+                for key, child in value.items():
+                    flattened.update(_flatten_stats(child, f"{prefix}.{key}" if prefix else str(key)))
+            elif isinstance(value, (int, float, str, bool)) or value is None:
+                flattened[prefix] = value
+            return flattened
+        old_stats = _flatten_stats(previous_performance)
+        new_stats = _flatten_stats(performance)
+        changed_stats = []
+        for stat_key in sorted(set(old_stats) | set(new_stats)):
+            old_value, new_value = old_stats.get(stat_key), new_stats.get(stat_key)
+            if old_value != new_value and (old_value is not None or new_value is not None):
+                changed_stats.append({"estadistica": stat_key, "anterior": old_value, "actual": new_value})
+        score_changed = bool(previous and prev_score is not None and now_score is not None and prev_score != now_score)
+        goal_scored = bool(
+            previous and prev_score is not None and now_score is not None
+            and None not in prev_score and None not in now_score
+            and (now_score[0] > prev_score[0] or now_score[1] > prev_score[1])
+        )
+
+        def _red_card_count(stats, side):
+            """Lee tarjetas rojas aunque Flashscore cambie la clave o etiqueta.
+
+            El feed puede entregar red_cards, red_card, tarjetas_rojas o
+            yellow_red_cards (doble amarilla/roja), y cada valor puede venir
+            como escalar o como objeto {value, raw_value, label, name}.
+            No suma métricas equivalentes para evitar contar dos veces la misma roja.
+            """
+            import re
+            import unicodedata
+
+            side_stats = stats.get(side) if isinstance(stats, dict) else {}
+            if not isinstance(side_stats, dict):
+                return None
+
+            def norm(value):
+                value = unicodedata.normalize("NFKD", str(value or ""))
+                value = "".join(ch for ch in value if not unicodedata.combining(ch))
+                return re.sub(r"[^a-z0-9]+", "", value.casefold())
+
+            red_keys = {
+                "redcards", "redcard", "tarjetasrojas", "tarjetaroja",
+                "yellowredcards", "yellowredcard", "dobleamarillaroja",
+                "dobleamarillayroja", "segundatarjetaamarilla",
+            }
+            found = []
+
+            def walk(node, inherited_key="", depth=0):
+                if depth > 6:
+                    return
+                if isinstance(node, dict):
+                    labels = [inherited_key]
+                    labels.extend(node.get(k) for k in ("key", "type", "stat_type", "name", "label", "displayName"))
+                    matches = any(norm(label) in red_keys for label in labels if label is not None)
+                    if matches:
+                        value = node.get("value")
+                        if value is None:
+                            value = node.get("raw_value")
+                        if value is None:
+                            value = node.get("current")
+                        try:
+                            parsed = int(float(str(value).replace(",", ".").replace("%", "").strip()))
+                            if parsed >= 0:
+                                found.append(parsed)
+                        except (TypeError, ValueError):
+                            pass
+                    for key, child in node.items():
+                        if isinstance(child, (dict, list)):
+                            walk(child, str(key), depth + 1)
+                elif isinstance(node, list):
+                    for child in node:
+                        walk(child, inherited_key, depth + 1)
+                else:
+                    if norm(inherited_key) in red_keys:
+                        try:
+                            parsed = int(float(str(node).replace(",", ".").replace("%", "").strip()))
+                            if parsed >= 0:
+                                found.append(parsed)
+                        except (TypeError, ValueError):
+                            pass
+
+            walk(side_stats)
+            return max(found) if found else None
+
+        red_card_changes = []
+        for side, team in (("home", match.home_team), ("away", match.away_team)):
+            current_red = _red_card_count(performance, side)
+            previous_red = _red_card_count(previous_performance, side)
+            if current_red is not None and current_red > (previous_red if previous_red is not None else 0):
+                red_card_changes.append({
+                    "equipo": team,
+                    "anterior": previous_red if previous_red is not None else 0,
+                    "actual": current_red,
+                })
+        red_card_detected = bool(red_card_changes)
+        previous_patron = (
+            (previous.performance or {}).get("patron_oportunidades", {})
+            if previous and isinstance(previous.performance, dict) else {}
+        )
+        previous_last_trigger = previous_patron.get("ultimo_detonante") if isinstance(previous_patron, dict) else None
+        last_trigger = (
+            {
+                "tipo": "GOL", "marcador": list(now_score),
+                "minuto": str(current_minute or ""),
+                "registrado_en": timezone.localtime().isoformat(),
+                "motivo": "Aumento confirmado del marcador LIVE.",
+            }
+            if goal_scored else (
+                {
+                    "tipo": "TARJETA_ROJA", "marcador": list(now_score),
+                    "minuto": str(current_minute or ""),
+                    "registrado_en": timezone.localtime().isoformat(),
+                    "motivo": "Nueva tarjeta roja detectada: " + ", ".join(item["equipo"] for item in red_card_changes),
+                    "equipos_afectados": red_card_changes,
+                } if red_card_detected else previous_last_trigger
+            )
+        )
+        stats_changed = bool(previous and changed_stats)
+        monitoring = {
+            "status": "SIN_BASELINE_PREVIO" if previous is None else (
+                "GOL_NUEVO_DETECTADO" if goal_scored else
+                "TARJETA_ROJA_DETECTADA" if red_card_detected else "ESPERANDO_DETONANTE"
+            ),
+            "minuto_anterior": previous.minute if previous else None,
+            "marcador_anterior": prev_score,
+            "minuto_actual": current_minute,
+            "marcador_actual": now_score,
+            "estadisticas_cambiadas": len(changed_stats),
+            "cambios_estadisticos": changed_stats[:30],
+            "gol_nuevo": goal_scored,
+            "tarjeta_roja_nueva": red_card_detected,
+            "tarjetas_rojas_detectadas": red_card_changes,
+            "detonante": bool(goal_scored or red_card_detected),
+            "ultimo_detonante": last_trigger,
+            "motivo": (
+                "Primera lectura: establece la línea base de marcador y estadísticas LIVE; todavía no activa Acción."
+                if previous is None else
+                "Se confirmó un aumento en el marcador: el gol nuevo activa Acción."
+                if goal_scored else
+                "Se detectó una nueva tarjeta roja: cambia el contexto numérico y activa Acción."
+                if red_card_detected else
+                "No se detectó gol ni tarjeta roja nueva. Los cambios estadísticos por sí solos no activan Acción ni las etapas siguientes."
+            ),
+        }
+
+        stage_action = {
+            "status": "PENDIENTE_DE_DETONANTE",
+            "diagnostico": "No se detectó cambio en las estadísticas LIVE; Acción queda pendiente.",
+            "datos_evaluados": [],
+        }
+        stage_probability = {}
+        stage_calculation = {}
+        stage_reaction = {"status": "SEGUIR_MONITOREANDO", "decision": "SEGUIR_MONITOREANDO", "motivo": "Esperando cambios en los datos LIVE para avanzar a Acción."}
+
+        # Acción evalúa las nuevas estadísticas cuando Monitoreo detecta cambios.
+        # Probabilidad se calcula desde estadísticas; Cálculo incorpora cuotas.
+        home_sot = None
+        away_sot = None
+        def stat(side, *keys):
+            data = performance.get(side) or {}
+            for key in keys:
+                val = data.get(key)
+                if isinstance(val, dict):
+                    val = val.get("value", val.get("raw_value"))
+                if val is not None:
+                    try: return float(str(val).replace("%", "").replace(",", "."))
+                    except (TypeError, ValueError): pass
+            return None
+        home_sot = stat("home", "shots_on_goal", "shots_on_target", "tiros a puerta")
+        away_sot = stat("away", "shots_on_goal", "shots_on_target", "tiros a puerta")
+        home = int(match.home_score or 0)
+        away = int(match.away_score or 0)
+        if home > away:
+            score_read = f"{match.home_team} va ganando {home}-{away}"
+        elif away > home:
+            score_read = f"{match.away_team} va ganando {away}-{home}"
+        else:
+            score_read = f"el partido está empatado {home}-{away}"
+        if home_sot is None or away_sot is None:
+            stats_read = "Faltan tiros a puerta de uno o ambos equipos; la lectura estadística es parcial."
+        elif home_sot >= away_sot + 2:
+            stats_read = f"{match.home_team} tiene ventaja en tiros a puerta ({home_sot:g} contra {away_sot:g})."
+        elif away_sot >= home_sot + 2:
+            stats_read = f"{match.away_team} tiene ventaja en tiros a puerta ({away_sot:g} contra {home_sot:g})."
+        else:
+            stats_read = f"Los tiros a puerta no muestran una ventaja clara ({home_sot:g} contra {away_sot:g})."
+        if monitoring["detonante"]:
+            trigger_read = ("gol nuevo" if goal_scored else "tarjeta roja de " + ", ".join(item["equipo"] for item in red_card_changes))
+            stage_action = {
+                "status": "EVALUADA",
+                "diagnostico": f"Tras detectar {trigger_read}, {score_read}; {stats_read}",
+                "datos_evaluados": [context_stage["status"], f"minuto {current_minute}", f"marcador {home}-{away}", trigger_read, stats_read],
+                "estadisticas_live": performance,
+                "cambios_detectados": changed_stats[:30],
+            }
+        else:
+            stage_action = {
+                "status": "PENDIENTE_DE_DETONANTE",
+                "diagnostico": f"No se activa Acción porque no se detectó un gol ni una tarjeta roja nueva. Estado observado: {score_read}; {stats_read}",
+                "datos_evaluados": [context_stage["status"], f"minuto {current_minute}", f"marcador {home}-{away}", stats_read],
+                "estadisticas_live": performance,
+                "cambios_detectados": changed_stats[:30],
+            }
+
+        # Calcular probabilidades dentro del alcance de esta simulación por partido.
+        # El resultado se inicializa siempre para evitar referencias no definidas.
+        from .live_engine.probability_calculator import LiveProbabilityCalculator
+        calculator_result = None
+        previous_patron = (
+            (previous.performance or {}).get("patron_oportunidades", {})
+            if previous and isinstance(previous.performance, dict) else {}
+        )
+        previous_opportunities = previous_patron.get("oportunidades_persistentes") or (
+            (previous_patron.get("etapas") or {}).get("reaccion", {}).get("senales_recibidas", [])
+        )
+        previous_by_market = {
+            str(item.get("clave") or item.get("mercado")): item
+            for item in previous_opportunities if isinstance(item, dict)
+        }
+
+        # Después de la línea base, recalcular probabilidades en cada ciclo, con o sin gol.
+        if match is not None and previous is not None:
+            calculator_result = LiveProbabilityCalculator.calculate(
+                match,
+                pre_match_context={
+                    "home_odds": saved_context.home_odds,
+                    "draw_odds": saved_context.draw_odds,
+                    "away_odds": saved_context.away_odds,
+                },
+            )
+            stage_probability = {
+                **calculator_result,
+                "status": "PROBABILIDAD_ESTADISTICA_ACTUALIZADA" if monitoring["detonante"] else "PROBABILIDAD_ACTUALIZADA_SIN_DETONANTE",
+                "estadisticas_live_recibidas": performance,
+                "criterio": "Recalculado en cada ciclo con marcador/minuto LIVE, estadísticas disponibles y contexto 1X2 prepartido.",
+                "motivo": ("Gol nuevo: cadena activada." if goal_scored else "Tarjeta roja nueva: cadena activada y contexto numérico ajustado." if red_card_detected else "Sin gol ni roja nueva: se actualizan probabilidades sin reactivar Acción."),
+            }
+        else:
+            stage_probability = {
+                "status": "ESTABLECIENDO_LINEA_BASE",
+                "mercados_probables": [],
+                "mas_probable": None,
+                "estadisticas_utilizadas": {},
+                "motivo": "Primera lectura: se guarda marcador y línea base; el cálculo comienza en el siguiente ciclo.",
+            }
+
+        # Patrón de Oportunidades usa exclusivamente el calculador central.
+        # Los motores de estrategias permanecen fuera de este flujo y no se ejecutan aquí.
+        mercados_calculados = list((calculator_result or {}).get("mercados_probables") or [])
+
+        # Consultar las cuotas reales LIVE de Ecuabet en cada ciclo. No usar las
+        # cuotas prepartido como sustituto ni presentar una cuota justa como cuota de la casa.
+        cuotas_live_diagnostico = {
+            "estado": "PENDIENTE",
+            "fuente": "Ecuabet GetLivenow + GetEventDetails",
+            "mercados_encontrados": 0,
+            "selecciones_encontradas": 0,
+            "error": None,
+        }
+        try:
+            # Reutilizar la misma fuente y el mismo payload Ecuabet que alimenta
+            # los siete motores: LiveMatchCollector ya aplana event -> markets -> odds.
+            # Esto evita una segunda consulta con una estructura de mercados distinta.
+            live_odds = list(getattr(match, "odds", None) or [])
+            mapped_prices = {}
+            live_selection_count = 0
+
+            import re
+            import unicodedata
+            from .live_engine.opportunity_engine import LiveOpportunityEngine
+
+            def _odd_label(value):
+                value = unicodedata.normalize("NFKD", str(value or ""))
+                value = "".join(char for char in value if not unicodedata.combining(char))
+                return " ".join(re.sub(r"[^a-z0-9]+", " ", value.lower()).split())
+
+            def _valid_live_price(odd):
+                try:
+                    price = float(str(odd.get("price")).replace(",", "."))
+                except (TypeError, ValueError):
+                    return None
+                if price <= 1:
+                    return None
+                status = _odd_label(odd.get("odd_status") or odd.get("status") or "")
+                if status in {"suspended", "closed", "inactive", "disabled", "2", "3"}:
+                    return None
+                return price
+
+            home_name = _odd_label(match.home_team)
+            away_name = _odd_label(match.away_team)
+
+            for odd in live_odds:
+                price = _valid_live_price(odd)
+                if price is None:
+                    continue
+                live_selection_count += 1
+                raw_market_name = str(odd.get("market_name") or "")
+                raw_selection_name = str(odd.get("name") or "")
+                market_name = _odd_label(raw_market_name)
+                selection_name = _odd_label(raw_selection_name)
+                combined = f"{market_name} {selection_name}"
+                key = None
+
+                # Primera prioridad: exactamente el mismo mapeo de mercados que
+                # utilizan los motores LIVE, para mantener criterios consistentes.
+                try:
+                    key = LiveOpportunityEngine._market_key(
+                        raw_market_name, raw_selection_name, odd.get("line")
+                    )
+                except Exception:
+                    key = None
+
+                # Compatibilidad con etiquetas de Ecuabet que no reconoce el motor.
+                if key is None:
+                    market_type = str(odd.get("market_type_id") or "").strip()
+                    if (
+                        "1x2" in combined or "resultado" in combined
+                        or "ganador" in combined or market_type == "1"
+                    ):
+                        if selection_name in {"x", "draw", "empate", "tie", "the draw"}:
+                            key = "draw"
+                        elif selection_name in {"1", "local", "home", "home team"}:
+                            key = "home"
+                        elif selection_name in {"2", "visitante", "away", "away team"}:
+                            key = "away"
+                        elif home_name and (
+                            selection_name == home_name
+                            or (len(selection_name) >= 4 and selection_name in home_name)
+                            or (len(home_name) >= 4 and home_name in selection_name)
+                        ):
+                            key = "home"
+                        elif away_name and (
+                            selection_name == away_name
+                            or (len(selection_name) >= 4 and selection_name in away_name)
+                            or (len(away_name) >= 4 and away_name in selection_name)
+                        ):
+                            key = "away"
+
+                if key is None and (
+                    "doble oportunidad" in combined or "double chance" in combined
+                    or "doble chance" in combined
+                ):
+                    if (
+                        "1x" in selection_name or "1 x" in selection_name
+                        or "home or draw" in selection_name or "local o empate" in selection_name
+                        or "1 empate" in selection_name or "local empate" in selection_name
+                    ):
+                        key = "dc_1x"
+                    elif (
+                        "x2" in selection_name or "x 2" in selection_name
+                        or "draw or away" in selection_name or "empate o visitante" in selection_name
+                        or "empate visitante" in selection_name
+                    ):
+                        key = "dc_x2"
+                    elif (
+                        "12" in selection_name or "1 2" in selection_name
+                        or "home or away" in selection_name or "local o visitante" in selection_name
+                        or "local visitante" in selection_name
+                    ):
+                        key = "dc_12"
+
+                if key is None and (
+                    "ambos marcan" in combined or "both teams" in combined
+                    or "btts" in combined or "ambos anotan" in combined
+                ):
+                    yes_labels = {"yes", "si", "ambos marcan si", "ambos anotan si", "1", "true"}
+                    no_labels = {"no", "ambos marcan no", "ambos anotan no", "2", "false"}
+                    if selection_name in yes_labels or selection_name.startswith("yes "):
+                        key = "btts_yes"
+                    elif selection_name in no_labels or selection_name.startswith("no "):
+                        key = "btts_no"
+
+                if key:
+                    # Solo se conservan precios reales válidos presentes en el feed.
+                    # En caso de duplicados, preferir la primera selección activa.
+                    mapped_prices.setdefault(key, (price, raw_market_name, raw_selection_name))
+
+            for market in mercados_calculados:
+                key = str(market.get("clave") or "")
+                mapped = mapped_prices.get(key)
+                if mapped:
+                    market["cuota_ecuabet"] = mapped[0]
+                    market["estado_cuota_ecuabet"] = "DISPONIBLE"
+                    market["mercado_ecuabet"] = mapped[1]
+                    market["seleccion_ecuabet"] = mapped[2]
+                else:
+                    market["cuota_ecuabet"] = None
+                    market["estado_cuota_ecuabet"] = (
+                        "RESULTADO_DETERMINADO"
+                        if market.get("estado_live") == "CERRADO_RESULTADO_DETERMINADO"
+                        else "NO_ENCONTRADA_EN_ECUABET"
+                    )
+                    market["mercado_ecuabet"] = None
+                    market["seleccion_ecuabet"] = None
+
+            cuotas_live_diagnostico.update({
+                "estado": "OK" if mapped_prices else "SIN_CUOTAS_COMPATIBLES",
+                "fuente": "LiveMatchCollector.match.odds (GetLivenow), mapeo compartido con los motores",
+                "mercados_encontrados": len({str(odd.get("market_id")) for odd in live_odds}),
+                "selecciones_encontradas": live_selection_count,
+                "claves_mapeadas": sorted(mapped_prices.keys()),
+                "claves_sin_cuota": sorted({
+                    str(market.get("clave") or "")
+                    for market in mercados_calculados
+                    if not mapped_prices.get(str(market.get("clave") or ""))
+                }),
+            })
+        except Exception as odds_exc:
+            logger.warning("No se pudieron obtener cuotas LIVE de Ecuabet para %s: %s", ecuabet_event_id, odds_exc)
+            cuotas_live_diagnostico.update({
+                "estado": "ERROR_CONSULTA",
+                "error": str(odds_exc),
+            })
+            for market in mercados_calculados:
+                market["cuota_ecuabet"] = None
+                market["estado_cuota_ecuabet"] = "ERROR_CONSULTA"
+                market["mercado_ecuabet"] = None
+                market["seleccion_ecuabet"] = None
+
+        for market in mercados_calculados:
+            key = str(market.get("clave") or market.get("mercado"))
+            old_market = previous_by_market.get(key, {})
+            try:
+                market["variacion_probabilidad_pp"] = round(float(market["probabilidad"]) - float(old_market["probabilidad"]), 2) if old_market.get("probabilidad") is not None else None
+            except (TypeError, ValueError, KeyError):
+                market["variacion_probabilidad_pp"] = None
+            try:
+                market["variacion_cuota_justa"] = round(float(market["cuota_justa"]) - float(old_market["cuota_justa"]), 3) if old_market.get("cuota_justa") is not None else None
+            except (TypeError, ValueError, KeyError):
+                market["variacion_cuota_justa"] = None
+
+        stage_calculation = {
+            "status": "CALCULO_COMPLETADO" if mercados_calculados else "ESTABLECIENDO_LINEA_BASE",
+            "fuente": "LiveProbabilityCalculator",
+            "motores_ejecutados": [],
+            "motores_involucrados": False,
+            "mercados": mercados_calculados,
+            "cantidad_mercados": len(mercados_calculados),
+            "cuotas_ecuabet_live": cuotas_live_diagnostico,
+            "motivo": (
+                "Cada ciclo actualiza probabilidades y cuotas justas; gol o tarjeta roja nueva activa Acción."
+                if monitoring["detonante"] else
+                "Sin gol ni roja nueva: se actualizan mercados sin reactivar Acción."
+                if previous is not None else "Primera lectura: línea base guardada."
+            ),
+        }
+        stage_reaction = {
+            "senales_recibidas": mercados_calculados,
+            "total_senales_recibidas": len(mercados_calculados),
+            "status": "DETONANTE_NUEVO_CADENA_ACTIVADA" if monitoring["detonante"] else ("OPORTUNIDADES_ACTUALIZADAS_SIN_DETONANTE" if mercados_calculados else "ESTABLECIENDO_LINEA_BASE"),
+            "decision": "ACTUALIZAR_OPORTUNIDADES" if mercados_calculados else "SEGUIR_MONITOREANDO",
+            "ultimo_detonante": last_trigger,
+            "motivo": (
+                "Gol nuevo confirmado: cadena ejecutada y mercados actualizados."
+                if monitoring["detonante"] else
+                "Sin gol ni roja nueva: se conservan mercados y se actualizan probabilidad y cuota justa."
+                if mercados_calculados else "Primera lectura guardada como línea base."
+            ),
+        }
+
+        # Guardar cada observación LIVE para que la siguiente pasada compare marcador/minuto.
+        import hashlib
+        import json
+        fingerprint_data = {
+            "id": int(match.ecuabet_event_id),
+            "minute": str(current_minute or ""),
+            "score": now_score,
+            "status": str(getattr(match, "status", "") or ""),
+        }
+        # Persistir también el resultado completo del Patrón para poder auditarlo después.
+        saved_performance = dict(performance) if isinstance(performance, dict) else {}
+        saved_performance["patron_oportunidades"] = {
+            "ultimo_detonante": last_trigger,
+            "oportunidades_persistentes": mercados_calculados,
+            "partido": {
+                "id": int(match.ecuabet_event_id),
+                "local": str(match.home_team or ""),
+                "visitante": str(match.away_team or ""),
+                "liga": str(match.league or ""),
+                "minuto": str(current_minute or ""),
+                "marcador": now_score,
+                "calidad_datos": str(match.data_quality or ""),
+                "confianza_mapeo": match.mapping_confidence,
+            },
+            "etapas": {
+                "contexto": context_stage,
+                "monitoreo": monitoring,
+                "accion": stage_action,
+                "probabilidad": stage_probability,
+                "calculo": stage_calculation,
+                "reaccion": stage_reaction,
+            },
+            "guardado_en": timezone.localtime().isoformat(),
+        }
+        MatchBehaviorSnapshot.objects.create(
+            ecuabet_event_id=int(match.ecuabet_event_id),
+            flashscore_event_id=str(getattr(match, "flashscore_event_id", "") or ""),
+            home_team=str(match.home_team or ""),
+            away_team=str(match.away_team or ""),
+            league=str(match.league or ""),
+            minute=str(current_minute or ""),
+            minute_number=minute_num,
+            period=str(getattr(match, "period", "") or ""),
+            home_score=home,
+            away_score=away,
+            status=str(getattr(match, "status", "") or ""),
+            performance=saved_performance,
+            odds=[],
+            fingerprint=hashlib.sha256(json.dumps(fingerprint_data, sort_keys=True, default=str).encode("utf-8")).hexdigest(),
+            observed_at=timezone.now(),
+        )
+
+        return JsonResponse({
+            "ok": True,
+            "cuotas_ecuabet_live": cuotas_live_diagnostico,
+            "partido": {
+                "id": match.ecuabet_event_id,
+                "local": match.home_team,
+                "visitante": match.away_team,
+                "liga": match.league,
+                "minuto": current_minute,
+                "marcador": now_score,
+                "calidad_datos": match.data_quality,
+                "confianza_mapeo": match.mapping_confidence,
+                "fuente_datos": (
+                    "Ecuabet · respaldo sin Flashscore"
+                    if (match.performance or {}).get("source") == "ecuabet_fallback"
+                    else "Ecuabet + Flashscore"
+                ),
+                "advertencia_fuente": (match.performance or {}).get("warning", ""),
+            },
+            "etapas": {
+                "contexto": context_stage,
+                "monitoreo": monitoring,
+                "accion": stage_action,
+                "probabilidad": stage_probability,
+                "calculo": stage_calculation,
+                "reaccion": stage_reaction,
+            },
+            "nota": "Simulación del Patrón de Oportunidades con calculador central; los motores quedan fuera de este flujo y no se crean apuestas ni se modifican capitales.",
+        })
+    except MatchMappingError as exc:
+        return JsonResponse({"ok": False, "error": f"No se pudo vincular el partido con Flashscore: {exc}"}, status=422)
+    except Exception as exc:
+        logger.exception("Error en simulación del Patrón de Oportunidades para %s", ecuabet_event_id)
+        return JsonResponse({"ok": False, "error": str(exc)}, status=502)

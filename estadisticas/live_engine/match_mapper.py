@@ -33,10 +33,31 @@ class MatchMapper:
         text = re.sub(r"[^a-z0-9]+", " ", text)
         return re.sub(r"\s+", " ", text).strip()
 
+    # Nombres alternativos confirmados entre proveedores. Las claves y valores
+    # usan el mismo formato producido por _normalize_name; evitar alias cortos
+    # o ambiguos (por ejemplo, "FAR" sin contexto).
+    TEAM_ALIASES = {
+        "hassania union": "hassania agadir",
+        "hassania union sportive agadir": "hassania agadir",
+        "hassania union sportive d agadir": "hassania agadir",
+        "hassania d agadir": "hassania agadir",
+        "hassania dagadir": "hassania agadir",
+        "husa": "hassania agadir",
+        "as far rabat": "far rabat",
+        "as far": "far rabat",
+        "association sportive des forces armees royales": "far rabat",
+        "association sportive des forces armees royales rabat": "far rabat",
+    }
+
+    @classmethod
+    def _canonical_team_name(cls, value: Any) -> str:
+        normalized = cls._normalize_name(value)
+        return cls.TEAM_ALIASES.get(normalized, normalized)
+
     @classmethod
     def _team_similarity(cls, left: Any, right: Any) -> float:
-        a = cls._normalize_name(left)
-        b = cls._normalize_name(right)
+        a = cls._canonical_team_name(left)
+        b = cls._canonical_team_name(right)
         if not a or not b:
             return 0.0
         if a == b:
@@ -157,18 +178,25 @@ class MatchMapper:
         margin = round(best["confidence"] - (second["confidence"] if second else 0.0), 4)
 
         team_ok = best["home_score"] >= 0.55 and best["away_score"] >= 0.55
-        accepted = (
-            team_ok
-            and best["confidence"] >= cls.MIN_CONFIDENCE
-            and (second is None or margin >= cls.MIN_MARGIN)
-        )
+        confidence_ok = best["confidence"] >= cls.MIN_CONFIDENCE
+        margin_ok = second is None or margin >= cls.MIN_MARGIN
+        accepted = team_ok and confidence_ok and margin_ok
+
+        if accepted:
+            reason = "match_confirmed"
+        elif not team_ok:
+            reason = "team_similarity_too_low"
+        elif not confidence_ok:
+            reason = "confidence_too_low"
+        else:
+            reason = "candidate_margin_too_low"
 
         return {
             "matched": accepted,
             "flashscore_event_id": best["flashscore_event_id"] if accepted else None,
             "confidence": best["confidence"],
             "margin": margin,
-            "reason": "match_confirmed" if accepted else "confidence_or_margin_too_low",
+            "reason": reason,
             "candidate": best,
             "candidates": scored[:5],
         }

@@ -1,0 +1,91 @@
+{% extends "estadisticas/base.html" %}
+{% block titulo %}Calendario de Ecuabet | Fútbol Stats{% endblock %}
+{% block contenido %}
+<style>
+.cal-head{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:1.2rem}
+.cal-sub{color:#94a3b8;font-size:.92rem;margin-top:.35rem}
+.cal-actions{display:flex;gap:.6rem;align-items:center}
+.cal-btn{border:1px solid #475569;background:#334155;color:#f8fafc;padding:.65rem .9rem;border-radius:8px;cursor:pointer}
+.cal-btn:hover{background:#475569}
+.cal-meta{display:flex;gap:.7rem;flex-wrap:wrap;margin:1rem 0}
+.cal-pill{border:1px solid #334155;background:#111c30;border-radius:999px;padding:.4rem .75rem;color:#cbd5e1;font-size:.84rem}
+.cal-list{display:grid;gap:.75rem}
+.cal-match{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:1rem;display:grid;grid-template-columns:76px minmax(0,1fr) auto;gap:1rem;align-items:center}
+.cal-time{font-size:1.15rem;font-weight:700;color:#7dd3fc}
+.cal-name{font-weight:650;line-height:1.45}
+.cal-league{font-size:.82rem;color:#94a3b8;margin-top:.3rem}
+.cal-id{font-size:.75rem;color:#64748b;text-align:right}
+.cal-state{font-size:.8rem;color:#cbd5e1;text-align:right}
+.cal-context{display:inline-block;margin-top:.45rem;padding:.38rem .58rem;border-radius:7px;background:#0e7490;color:#fff;text-decoration:none;font-size:.82rem;font-weight:700}.cal-context.pending{background:#334155;color:#cbd5e1;border:1px solid #475569}
+.cal-empty{border:1px dashed #475569;border-radius:10px;padding:2rem;text-align:center;color:#cbd5e1}
+.cal-error{color:#fecaca;background:#450a0a;border:1px solid #991b1b;padding:1rem;border-radius:8px;margin-bottom:1rem}
+@media(max-width:560px){.cal-match{grid-template-columns:58px minmax(0,1fr);gap:.65rem;padding:.8rem}.cal-extra{grid-column:2;text-align:left;display:flex;gap:.5rem;flex-wrap:wrap}.cal-time{font-size:1rem}.cal-id,.cal-state{text-align:left}}
+</style>
+<section class="tarjeta">
+  <div class="cal-head">
+    <div>
+      <h2 style="margin:0">📅 Calendario de Ecuabet</h2>
+      <div class="cal-sub">Programación de fútbol para hoy · <strong id="cal-date">{{ fecha_hoy|date:"l d/m/Y" }}</strong></div>
+    </div>
+    <div class="cal-actions">
+      <span id="cal-updated" class="cal-sub">Cargando...</span>
+      <button id="cal-refresh" class="cal-btn" type="button">↻ Actualizar</button>
+    </div>
+  </div>
+  <div class="cal-meta">
+    <span class="cal-pill">Partidos de hoy: <strong id="cal-count">—</strong></span>
+    <span class="cal-pill">Fuente: Ecuabet</span>
+    <span class="cal-pill">Actualización automática cada 60 s</span>
+  </div>
+  <div id="cal-error"></div>
+  <div id="cal-list" class="cal-list"><div class="cal-empty">Consultando la programación de Ecuabet...</div></div>
+  <p class="cal-sub" style="margin-top:1rem">Este apartado muestra únicamente eventos cuya fecha corresponde al día actual en la zona horaria del proyecto. La cantidad depende de los eventos que entregue la consulta de Ecuabet.</p>
+</section>
+<script>
+(() => {
+  const list = document.getElementById("cal-list");
+  const count = document.getElementById("cal-count");
+  const updated = document.getElementById("cal-updated");
+  const error = document.getElementById("cal-error");
+  const refresh = document.getElementById("cal-refresh");
+  const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  async function loadCalendar() {
+    refresh.disabled = true;
+    refresh.textContent = "Consultando...";
+    try {
+      const response = await fetch("{% url 'estadisticas:api_calendario_ecuabet' %}", {headers: {"Accept":"application/json"}, cache:"no-store"});
+      const data = await response.json();
+      if (!response.ok || !data.ok) throw new Error(data.error || "No se pudo consultar el calendario.");
+      count.textContent = data.count;
+      updated.textContent = "Actualizado " + (data.updated_at || "");
+      error.innerHTML = data.note ? '<div class="cal-empty">' + escapeHtml(data.note) + '<br><small>Eventos revisados: ' + escapeHtml(data.events_returned_by_ecuabet ?? 0) + '</small></div>' : "";
+      if (!data.events.length) {
+        list.innerHTML = '<div class="cal-empty">No hay partidos de hoy disponibles en la respuesta de Ecuabet.</div>';
+        return;
+      }
+      list.innerHTML = data.events.map(event => {
+        const id = event.id ? "ID " + event.id : "ID no disponible";
+        const state = event.status ? escapeHtml(event.status) : "";
+        const contextLink = event.context_available
+          ? '<a class="cal-context" href="{% url "estadisticas:contexto_ecuabet" %}?event_id=' + encodeURIComponent(event.id) + '">🧭 Ver contexto</a>'
+          : '<a class="cal-context pending" href="{% url "estadisticas:contexto_ecuabet" %}?event_id=' + encodeURIComponent(event.id) + '">Contexto pendiente</a>';
+        const contextSummary = event.context_available && event.context
+          ? '<div class="cal-state">Favorito: ' + escapeHtml(event.context.favorite || event.context.status || "Sin favorito") + '</div>'
+          : '';
+        return '<article class="cal-match"><div class="cal-time">' + escapeHtml(event.time || "Hora —") + '</div><div><div class="cal-name">' + escapeHtml(event.name) + '</div><div class="cal-league">' + escapeHtml(event.championship || "Competición no identificada") + '</div>' + contextLink + '</div><div class="cal-extra"><div class="cal-id">' + escapeHtml(id) + '</div><div class="cal-state">' + state + '</div>' + contextSummary + '</div></article>';
+      }).join("");
+    } catch (e) {
+      error.innerHTML = '<div class="cal-error">' + escapeHtml(e.message || "Error cargando el calendario") + '</div>';
+      list.innerHTML = '<div class="cal-empty">No se pudo cargar la programación. Puedes intentarlo de nuevo con Actualizar.</div>';
+      updated.textContent = "Sin conexión";
+    } finally {
+      refresh.disabled = false;
+      refresh.textContent = "↻ Actualizar";
+    }
+  }
+  refresh.addEventListener("click", loadCalendar);
+  loadCalendar();
+  window.setInterval(loadCalendar, 60000);
+})();
+</script>
+{% endblock %}

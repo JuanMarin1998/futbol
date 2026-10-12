@@ -524,3 +524,48 @@ class EcuabetClient:
             "market_inventory": normalized["market_inventory"],
             "markets": normalized["markets"],
         }
+
+
+    def obtener_cuotas_live_evento(self, event_id, sport_id=66):
+        """Obtiene cuotas vigentes de un evento desde el feed LIVE y su detalle."""
+        live_payload = self._request("GET", "GetLivenow", {
+            "eventCount": 0,
+            "sportId": sport_id,
+        })
+        events = live_payload.get("events", []) if isinstance(live_payload, dict) else []
+        event = next(
+            (item for item in events if str(item.get("id") or item.get("eventId")) == str(event_id)),
+            None,
+        )
+        if event is None:
+            raise EcuabetAPIError(f"El evento {event_id} no aparece en GetLivenow")
+
+        detail_payload = {}
+        detail_error = None
+        try:
+            detail_payload = self.obtener_detalle_evento(event_id)
+        except (EcuabetAPIError, requests.RequestException) as exc:
+            detail_error = str(exc)
+
+        normalized = self.normalizar_mercados_evento(event, live_payload, detail_payload)
+        markets = normalized.get("markets") or []
+        active_prices = [
+            selection for market in markets
+            for selection in (market.get("selections") or [])
+            if selection.get("price") is not None
+            and not selection.get("is_suspended")
+            and str(selection.get("status") or "").lower() not in {"suspended", "closed", "inactive"}
+        ]
+        if not active_prices and detail_error:
+            raise EcuabetAPIError(
+                f"El evento LIVE existe, pero no se pudieron obtener cuotas del detalle: {detail_error}"
+            )
+        return {
+            "event_id": int(event_id),
+            "name": event.get("name") or event.get("eventName") or "",
+            "competitor_ids": event.get("competitorIds") or [],
+            "markets": markets,
+            "market_inventory": normalized.get("market_inventory") or {},
+            "detail_error": detail_error,
+            "source": "Ecuabet GetLivenow + GetEventDetails",
+        }

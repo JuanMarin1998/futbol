@@ -1,0 +1,316 @@
+{% extends "estadisticas/base.html" %}
+{% block titulo %}🎯 Simulación del Patrón de Oportunidades{% endblock %}
+{% block contenido %}
+<style>
+.patron-page{max-width:1450px;margin:auto}.panel{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:1.1rem;margin-bottom:1rem}.muted{color:#94a3b8}.matches{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:.8rem}.match-card{background:#0f172a;border:1px solid #334155;border-radius:10px;padding:1rem;min-width:0}.match-card h3{margin:.1rem 0 .6rem;font-size:1rem}.btn{border:0;border-radius:8px;background:#2563eb;color:#fff;padding:.7rem 1rem;cursor:pointer;font-weight:700}.btn:disabled{opacity:.5;cursor:wait}.btn-secondary{background:#334155}.btn-stop{background:#991b1b}.status{padding:.65rem .8rem;border-radius:8px;background:#0f172a;margin:.7rem 0;white-space:pre-wrap}.pill{display:inline-block;border-radius:999px;background:#334155;padding:.2rem .55rem;font-size:.75rem;margin:.12rem}.good{border-color:#15803d}.warn{border-color:#a16207}.bad{border-color:#b91c1c}.match-meta{line-height:1.65;font-size:.9rem}.result-title{font-weight:800;margin-bottom:.35rem}.result-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:.45rem;margin-top:.7rem}.stage-mini{background:#172033;border:1px solid #334155;border-radius:7px;padding:.55rem;font-size:.82rem;overflow-wrap:anywhere}.stage-mini strong{display:block;margin-bottom:.25rem}.op-list{font-size:.82rem;line-height:1.5;margin:.5rem 0 0;padding-left:1.1rem}.best-opportunity{background:linear-gradient(135deg,#422006,#713f12);border:2px solid #facc15;border-radius:12px;padding:1rem;margin:.65rem 0;color:#fef3c7;box-shadow:0 0 0 2px #facc1530,0 8px 24px #0004}.best-opportunity .best-badge{display:inline-block;background:#facc15;color:#422006;border-radius:999px;padding:.22rem .6rem;font-weight:900;font-size:.75rem}.best-opportunity .best-prob{font-size:1.8rem;font-weight:900;color:#fde047}.fav-market{background:#172033;border:1px solid #475569;border-radius:9px;padding:.7rem;margin:.5rem 0}.fav-market.best{border-color:#facc15}.market-row{display:flex;justify-content:space-between;gap:.7rem;flex-wrap:wrap}.market-note{font-size:.82rem;color:#cbd5e1;margin-top:.4rem}.no-value{color:#fecaca;font-weight:700}.section-title{display:flex;gap:.8rem;align-items:center;justify-content:space-between;flex-wrap:wrap}.tabs{display:flex;gap:.5rem;flex-wrap:wrap;margin:1rem 0 0}.tab-btn{border:1px solid #475569;border-radius:8px;background:#0f172a;color:#cbd5e1;padding:.65rem .95rem;cursor:pointer;font-weight:700}.tab-btn.active{background:#2563eb;border-color:#2563eb;color:#fff}.tab-panel[hidden]{display:none!important}@media(max-width:600px){.matches{grid-template-columns:1fr}.tab-btn{flex:1}}
+</style>
+<div class="patron-page">
+ <section class="panel">
+  <h2 style="margin:.1rem 0 .5rem">🎯 Patrón de Oportunidades · Simulación LIVE</h2>
+  <p class="muted">Cada tarjeta reúne el contexto previo, el estado LIVE, las oportunidades calculadas y el detonante detectado. Al pulsar Simular, las seis etapas se ejecutan internamente; no se muestran como un panel separado ni intervienen los motores de apuestas.</p>
+  <div style="display:flex;gap:.6rem;flex-wrap:wrap">
+   <button id="reloadMatches" class="btn btn-secondary">↻ Actualizar candidatos</button>
+   <button id="startAll" class="btn">▶ Simular todos los partidos elegibles</button>
+   <button id="stopAll" class="btn btn-stop" disabled>■ Detener simulación</button>
+  </div>
+  <div id="listStatus" class="status">Buscando partidos LIVE con contexto y favorito…</div>
+  <div class="muted">La simulación consulta los partidos elegibles en ciclos de 30 segundos. Cada tarjeta conserva el último marcador observado y muestra si detectó un gol nuevo o sigue monitoreando.</div>
+  <nav class="tabs" aria-label="Secciones del Patrón de Oportunidades"><button type="button" class="tab-btn active" data-tab="principal">① Partidos elegibles</button><button type="button" class="tab-btn" data-tab="oportunidades">③ Oportunidades</button><button type="button" class="tab-btn" data-tab="historial">④ Historial y cuadro</button></nav>
+ </section>
+ <div class="tab-panel" data-tab-panel="principal">
+ <section class="panel">
+  <div class="section-title"><h3 style="margin-top:0">1. Partidos elegibles</h3><span id="candidateCount" class="pill">0 partidos</span></div>
+  <div id="matches" class="matches"><p class="muted">Cargando…</p></div>
+ </section>
+ <span id="cycleLabel" class="pill" hidden>Sin iniciar</span>
+ </div>
+ <div class="tab-panel" data-tab-panel="oportunidades" hidden>
+ <section class="panel" id="opportunitiesPanel">
+  <div class="section-title"><h3 style="margin-top:0">🎯 Oportunidades · señales recibidas por Reacción</h3><span id="opportunityCount" class="pill">0 señales</span></div>
+  <p class="muted">Registro de mercados calculados por el Patrón: resultado, doble oportunidad, ambos marcan y goles, con marcador, minuto, probabilidad estimada, cuota justa y variaciones entre ciclos. Las oportunidades se conservan y actualizan mientras el partido siga en seguimiento.</p>
+  <div id="opportunitiesResults" class="matches"><p class="muted">Inicia la simulación para que aparezcan los mercados calculados y sus cambios.</p></div>
+ </section>
+ </div>
+ <div class="tab-panel" data-tab-panel="historial" hidden>
+ <section class="panel">
+  <div class="section-title"><h3 style="margin-top:0">📚 Historial y cuadro de registros</h3><button id="reloadHistory" class="btn btn-secondary">↻ Cargar historial</button></div>
+  <p class="muted">Cada pasada queda guardada en la base de datos con marcador, minuto y las seis etapas. Filtra por nombre o ID de Ecuabet y abre el diagnóstico de cada registro.</p>
+  <input id="historyFilter" type="search" placeholder="Filtrar por partido o ID de Ecuabet…" style="box-sizing:border-box;width:100%;padding:.7rem;border-radius:8px;border:1px solid #475569;background:#0f172a;color:inherit;margin-bottom:.7rem">
+  <div id="historyStatus" class="status">Cargando historial guardado…</div>
+  <div id="historyResults" class="matches"><p class="muted">Consultando registros guardados…</p></div>
+ </section>
+ </div>
+</div>
+<script>
+(function(){
+ const tabButtons=Array.from(document.querySelectorAll('[data-tab]'));
+ const tabPanels=Array.from(document.querySelectorAll('[data-tab-panel]'));
+ function activateTab(name){
+  tabButtons.forEach(button=>{const active=button.dataset.tab===name;button.classList.toggle('active',active);button.setAttribute('aria-selected',active?'true':'false');});
+  tabPanels.forEach(panel=>{panel.hidden=panel.dataset.tabPanel!==name;});
+ }
+ tabButtons.forEach(button=>button.addEventListener('click',()=>activateTab(button.dataset.tab)));
+ activateTab('principal');
+ const matchesEl=document.getElementById('matches');
+ const resultsEl=matchesEl;
+ const listStatus=document.getElementById('listStatus');
+ const candidateCount=document.getElementById('candidateCount');
+ const cycleLabel=document.getElementById('cycleLabel');
+ const startBtn=document.getElementById('startAll');
+ const stopBtn=document.getElementById('stopAll');
+ const reloadBtn=document.getElementById('reloadMatches');
+ const reloadHistoryBtn=document.getElementById('reloadHistory');
+ const historyFilter=document.getElementById('historyFilter');
+ const historyStatus=document.getElementById('historyStatus');
+ const historyResults=document.getElementById('historyResults');
+ const opportunitiesResults=document.getElementById('opportunitiesResults');
+ const opportunityCount=document.getElementById('opportunityCount');
+ let opportunityRecords=[];
+ const candidatesUrl="{% url 'estadisticas:api_patron_oportunidades_partidos' %}";
+ const historyUrl="{% url 'estadisticas:api_historial_patron_oportunidades' %}";
+ const simulationUrl="{% url 'estadisticas:api_simular_patron_oportunidades' 0 %}";
+ let running=false, busy=false, cycle=0, lastIds=[], savedHistory=[];
+ function esc(v){return String(v==null?'—':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+ function pretty(v){return typeof v==='object'&&v!==null?JSON.stringify(v):String(v==null?'—':v);}
+ function scoreText(v){if(Array.isArray(v))return v.join(' - ');return pretty(v);}
+ async function fetchCandidates(){
+  listStatus.textContent='Sincronizando contextos guardados con el feed LIVE de Ecuabet…';
+  try{
+   const res=await fetch(candidatesUrl,{cache:'no-store'});
+   const data=await res.json();
+   if(!res.ok||!data.ok)throw new Error(data.error||'No se pudieron consultar los candidatos.');
+   const events=data.events||[];
+   lastIds=events.map(e=>String(e.id));
+   candidateCount.textContent=events.length+' partidos LIVE';
+   listStatus.textContent='Contextos de hoy: '+(data.contexts_found||0)+' · Favoritos por regla: '+(data.favorite_contexts||0)+' · En LIVE y elegibles: '+events.length+' · Actualizado: '+(data.updated_at||'—');
+   if(!events.length){
+    matchesEl.innerHTML='<p class="muted">No hay partidos que cumplan los tres requisitos: contexto guardado, favorito 1.05–2.00 y partido actualmente LIVE.</p>';
+   }else if(running){
+    // Mantener las tarjetas y resultados existentes entre ciclos. Solo refrescar los campos LIVE.
+    const activeIds=new Set(events.map(e=>'pattern-result-'+String(e.id)));
+    events.forEach(e=>{
+     const id='pattern-result-'+String(e.id);
+     let card=document.getElementById(id);
+     if(!card){matchesEl.insertAdjacentHTML('beforeend',candidateCard(e));card=document.getElementById(id);}
+     if(card){
+      const score=card.querySelector('.live-score');
+      const minute=card.querySelector('.live-minute');
+      if(score)score.textContent=scoreText(e.score);
+      if(minute)minute.textContent=pretty(e.live_time);
+      card.dataset.eventName=e.name||'';
+     }
+    });
+    Array.from(matchesEl.querySelectorAll('.match-card[id^="pattern-result-"]')).forEach(card=>{if(!activeIds.has(card.id))card.remove();});
+   }else{
+    matchesEl.innerHTML=events.map(e=>candidateCard(e)).join('');
+   }
+   return events;
+  }catch(err){
+   listStatus.textContent='Error al consultar candidatos: '+err.message;
+   matchesEl.innerHTML='<p class="muted">No se pudo cargar la lista filtrada.</p>';
+   return [];
+  }
+ }
+ function candidateCard(e){
+  return '<article class="match-card" id="pattern-result-'+esc(e.id)+'" data-event-name="'+esc(e.name)+'"><h3>'+esc(e.name)+'</h3><div class="match-meta"><div><strong>Favorito:</strong> <span class="static-favorite">'+esc(e.favorite)+'</span></div><div><strong>Cuotas iniciales (1X2):</strong> <span class="static-odds">'+esc(e.home_odds)+' / '+esc(e.draw_odds)+' / '+esc(e.away_odds)+'</span></div><div><strong>Marcador LIVE:</strong> <span class="live-score">'+esc(scoreText(e.score))+'</span></div><div><strong>Minuto/estado:</strong> <span class="live-minute">'+esc(pretty(e.live_time))+'</span></div><div class="muted"><strong>Contexto capturado:</strong> <span class="static-captured">'+esc(e.captured_at||'—')+'</span></div></div><p><span class="pill simulation-status">Esperando simulación</span></p><div class="result-title">Oportunidades y cuotas</div><div class="opportunities-content"><p class="muted">Aún no hay resultado calculado. Se conserva aquí al iniciar el seguimiento.</p></div><div class="stage-mini detonante-content"><strong>Detonante / último estado</strong>Esperando la primera lectura.</div><div class="muted updated-at" style="margin-top:.6rem;font-size:.78rem">Sin lectura de simulación todavía.</div><div class="simulation-error"></div></article>';
+ }
+ function resultCard(e,data,error){
+  const card=document.getElementById('pattern-result-'+String(e.id));
+  if(!card)return;
+  const status=card.querySelector('.simulation-status');
+  const opp=card.querySelector('.opportunities-content');
+  const trigger=card.querySelector('.detonante-content');
+  const updated=card.querySelector('.updated-at');
+  const errEl=card.querySelector('.simulation-error');
+  if(error){
+   card.classList.add('bad');
+   if(status)status.textContent='Error de simulación';
+   if(errEl)errEl.innerHTML='<p>'+esc(error)+'</p>';
+   if(updated)updated.textContent='No se actualizó el resultado; se conserva la última lectura válida.';
+   return;
+  }
+  card.classList.remove('bad');
+  const stages=data.etapas||{}, calc=stages.calculo||{}, monitor=stages.monitoreo||{}, reaction=stages.reaccion||{};
+  const ops=calc.mercados||[];
+  // Mostrar todos los mercados calculados: resultado, doble oportunidad, ambos marcan y goles.
+  const probabilityQuality=Number(stages.probabilidad?.calidad_datos??0);
+  const fallbackOnly=!!data.partido?.advertencia_fuente||String(data.partido?.fuente_datos||'').includes('respaldo sin Flashscore');
+  const candidates=ops.filter(op=>!String(op.estado_live||'').startsWith('CERRADO')).map(op=>{
+   const p=Number(op.probabilidad);
+   const odd=op.cuota_ecuabet==null?null:Number(op.cuota_ecuabet);
+   const fair=op.cuota_justa==null?null:Number(op.cuota_justa);
+   let evReason='';
+   if(!Number.isFinite(p)||p<=0||p>=99) evReason='la probabilidad es extrema y no permite una comparación fiable';
+   else if(probabilityQuality<0.75) evReason='faltan al menos tres estadísticas LIVE comparables para validar la probabilidad';
+   else if(fallbackOnly) evReason='el partido usa respaldo de Ecuabet sin estadísticas independientes de Flashscore';
+   else if(odd==null||!Number.isFinite(odd)||odd<=1) evReason='falta una cuota LIVE válida para este mercado';
+   const ev=!evReason?(p/100*odd-1)*100:null;
+   return {...op,_p:p,_odd:odd,_fair:fair,_ev:ev,_evReason:evReason};
+  }).filter(op=>Number.isFinite(op._p));
+  candidates.sort((a,b)=>{
+   const av=a._ev==null?-Infinity:a._ev, bv=b._ev==null?-Infinity:b._ev;
+   if(av!==bv)return bv-av;
+   return b._p-a._p;
+  });
+  const best=candidates[0]||null;
+  const labelFor=op=>op.mercado||op.nombre||'Mercado del favorito';
+  const probabilityText=p=>p>=99?'≥99% (extrema)':p<=1?'≤1% (extrema)':p.toFixed(2)+'%';
+  const marketHtml=op=>{
+   const evText=op._ev==null?'Valor no evaluable: '+(op._evReason||'datos insuficientes para validar la estimación'):('Valor esperado estimado: '+(op._ev>0?'+':'')+op._ev.toFixed(2)+'% por unidad');
+   const fairText=op._fair!=null&&Number.isFinite(op._fair)?op._fair.toFixed(3):'—';
+   const oddText=op._odd!=null&&Number.isFinite(op._odd)?op._odd.toFixed(3):'No disponible';
+   return '<div class="fav-market'+(best&&op.clave===best.clave?' best':'')+'"><div class="market-row"><strong>'+esc(labelFor(op))+'</strong><strong>'+esc(probabilityText(op._p))+'</strong></div><div class="market-note">Cuota LIVE: '+esc(oddText)+' · Cuota justa: '+esc(fairText)+'</div><div class="market-note">'+esc(evText)+'</div></div>';
+  };
+  let opsHtml='';
+  if(best){
+   const positive=best._ev!=null&&best._ev>0;
+   const evaluable=best._ev!=null;
+   const heading=positive?'MEJOR OPORTUNIDAD':evaluable?'MEJOR ALTERNATIVA EVALUADA':'SEÑAL SIN VALIDAR';
+   const sub=!evaluable?'No se declara una oportunidad: '+(best._evReason||'faltan datos fiables')+'.':positive?'La estimación y los datos disponibles sugieren valor; no garantiza un resultado.':'Ningún mercado evaluado ofrece valor esperado positivo con las cuotas actuales.';
+   opsHtml='<div class="best-opportunity"><span class="best-badge">★ '+heading+'</span><div style="font-size:1.05rem;font-weight:800;margin-top:.65rem">'+esc(labelFor(best))+'</div><div class="best-prob">'+esc(probabilityText(best._p))+'</div><div>'+esc(sub)+'</div></div>'+candidates.map(marketHtml).join('');
+  }else{
+   opsHtml='<p class="muted">No hay mercados abiertos en esta lectura. Se mostrarán resultado, doble oportunidad, ambos marcan y goles cuando el cálculo esté disponible.</p>';
+  }
+  if(ops.length&&opp)opp.innerHTML=opsHtml;
+  const triggerLabel=monitor.gol_nuevo?'GOL NUEVO DETECTADO':(monitor.tarjeta_roja_nueva?'TARJETA ROJA DETECTADA':(monitor.status==='SIN_BASELINE_PREVIO'?'ESTABLECIENDO LÍNEA BASE':'Sin gol ni roja nueva · monitoreando'));
+  const triggerText=monitor.motivo||reaction.motivo||'Se conserva el estado anterior y se compara en el siguiente ciclo.';
+  if(status)status.textContent=running?'Simulando':'Última lectura';
+  if(trigger)trigger.innerHTML='<strong>Detonante / último estado</strong>'+esc(triggerLabel)+' · '+esc(triggerText)+'<br><span class="muted">Marcador anterior: '+esc(scoreText(monitor.marcador_anterior))+' · Marcador guardado: '+esc(scoreText(monitor.marcador_actual||data.partido.marcador))+'</span>';
+  if(updated)updated.textContent='Última actualización: '+new Date().toLocaleTimeString()+' · Próxima comparación en el siguiente ciclo.';
+  const sourceWarning=data.partido?.advertencia_fuente||'';
+  const sourceLabel=data.partido?.fuente_datos||'Ecuabet + Flashscore';
+  if(errEl){
+   errEl.innerHTML=sourceWarning
+    ? '<div class="status warn"><strong>⚠️ '+esc(sourceLabel)+'</strong><br>'+esc(sourceWarning)+'</div>'
+    : '';
+  }
+  card.classList.toggle('good',!!monitor.gol_nuevo||!!monitor.tarjeta_roja_nueva);
+  // El contexto previo (favorito, cuotas iniciales y captura) no se reemplaza con datos LIVE.
+  const score=card.querySelector('.live-score'), minute=card.querySelector('.live-minute');
+  if(score)score.textContent=scoreText(data.partido.marcador||'—');
+  if(minute)minute.textContent=pretty(data.partido.minuto||'—');
+ }
+ function renderOpportunities(){
+  opportunityCount.textContent=opportunityRecords.length+' mercados activos';
+  if(!opportunityRecords.length){
+   opportunitiesResults.innerHTML='<p class="muted">Primera lectura: guardando línea base. Los mercados aparecerán en el siguiente ciclo.</p>';
+   return;
+  }
+  const movement=(value,suffix)=>{
+   if(value==null||!Number.isFinite(Number(value)))return 'sin variación previa';
+   const n=Number(value);
+   return n===0?'sin cambio':(n>0?'↑ +':'↓ ')+n+suffix;
+  };
+  opportunitiesResults.innerHTML=opportunityRecords.slice().sort((a,b)=>a.partido.localeCompare(b.partido)||String(a.signal.mercado).localeCompare(String(b.signal.mercado))).map(record=>{
+   const op=record.signal||{};
+   return '<article class="match-card"><h3>'+esc(record.partido||'Partido desconocido')+' · '+esc(op.mercado||'Mercado')+'</h3><div class="match-meta"><strong>Marcador:</strong> '+esc(scoreText(record.marcador))+' · <strong>Minuto:</strong> '+esc(record.minuto||'—')+'<br><strong>Probabilidad:</strong> '+esc(op.probabilidad==null?'—':op.probabilidad+'%')+' ('+esc(movement(op.variacion_probabilidad_pp,' pp'))+')<br><strong>Cuota justa calculada:</strong> '+esc(op.cuota_justa==null?'—':op.cuota_justa)+' ('+esc(movement(op.variacion_cuota_justa,''))+')<br><strong>Cuota Ecuabet LIVE:</strong> '+esc(op.cuota_ecuabet==null?'No disponible':op.cuota_ecuabet)+'<br><strong>Actualizado:</strong> '+esc(record.registrado||'—')+'</div></article>';
+  }).join('');
+ }
+ function renderHistory(){
+  const term=(historyFilter.value||'').trim().toLowerCase();
+  const filtered=savedHistory.filter(item=>{
+   const p=item.partido||{};
+   return (String(item.event_id)+' '+String(p.local||'')+' '+String(p.visitante||'')+' '+String(p.liga||'')).toLowerCase().includes(term);
+  });
+  if(!filtered.length){
+   historyResults.innerHTML='<p class="muted">'+(savedHistory.length?'No hay registros que coincidan con el filtro.':'Aún no hay simulaciones guardadas. Los nuevos resultados aparecerán aquí después de cada pasada.')+'</p>';
+   return;
+  }
+  historyResults.innerHTML=filtered.map(item=>{
+   const p=item.partido||{}, stages=item.etapas||{}, calc=stages.calculo||{}, react=stages.reaccion||{};
+   return '<article class="match-card"><h3>'+esc((p.local||'Local')+' vs '+(p.visitante||'Visitante'))+'</h3><div class="match-meta"><strong>Fecha:</strong> '+esc(item.observed_at||item.guardado_en||'')+'<br><strong>Marcador:</strong> '+esc(scoreText(p.marcador))+' · <strong>Minuto:</strong> '+esc(p.minuto||'—')+'<br><strong>Liga:</strong> '+esc(p.liga||'—')+' · <strong>ID:</strong> '+esc(item.event_id)+'<br><strong>Reacción:</strong> '+esc(react.decision||'—')+' · <strong>Oportunidades:</strong> '+esc((calc.oportunidades||[]).length)+'</div><details><summary>Ver etapas y diagnóstico guardado</summary><pre class="match-meta">'+esc(JSON.stringify(stages,null,2))+'</pre></details></article>';
+  }).join('');
+ }
+ async function fetchHistory(){
+  historyStatus.textContent='Consultando historial guardado en la base de datos…';
+  try{
+   const res=await fetch(historyUrl,{cache:'no-store'}), data=await res.json();
+   if(!res.ok||!data.ok)throw new Error(data.error||'No se pudo cargar el historial.');
+   savedHistory=data.results||[];
+   historyStatus.textContent='Registros guardados: '+savedHistory.length+' · Se muestran hasta los 200 más recientes.';
+   renderHistory();
+  }catch(err){
+   historyStatus.textContent='Error al cargar historial: '+err.message;
+   historyResults.innerHTML='<p class="muted">No se pudo consultar el historial guardado.</p>';
+  }
+ }
+ async function simulateCycle(){
+  if(!running||busy)return;
+  busy=true;cycle++;cycleLabel.textContent='Ciclo '+cycle+' · ejecutando';
+  startBtn.disabled=true;reloadBtn.disabled=true;
+  try{
+   const events=await fetchCandidates();
+   if(!running)return;
+   if(!events.length){
+    resultsEl.innerHTML='<p class="muted">No hay partidos elegibles en este ciclo. Se volverán a buscar mientras la simulación permanezca activa.</p>';
+   }else{
+    const resultById={};
+    // No vaciar la pantalla al empezar el ciclo: conservar resultados anteriores.
+    events.forEach(event=>{
+     if(!document.getElementById('pattern-result-'+String(event.id)))matchesEl.insertAdjacentHTML('beforeend',candidateCard(event));
+    });
+    const jobs=events.map(async(event,idx)=>{
+     const target=document.getElementById('pattern-result-'+String(event.id));
+     if(target){const status=target.querySelector('.simulation-status');if(status)status.textContent='Simulando internamente · '+(idx+1)+' de '+events.length;}
+     try{
+      const url=simulationUrl.replace('/0/','/'+encodeURIComponent(event.id)+'/');
+      const res=await fetch(url,{cache:'no-store'});
+      const data=await res.json();
+      if(!res.ok||!data.ok)throw new Error(data.error||'Falló la simulación.');
+      resultById[String(event.id)]={event,data};
+      const reaction=data.etapas&&data.etapas.reaccion||{};
+      const allSignals=reaction.senales_recibidas||[];
+      // Registrar todos los mercados abiertos, incluidos BTTS y totales de goles.
+      const signals=allSignals.filter(signal=>!String(signal.estado_live||'').startsWith('CERRADO'));
+      signals.forEach(signal=>{
+       const key=String(event.id)+'::'+String(signal.clave||signal.mercado);
+       const existingIndex=opportunityRecords.findIndex(record=>record.key===key);
+       const record={key:key,event_id:String(event.id),partido:(data.partido.local+' vs '+data.partido.visitante),marcador:data.partido.marcador,minuto:data.partido.minuto,registrado:new Date().toLocaleString(),signal:signal};
+       if(existingIndex>=0)opportunityRecords[existingIndex]=record;
+       else opportunityRecords.push(record);
+      });
+      renderOpportunities();
+      const current=document.getElementById('pattern-result-'+String(event.id));
+      resultCard(event,data,null);
+     }catch(err){
+      const current=document.getElementById('pattern-result-'+String(event.id));
+      resultCard(event,null,err.message);
+     }
+    });
+    cycleLabel.textContent='Ciclo '+cycle+' · '+events.length+' partidos ejecutándose en paralelo';
+    await Promise.all(jobs);
+    cycleLabel.textContent='Ciclo '+cycle+' · '+events.length+' partidos procesados en paralelo';
+   }
+  }catch(err){listStatus.textContent='Error del ciclo: '+err.message;}
+  finally{
+   busy=false;
+   if(running){
+    cycleLabel.textContent='Ciclo '+cycle+' finalizado · siguiente ciclo en 30 s';
+    window.setTimeout(simulateCycle,30000);
+   }else{
+    startBtn.disabled=false;reloadBtn.disabled=false;stopBtn.disabled=true;
+    cycleLabel.textContent='Detenido · último ciclo '+cycle;
+   }
+  }
+ }
+ startBtn.addEventListener('click',()=>{
+  if(running)return;
+  running=true;startBtn.disabled=true;stopBtn.disabled=false;
+  resultsEl.innerHTML='<p class="muted">Iniciando simulación continua para todos los partidos elegibles…</p>';
+  renderOpportunities();
+  simulateCycle();
+ });
+ stopBtn.addEventListener('click',()=>{
+  running=false;stopBtn.disabled=true;cycleLabel.textContent='Deteniendo después de la pasada en curso…';
+  if(!busy){startBtn.disabled=false;reloadBtn.disabled=false;cycleLabel.textContent='Detenido';}
+ });
+ reloadBtn.addEventListener('click',async()=>{
+  reloadBtn.disabled=true;await fetchCandidates();reloadBtn.disabled=running;
+ });
+ reloadHistoryBtn.addEventListener('click',fetchHistory);
+ historyFilter.addEventListener('input',renderHistory);
+ fetchCandidates();
+ fetchHistory();
+})();
+</script>
+{% endblock %}

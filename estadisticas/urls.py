@@ -2,6 +2,7 @@ from django.urls import path
 from . import views
 from . import views_live
 from . import views_odds
+from . import views_runners
 
 app_name = "estadisticas"
 
@@ -13,6 +14,21 @@ urlpatterns = [
     path("api/live/<int:fixture_id>/", views_live.api_detalle_partido_en_vivo, name="api_live_detail"),
     path("live/experimento/", views_live.experimento_live, name="experimento_live"),
     path("live/patrones/", views_live.laboratorio_patrones, name="laboratorio_patrones"),
+    path("live/patron-oportunidades/", views_live.patron_oportunidades, name="patron_oportunidades"),
+    path("live/corredores/", views_runners.corredores_apuestas, name="corredores_apuestas"),
+    path("api/live/corredores/estado/", views_runners.api_corredores_estado, name="api_corredores_estado"),
+    path("api/live/corredores/iniciar/", views_runners.api_corredores_iniciar, name="api_corredores_iniciar"),
+    path("api/live/corredores/pausar/", views_runners.api_corredores_pausar, name="api_corredores_pausar"),
+    path("api/live/corredores/ciclo/", views_runners.api_corredores_ciclo, name="api_corredores_ciclo"),
+    path("api/live/corredores/liquidar/", views_runners.api_corredores_liquidar, name="api_corredores_liquidar"),
+    path("api/live/corredores/reiniciar/", views_runners.api_corredores_reiniciar, name="api_corredores_reiniciar"),
+    path("api/live/patron-oportunidades/partidos/", views_live.api_patron_oportunidades_partidos, name="api_patron_oportunidades_partidos"),
+    path("api/live/patron-oportunidades/historial/", views_live.api_historial_patron_oportunidades, name="api_historial_patron_oportunidades"),
+    path("api/live/patron-oportunidades/<int:ecuabet_event_id>/", views_live.api_simular_patron_oportunidades, name="api_simular_patron_oportunidades"),
+    path("live/calendario/", views_live.calendario_ecuabet, name="calendario_ecuabet"),
+    path("api/live/calendario/", views_live.api_calendario_ecuabet, name="api_calendario_ecuabet"),
+    path("live/contexto/", views_live.contexto_ecuabet, name="contexto_ecuabet"),
+    path("api/live/contexto/generar/", views_live.api_generar_contexto_ecuabet, name="api_generar_contexto_ecuabet"),
     path("live/ecuabet/", views_live.ecuabet_live, name="ecuabet_live"),
     path("live/ecuabet/<int:ecuabet_event_id>/", views_live.ecuabet_live_detalle, name="ecuabet_live_detalle"),
     path("api/live/ecuabet/", views_live.api_ecuabet_live, name="api_ecuabet_live"),
