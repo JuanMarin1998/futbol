@@ -1988,14 +1988,14 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
                 "datos_evaluados": [context_stage["status"], f"minuto {current_minute}", f"marcador {home}-{away}", stats_read],
                 "estadisticas_live": performance,
                 "cambios_detectados": changed_stats[:30],
-                "estadisticas_live": performance,
-                "cambios_detectados": changed_stats[:30],
             }
         else:
             stage_action = {
                 "status": "PENDIENTE_DE_DETONANTE",
                 "diagnostico": f"No se activa Acción porque no cambiaron los datos LIVE. Estado observado: {score_read}; {stats_read}",
                 "datos_evaluados": [context_stage["status"], f"minuto {current_minute}", f"marcador {home}-{away}", stats_read],
+                "estadisticas_live": performance,
+                "cambios_detectados": changed_stats[:30],
             }
 
         engine_specs = [
