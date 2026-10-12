@@ -135,10 +135,12 @@
   const opsHtml=ops.length?'<ul class="op-list">'+ops.map(op=>{
    const probability=Number(op.probabilidad);
    const impossible=Number.isFinite(probability)&&(probability<=0.01||probability>=99.99);
-   const fair=op.cuota_justa==null?'—':(Number.isFinite(Number(op.cuota_justa))&&Number(op.cuota_justa)<1000?Number(op.cuota_justa).toFixed(3):'No aplicable (probabilidad extrema)');
+   const fair=op.cuota_justa==null?'No aplicable':(Number.isFinite(Number(op.cuota_justa))&&Number(op.cuota_justa)<1000?Number(op.cuota_justa).toFixed(3):'No aplicable (probabilidad extrema)');
    const live=op.cuota_ecuabet==null?'No disponible':op.cuota_ecuabet;
-   const selection=op.seleccion||op.resultado||'—';
-   return '<li><strong>'+esc(op.mercado||op.nombre||'Mercado')+'</strong> · Selección: '+esc(selection)+'<br>Probabilidad estimada: '+esc(op.probabilidad==null?'—':op.probabilidad+'%')+' · Cuota justa: '+esc(fair)+' · Cuota Ecuabet LIVE: '+esc(live)+(impossible?'<br><span class="muted">Probabilidad extrema: no tratar como oportunidad sin validar el mercado y el estado del partido.</span>':'')+'<br>Variación probabilidad: '+esc(op.variacion_probabilidad_pp==null?'línea base':(op.variacion_probabilidad_pp>0?'+':'')+op.variacion_probabilidad_pp+' pp')+' · Variación cuota justa: '+esc(op.variacion_cuota_justa==null?'línea base':(op.variacion_cuota_justa>0?'+':'')+op.variacion_cuota_justa)+'</li>';
+   const selection=op.seleccion||op.resultado||'';
+   const settled=String(op.estado_live||'').startsWith('CERRADO');
+   const variation=op.variacion_cuota_justa==null||fair==='No aplicable'?'No disponible':(op.variacion_cuota_justa>0?'+':'')+op.variacion_cuota_justa;
+   return '<li><strong>'+esc(op.mercado||op.nombre||'Mercado')+'</strong>'+(selection?' · Selección: '+esc(selection):'')+' '+(settled?'<span class="pill">Mercado determinado</span>':'')+'<br>Probabilidad estimada: '+esc(op.probabilidad==null?'—':op.probabilidad+'%')+' · Cuota justa: '+esc(fair)+' · Cuota Ecuabet LIVE: '+esc(live)+(impossible?'<br><span class="muted">Probabilidad extrema: no tratar como oportunidad abierta.</span>':'')+'<br>Variación probabilidad: '+esc(op.variacion_probabilidad_pp==null?'línea base':(op.variacion_probabilidad_pp>0?'+':'')+op.variacion_probabilidad_pp+' pp')+' · Variación cuota justa: '+esc(variation)+'</li>';
   }).join('')+'</ul>':'<p class="muted">Sin mercados calculados en esta lectura. Se conserva la última oportunidad válida si existía.</p>';
   if(ops.length&&opp)opp.innerHTML=opsHtml;
   const triggerLabel=monitor.gol_nuevo?'GOL NUEVO DETECTADO':(monitor.status==='SIN_BASELINE_PREVIO'?'ESTABLECIENDO LÍNEA BASE':'Sin gol nuevo · monitoreando');
