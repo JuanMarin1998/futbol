@@ -16,6 +16,7 @@
 .cal-league{font-size:.82rem;color:#94a3b8;margin-top:.3rem}
 .cal-id{font-size:.75rem;color:#64748b;text-align:right}
 .cal-state{font-size:.8rem;color:#cbd5e1;text-align:right}
+.cal-context{display:inline-block;margin-top:.45rem;padding:.38rem .58rem;border-radius:7px;background:#0e7490;color:#fff;text-decoration:none;font-size:.82rem;font-weight:700}.cal-context.pending{background:#334155;color:#cbd5e1;border:1px solid #475569}
 .cal-empty{border:1px dashed #475569;border-radius:10px;padding:2rem;text-align:center;color:#cbd5e1}
 .cal-error{color:#fecaca;background:#450a0a;border:1px solid #991b1b;padding:1rem;border-radius:8px;margin-bottom:1rem}
 @media(max-width:560px){.cal-match{grid-template-columns:58px minmax(0,1fr);gap:.65rem;padding:.8rem}.cal-extra{grid-column:2;text-align:left;display:flex;gap:.5rem;flex-wrap:wrap}.cal-time{font-size:1rem}.cal-id,.cal-state{text-align:left}}
@@ -65,7 +66,13 @@
       list.innerHTML = data.events.map(event => {
         const id = event.id ? "ID " + event.id : "ID no disponible";
         const state = event.status ? escapeHtml(event.status) : "";
-        return '<article class="cal-match"><div class="cal-time">' + escapeHtml(event.time || "Hora —") + '</div><div><div class="cal-name">' + escapeHtml(event.name) + '</div><div class="cal-league">' + escapeHtml(event.championship || "Competición no identificada") + '</div></div><div class="cal-extra"><div class="cal-id">' + escapeHtml(id) + '</div><div class="cal-state">' + state + '</div></div></article>';
+        const contextLink = event.context_available
+          ? '<a class="cal-context" href="{% url "estadisticas:contexto_ecuabet" %}?event_id=' + encodeURIComponent(event.id) + '">🧭 Ver contexto</a>'
+          : '<a class="cal-context pending" href="{% url "estadisticas:contexto_ecuabet" %}?event_id=' + encodeURIComponent(event.id) + '">Contexto pendiente</a>';
+        const contextSummary = event.context_available && event.context
+          ? '<div class="cal-state">Favorito: ' + escapeHtml(event.context.favorite || event.context.status || "Sin favorito") + '</div>'
+          : '';
+        return '<article class="cal-match"><div class="cal-time">' + escapeHtml(event.time || "Hora —") + '</div><div><div class="cal-name">' + escapeHtml(event.name) + '</div><div class="cal-league">' + escapeHtml(event.championship || "Competición no identificada") + '</div>' + contextLink + '</div><div class="cal-extra"><div class="cal-id">' + escapeHtml(id) + '</div><div class="cal-state">' + state + '</div>' + contextSummary + '</div></article>';
       }).join("");
     } catch (e) {
       error.innerHTML = '<div class="cal-error">' + escapeHtml(e.message || "Error cargando el calendario") + '</div>';
