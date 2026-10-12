@@ -24,6 +24,13 @@
   <div class="section-title"><h3 style="margin-top:0">Resultados de la simulación por partido</h3><span id="cycleLabel" class="pill">Sin iniciar</span></div>
   <div id="results" class="matches"><p class="muted">Pulsa «Simular todos los partidos elegibles» para iniciar.</p></div>
  </section>
+ <section class="panel">
+  <div class="section-title"><h3 style="margin-top:0">📚 Historial guardado de partidos</h3><button id="reloadHistory" class="btn btn-secondary">↻ Cargar historial</button></div>
+  <p class="muted">Cada pasada queda guardada en la base de datos con marcador, minuto y las seis etapas. Filtra por nombre o ID de Ecuabet y abre el diagnóstico de cada registro.</p>
+  <input id="historyFilter" type="search" placeholder="Filtrar por partido o ID de Ecuabet…" style="box-sizing:border-box;width:100%;padding:.7rem;border-radius:8px;border:1px solid #475569;background:#0f172a;color:inherit;margin-bottom:.7rem">
+  <div id="historyStatus" class="status">Cargando historial guardado…</div>
+  <div id="historyResults" class="matches"><p class="muted">Consultando registros guardados…</p></div>
+ </section>
 </div>
 <script>
 (function(){
@@ -35,9 +42,14 @@
  const startBtn=document.getElementById('startAll');
  const stopBtn=document.getElementById('stopAll');
  const reloadBtn=document.getElementById('reloadMatches');
+ const reloadHistoryBtn=document.getElementById('reloadHistory');
+ const historyFilter=document.getElementById('historyFilter');
+ const historyStatus=document.getElementById('historyStatus');
+ const historyResults=document.getElementById('historyResults');
  const candidatesUrl="{% url 'estadisticas:api_patron_oportunidades_partidos' %}";
+ const historyUrl="{% url 'estadisticas:api_historial_patron_oportunidades' %}";
  const simulationUrl="{% url 'estadisticas:api_simular_patron_oportunidades' 0 %}";
- let running=false, busy=false, cycle=0, lastIds=[];
+ let running=false, busy=false, cycle=0, lastIds=[], savedHistory=[];
  function esc(v){return String(v==null?'—':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
  function pretty(v){return typeof v==='object'&&v!==null?JSON.stringify(v):String(v==null?'—':v);}
  function scoreText(v){if(Array.isArray(v))return v.join(' - ');return pretty(v);}
@@ -70,6 +82,34 @@
   const ops=calc.oportunidades||[];
   const opsHtml=ops.length?'<ul class="op-list">'+ops.slice(0,5).map(op=>'<li><strong>'+esc(op.motor)+'</strong>: '+esc(op.mercado)+' · '+esc(op.seleccion)+' · cuota '+esc(op.cuota)+' · edge '+esc(op.edge_pct==null?'—':op.edge_pct+'%')+'</li>').join('')+'</ul>':'<p class="muted">Sin señales de oportunidad en esta pasada.</p>';
   return '<article class="match-card '+(ops.length?'good':'')+'"><div class="result-title">'+esc(name)+'</div><div class="match-meta"><strong>Marcador:</strong> '+esc(scoreText(data.partido.marcador))+' · <strong>Minuto:</strong> '+esc(data.partido.minuto||'—')+'<br><strong>Calidad de datos:</strong> '+esc(data.partido.calidad_datos||'—')+'</div><div class="result-grid"><div class="stage-mini"><strong>Contexto</strong>'+esc(stages.contexto&&stages.contexto.status)+'</div><div class="stage-mini"><strong>Monitoreo</strong>'+esc(monitor.status)+'<br>'+esc(monitor.motivo)+'</div><div class="stage-mini"><strong>Acción · datos LIVE</strong>'+esc((stages.accion||{}).status)+'<br>'+esc(((stages.accion||{}).cambios_detectados||[]).length)+' cambios estadísticos detectados</div><div class="stage-mini"><strong>Probabilidad · estadísticas</strong>'+esc((stages.probabilidad||{}).status)+'<br>Más probable: '+esc(((stages.probabilidad||{}).mas_probable||{}).mercado||'—')+' ('+esc(((stages.probabilidad||{}).mas_probable||{}).probabilidad==null?'—':((stages.probabilidad||{}).mas_probable).probabilidad+'%')+')<br>'+esc(((stages.probabilidad||{}).mercados_probables||[]).slice(0,4).map(p=>p.mercado+': '+p.probabilidad+'%').join(' · '))+'</div><div class="stage-mini"><strong>Cálculo · cuotas</strong>'+esc(calc.motores_con_senales||0)+' motores con señales · '+ops.length+' oportunidades</div><div class="stage-mini"><strong>Reacción</strong>'+esc(reaction.decision||'—')+'<br>'+esc(reaction.motivo||'')+'</div></div>'+opsHtml+'<details><summary>Ver diagnóstico completo</summary><pre class="match-meta">'+esc(JSON.stringify(stages,null,2))+'</pre></details></article>';
+ }
+ function renderHistory(){
+  const term=(historyFilter.value||'').trim().toLowerCase();
+  const filtered=savedHistory.filter(item=>{
+   const p=item.partido||{};
+   return (String(item.event_id)+' '+String(p.local||'')+' '+String(p.visitante||'')+' '+String(p.liga||'')).toLowerCase().includes(term);
+  });
+  if(!filtered.length){
+   historyResults.innerHTML='<p class="muted">'+(savedHistory.length?'No hay registros que coincidan con el filtro.':'Aún no hay simulaciones guardadas. Los nuevos resultados aparecerán aquí después de cada pasada.')+'</p>';
+   return;
+  }
+  historyResults.innerHTML=filtered.map(item=>{
+   const p=item.partido||{}, stages=item.etapas||{}, calc=stages.calculo||{}, react=stages.reaccion||{};
+   return '<article class="match-card"><h3>'+esc((p.local||'Local')+' vs '+(p.visitante||'Visitante'))+'</h3><div class="match-meta"><strong>Fecha:</strong> '+esc(item.observed_at||item.guardado_en||'')+'<br><strong>Marcador:</strong> '+esc(scoreText(p.marcador))+' · <strong>Minuto:</strong> '+esc(p.minuto||'—')+'<br><strong>Liga:</strong> '+esc(p.liga||'—')+' · <strong>ID:</strong> '+esc(item.event_id)+'<br><strong>Reacción:</strong> '+esc(react.decision||'—')+' · <strong>Oportunidades:</strong> '+esc((calc.oportunidades||[]).length)+'</div><details><summary>Ver etapas y diagnóstico guardado</summary><pre class="match-meta">'+esc(JSON.stringify(stages,null,2))+'</pre></details></article>';
+  }).join('');
+ }
+ async function fetchHistory(){
+  historyStatus.textContent='Consultando historial guardado en la base de datos…';
+  try{
+   const res=await fetch(historyUrl,{cache:'no-store'}), data=await res.json();
+   if(!res.ok||!data.ok)throw new Error(data.error||'No se pudo cargar el historial.');
+   savedHistory=data.results||[];
+   historyStatus.textContent='Registros guardados: '+savedHistory.length+' · Se muestran hasta los 200 más recientes.';
+   renderHistory();
+  }catch(err){
+   historyStatus.textContent='Error al cargar historial: '+err.message;
+   historyResults.innerHTML='<p class="muted">No se pudo consultar el historial guardado.</p>';
+  }
  }
  async function simulateCycle(){
   if(!running||busy)return;
@@ -129,7 +169,10 @@
  reloadBtn.addEventListener('click',async()=>{
   reloadBtn.disabled=true;await fetchCandidates();reloadBtn.disabled=running;
  });
+ reloadHistoryBtn.addEventListener('click',fetchHistory);
+ historyFilter.addEventListener('input',renderHistory);
  fetchCandidates();
+ fetchHistory();
 })();
 </script>
 {% endblock %}
