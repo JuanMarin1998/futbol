@@ -28,3 +28,5 @@ jobs:
         run: python experimentos/patron_oportunidades/simular_contexto.py
       - name: Simular escenarios del partido y mostrar informe
         run: python experimentos/patron_oportunidades/simular_patron.py
+      - name: Ejecutar flujo integral sintético de contexto a reacción
+        run: python experimentos/patron_oportunidades/simular_partido_completo.py
