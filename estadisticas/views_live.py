@@ -2221,7 +2221,7 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
         stage_calculation = {
             "status": "CALCULO_COMPLETADO" if monitoring["detonante"] else "ESPERANDO_DETONANTE",
             "motores": engine_results,
-            "oportunidades": all_opportunities[:100],
+            "oportunidades": all_opportunities[:150],
             "motores_con_senales": sum(1 for item in engine_results if item["senales"]),
             "coinciden_con_probabilidad": sum(1 for item in all_opportunities if item.get("consenso_estadistico") == "COINCIDE"),
             "discrepancias_altas": sum(1 for item in all_opportunities if item.get("consenso_estadistico") == "DISCREPANCIA_ALTA"),
