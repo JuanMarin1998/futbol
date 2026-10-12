@@ -155,18 +155,35 @@ def analizar_patron(contexto: ContextoPrevio, estado: EstadoPartido,
         tendencia_rival = all(x is not None for x in valores) and rp > fp and (ra - fa) > (rp - fp) and (rp - fp) > (rv - fv)
     gol_nuevo = anterior is not None and (estado.goles_local + estado.goles_visitante > anterior.goles_local + anterior.goles_visitante)
     roja_fav = (fav_local and estado.rojas_local > 0) or (favorito == contexto.visitante and estado.rojas_visitante > 0)
-    if gol_nuevo and dom_fav and not roja_fav:
-        interpretacion = "El gol parece aislado respecto a los indicadores actuales: el favorito mantiene ventaja en tiros a puerta; no declarar perdido su dominio."
-    elif dom_rival and (tendencia_rival or roja_fav):
-        interpretacion = "Hay señales convergentes de posible cambio de control: el rival aventaja al favorito y la tendencia reciente o una expulsión refuerza la señal."
-    elif dom_rival:
-        interpretacion = "El rival aventaja al favorito en esta observación, pero aún falta evidencia temporal para llamarlo cambio sostenido."
+    tiros_fav = estado.tiros_local if fav_local else estado.tiros_visitante
+    tiros_rival = estado.tiros_visitante if fav_local else estado.tiros_local
+    ataques_fav = estado.ataques_peligrosos_local if fav_local else estado.ataques_peligrosos_visitante
+    ataques_rival = estado.ataques_peligrosos_visitante if fav_local else estado.ataques_peligrosos_local
+    votos_fav = sum((
+        bool(dom_fav),
+        tiros_fav is not None and tiros_rival is not None and tiros_fav > tiros_rival,
+        ataques_fav is not None and ataques_rival is not None and ataques_fav > ataques_rival,
+    ))
+    votos_rival = sum((
+        bool(dom_rival),
+        tiros_fav is not None and tiros_rival is not None and tiros_rival > tiros_fav,
+        ataques_fav is not None and ataques_rival is not None and ataques_rival > ataques_fav,
+    ))
+    contradictorias = votos_fav > 0 and votos_rival > 0
+    if contradictorias:
+        interpretacion = "Indicadores contradictorios: unas métricas favorecen al favorito y otras al rival. No afirmar un cambio sostenido; comprobar calidad de datos y esperar otra observación."
+    elif gol_nuevo and dom_fav and not roja_fav:
+        interpretacion = "El favorito conserva ventaja en tiros a puerta; el gol no demuestra por sí solo un cambio de dominio. Confirmar en la siguiente observación."
+    elif votos_rival >= 2 and (tendencia_rival or roja_fav):
+        interpretacion = "Varias métricas favorecen al rival y hay confirmación temporal o una expulsión relevante: posible cambio de control, aún sujeto a seguimiento."
+    elif votos_rival >= 2:
+        interpretacion = "Varias métricas favorecen al rival en esta observación, pero falta confirmación temporal para llamarlo cambio sostenido."
     elif gol_nuevo:
         interpretacion = "Hubo un gol, pero los indicadores no confirman por sí solos un cambio sostenido de dominio."
-    elif dom_fav:
-        interpretacion = "Los indicadores actuales favorecen al favorito; se necesitan más observaciones para confirmar continuidad."
+    elif votos_fav >= 2:
+        interpretacion = "Varias métricas favorecen al favorito; hace falta otra observación para confirmar continuidad."
     else:
-        interpretacion = "Las señales son insuficientes o mixtas para establecer un dominio claro; conservar incertidumbre."
+        interpretacion = "Las señales son insuficientes para establecer un dominio claro; conservar incertidumbre."
 
     vigentes, cuestionadas, sin_evidencia = [], [], []
     for exp in contexto.escenarios_esperados:
