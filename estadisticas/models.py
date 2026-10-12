@@ -517,3 +517,97 @@ class EcuabetPreMatchContext(models.Model):
 
     def __str__(self):
         return f"{self.match_name} · contexto previo"
+
+
+class BettingRunner(models.Model):
+    """Perfil independiente de un corredor del laboratorio virtual."""
+    key = models.SlugField(max_length=40, unique=True)
+    name = models.CharField(max_length=100)
+    strategy = models.CharField(max_length=40)
+    description = models.TextField(blank=True)
+    initial_lives = models.DecimalField(max_digits=12, decimal_places=4, default=100)
+    active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["id"]
+        verbose_name = "Corredor virtual"
+        verbose_name_plural = "Corredores virtuales"
+
+    def __str__(self):
+        return self.name
+
+
+class BettingRunnerBet(models.Model):
+    """Apuesta virtual registrada por un corredor; no representa una apuesta real."""
+    STATUS = [
+        ("OPEN", "Abierta"),
+        ("WON", "Ganada"),
+        ("LOST", "Perdida"),
+        ("CANCELLED", "Cancelada"),
+    ]
+    runner = models.ForeignKey(BettingRunner, on_delete=models.PROTECT, related_name="bets")
+    ecuabet_event_id = models.BigIntegerField(db_index=True)
+    home_team = models.CharField(max_length=180)
+    away_team = models.CharField(max_length=180)
+    market_key = models.CharField(max_length=80)
+    market = models.CharField(max_length=180)
+    selection = models.CharField(max_length=150, blank=True)
+    line = models.CharField(max_length=40, blank=True)
+    price = models.DecimalField(max_digits=10, decimal_places=4)
+    model_probability = models.FloatField()
+    confidence = models.FloatField(default=0)
+    edge = models.FloatField(default=0)
+    stake = models.DecimalField(max_digits=12, decimal_places=4)
+    potential_profit = models.DecimalField(max_digits=12, decimal_places=4)
+    status = models.CharField(max_length=12, choices=STATUS, default="OPEN")
+    pnl = models.DecimalField(max_digits=12, decimal_places=4, default=0)
+    reason = models.TextField()
+    opportunity_snapshot = models.JSONField(default=dict, blank=True)
+    placed_minute = models.CharField(max_length=30, blank=True)
+    placed_home_score = models.IntegerField(null=True, blank=True)
+    placed_away_score = models.IntegerField(null=True, blank=True)
+    final_home_score = models.IntegerField(null=True, blank=True)
+    final_away_score = models.IntegerField(null=True, blank=True)
+    placed_at = models.DateTimeField(auto_now_add=True)
+    settled_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-placed_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["runner", "ecuabet_event_id"], name="uniq_runner_one_bet_event"),
+        ]
+        indexes = [
+            models.Index(fields=["runner", "status", "placed_at"], name="runner_bet_status_date"),
+            models.Index(fields=["ecuabet_event_id", "status"], name="runner_bet_event_status"),
+        ]
+        verbose_name = "Apuesta de corredor"
+        verbose_name_plural = "Apuestas de corredores"
+
+    def __str__(self):
+        return f"{self.runner.name}: {self.home_team} vs {self.away_team} · {self.market}"
+
+
+class BettingRunnerEvaluation(models.Model):
+    """Última decisión por corredor/partido, incluidos motivos para abstenerse."""
+    runner = models.ForeignKey(BettingRunner, on_delete=models.CASCADE, related_name="evaluations")
+    ecuabet_event_id = models.BigIntegerField()
+    home_team = models.CharField(max_length=180)
+    away_team = models.CharField(max_length=180)
+    action = models.CharField(max_length=24, default="WAIT")
+    reason = models.TextField(blank=True)
+    selected_market = models.CharField(max_length=180, blank=True)
+    evaluated_minute = models.CharField(max_length=30, blank=True)
+    evaluated_home_score = models.IntegerField(null=True, blank=True)
+    evaluated_away_score = models.IntegerField(null=True, blank=True)
+    snapshot = models.JSONField(default=dict, blank=True)
+    evaluated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["runner", "ecuabet_event_id"], name="uniq_runner_evaluation_event"),
+        ]
+        ordering = ["-evaluated_at"]
+        indexes = [models.Index(fields=["runner", "-evaluated_at"], name="runner_eval_recent")]
+        verbose_name = "Evaluación de corredor"
+        verbose_name_plural = "Evaluaciones de corredores"
