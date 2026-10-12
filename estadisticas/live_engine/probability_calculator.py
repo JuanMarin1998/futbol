@@ -187,11 +187,10 @@ class LiveProbabilityCalculator:
                 if final_home > 0 and final_away > 0:
                     both_yes += probability
 
+        # El marcador actual condiciona el resultado final. Las cuotas prepartido
+        # ya influyeron en el reparto de goles esperados; no mezclamos después un
+        # pronóstico prepartido sin marcador, porque podría contradecir un 3-0 al 80'.
         outcome = _normalize([home_win, draw, away_win])
-        # Las cuotas solo se mezclan de forma moderada y después de condicionar
-        # la distribución al marcador LIVE actual.
-        if prior:
-            outcome = _normalize([0.75 * outcome[i] + 0.25 * prior[i] for i in range(3)])
 
         probabilities = {
             "home": outcome[0],
