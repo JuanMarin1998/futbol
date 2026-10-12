@@ -2,7 +2,7 @@
 
 No crea apuestas ni decide si una señal es oportunidad. Recibe el partido, sus
 estadísticas disponibles y las cuotas prepartido guardadas; devuelve probabilidades
-para 1X2, doble oportunidad y ambos marcan. Los datos ausentes se reportan, nunca
+para 1X2, doble oportunidad, ambos marcan y totales de goles. Los datos ausentes se reportan, nunca
 se rellenan con estadísticas inventadas.
 """
 from __future__ import annotations
