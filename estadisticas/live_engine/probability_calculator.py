@@ -128,6 +128,7 @@ class LiveProbabilityCalculator:
             "corners": ("corner kicks", "corners", "corners kicks", "saques de esquina"),
             "dangerous": ("dangerous attacks", "ataques peligrosos"),
             "possession": ("ball possession", "possession", "posesion", "posesion del balon"),
+            "red_cards": ("red cards", "red card", "tarjetas rojas", "red_cards"),
         }
         observed = {}
         for side in ("home", "away"):
@@ -168,6 +169,22 @@ class LiveProbabilityCalculator:
         apply_attack_metric("shots", 0.16, 12.0, "Tiros totales")
         apply_attack_metric("corners", 0.08, 8.0, "Saques de esquina")
         apply_attack_metric("dangerous", 0.12, 30.0, "Ataques peligrosos")
+
+        # Ajuste contextual conservador si el feed confirma expulsiones.
+        home_red = observed["home"].get("red_cards")
+        away_red = observed["away"].get("red_cards")
+        if home_red is not None and away_red is not None:
+            red_diff = max(-2, min(2, int(home_red) - int(away_red)))
+            if red_diff > 0:
+                lambda_home *= 0.72 ** red_diff
+                lambda_away *= 1.20 ** red_diff
+                evidence.append(f"Tarjetas rojas: local {home_red:g}, visitante {away_red:g}; inferioridad numérica local")
+                quality_points += 1
+            elif red_diff < 0:
+                lambda_away *= 0.72 ** abs(red_diff)
+                lambda_home *= 1.20 ** abs(red_diff)
+                evidence.append(f"Tarjetas rojas: local {home_red:g}, visitante {away_red:g}; inferioridad numérica visitante")
+                quality_points += 1
 
         home_poss = observed["home"].get("possession")
         away_poss = observed["away"].get("possession")
