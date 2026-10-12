@@ -136,19 +136,9 @@ class LiveMatchCollector:
             data_quality=0.0,
         )
 
-        # Los motores pueden evaluar los datos disponibles, pero el snapshot
-        # queda marcado como respaldo y sin estadísticas externas.
-        match.opportunities = LiveOpportunityEngine.evaluate(match)
-        match.opportunities_v2 = LiveOpportunityEngineV2.evaluate(match)
-        match.opportunities_v11 = LiveOpportunityEngineV11.evaluate(match)
-        match.opportunities_v12 = LiveOpportunityEngineV12.evaluate(match)
-        match.opportunities_v21 = LiveOpportunityEngineV21.evaluate(match)
-        match.opportunities_v22 = LiveOpportunityEngineV22.evaluate(match)
-        match.opportunities_v3 = LiveOpportunityEngineV3.evaluate(match)
-        match.opportunities_v2_ultra = LiveOpportunityEngineV2Ultra.evaluate(match)
-        match.opportunities_v11_ultra = LiveOpportunityEngineV11Ultra.evaluate(match)
-        match.opportunities_vpro = LiveOpportunityEngineVPro.evaluate(match)
-        match.opportunities_vpro11 = LiveOpportunityEngineVPro11.evaluate(match)
+        # Sin vínculo/estadísticas Flashscore no evaluamos motores de apuestas.
+        # El Patrón calcula sus etapas con los datos Ecuabet disponibles y
+        # la tarjeta queda explícitamente marcada como respaldo.
         try:
             record_match_snapshot(match)
         except Exception:
