@@ -33,10 +33,29 @@ class MatchMapper:
         text = re.sub(r"[^a-z0-9]+", " ", text)
         return re.sub(r"\s+", " ", text).strip()
 
+    # Nombres alternativos confirmados entre proveedores. Las claves y valores
+    # usan el mismo formato producido por _normalize_name; evitar alias cortos
+    # o ambiguos (por ejemplo, "FAR" sin contexto).
+    TEAM_ALIASES = {
+        "hassania union": "hassania agadir",
+        "hassania union sportive agadir": "hassania agadir",
+        "hassania d agadir": "hassania agadir",
+        "hassania dagadir": "hassania agadir",
+        "husa": "hassania agadir",
+        "as far rabat": "far rabat",
+        "association sportive des forces armees royales": "far rabat",
+        "association sportive des forces armees royales rabat": "far rabat",
+    }
+
+    @classmethod
+    def _canonical_team_name(cls, value: Any) -> str:
+        normalized = cls._normalize_name(value)
+        return cls.TEAM_ALIASES.get(normalized, normalized)
+
     @classmethod
     def _team_similarity(cls, left: Any, right: Any) -> float:
-        a = cls._normalize_name(left)
-        b = cls._normalize_name(right)
+        a = cls._canonical_team_name(left)
+        b = cls._canonical_team_name(right)
         if not a or not b:
             return 0.0
         if a == b:
