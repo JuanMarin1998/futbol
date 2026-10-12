@@ -172,7 +172,7 @@
    opsHtml='<p class="muted">No hay mercados abiertos en esta lectura. Se mostrarán resultado, doble oportunidad, ambos marcan y goles cuando el cálculo esté disponible.</p>';
   }
   if(ops.length&&opp)opp.innerHTML=opsHtml;
-  const triggerLabel=monitor.gol_nuevo?'GOL NUEVO DETECTADO':(monitor.status==='SIN_BASELINE_PREVIO'?'ESTABLECIENDO LÍNEA BASE':'Sin gol nuevo · monitoreando');
+  const triggerLabel=monitor.gol_nuevo?'GOL NUEVO DETECTADO':(monitor.tarjeta_roja_nueva?'TARJETA ROJA DETECTADA':(monitor.status==='SIN_BASELINE_PREVIO'?'ESTABLECIENDO LÍNEA BASE':'Sin gol ni roja nueva · monitoreando'));
   const triggerText=monitor.motivo||reaction.motivo||'Se conserva el estado anterior y se compara en el siguiente ciclo.';
   if(status)status.textContent=running?'Simulando':'Última lectura';
   if(trigger)trigger.innerHTML='<strong>Detonante / último estado</strong>'+esc(triggerLabel)+' · '+esc(triggerText)+'<br><span class="muted">Marcador anterior: '+esc(scoreText(monitor.marcador_anterior))+' · Marcador guardado: '+esc(scoreText(monitor.marcador_actual||data.partido.marcador))+'</span>';
@@ -184,7 +184,7 @@
     ? '<div class="status warn"><strong>⚠️ '+esc(sourceLabel)+'</strong><br>'+esc(sourceWarning)+'</div>'
     : '';
   }
-  card.classList.toggle('good',!!monitor.gol_nuevo);
+  card.classList.toggle('good',!!monitor.gol_nuevo||!!monitor.tarjeta_roja_nueva);
   // El contexto previo (favorito, cuotas iniciales y captura) no se reemplaza con datos LIVE.
   const score=card.querySelector('.live-score'), minute=card.querySelector('.live-minute');
   if(score)score.textContent=scoreText(data.partido.marcador||'—');
