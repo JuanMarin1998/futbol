@@ -42,25 +42,113 @@ class LiveMatchCollector:
         mapping = self.mapper.mapear(ecuabet, self.flashscore)
 
         if not mapping.get("matched"):
-            reason = mapping.get("reason", "sin coincidencia")
-            confidence = mapping.get("confidence", 0.0)
-            margin = mapping.get("margin", 0.0)
-            candidate = mapping.get("candidate") or {}
-            candidate_name = (
-                f"{candidate.get('home_team', '?')} vs {candidate.get('away_team', '?')}"
-                if candidate else "sin candidato"
+            # Respaldo seguro: si Flashscore no tiene una coincidencia fiable,
+            # seguimos con el snapshot propio de Ecuabet. Nunca usamos el
+            # candidato aproximado, porque podría pertenecer a otro partido.
+            logger.warning(
+                "Sin vínculo Flashscore fiable para Ecuabet %s; usando respaldo Ecuabet. "
+                "Confianza=%s motivo=%s",
+                ecuabet_event_id,
+                mapping.get("confidence", 0.0),
+                mapping.get("reason", "sin coincidencia"),
             )
-            raise MatchMappingError(
-                f"No se pudo vincular Ecuabet {ecuabet_event_id} con Flashscore "
-                f"(confianza={confidence:.2f}, margen={margin:.2f}, "
-                f"candidato={candidate_name}, motivo={reason})."
-            )
+            return self._construir_solo_ecuabet(ecuabet)
 
         return self._construir_desde_evento(
             ecuabet,
             mapping["flashscore_event_id"],
             mapping["confidence"],
         )
+
+    @staticmethod
+    def _parse_ecuabet_score(event: Dict[str, Any]):
+        """Extrae el marcador de Ecuabet si el payload realmente lo incluye."""
+        score = event.get("score") or event.get("currentScore") or event.get("scores")
+        home = away = None
+        if isinstance(score, dict):
+            home = score.get("home", score.get("homeScore", score.get("currentHome")))
+            away = score.get("away", score.get("awayScore", score.get("currentAway")))
+        elif isinstance(score, (list, tuple)):
+            home = score[0] if len(score) > 0 else None
+            away = score[1] if len(score) > 1 else None
+        if home is None:
+            home = event.get("homeScore", event.get("currentHomeScore", event.get("scoreHome")))
+        if away is None:
+            away = event.get("awayScore", event.get("currentAwayScore", event.get("scoreAway")))
+
+        def number(value):
+            if isinstance(value, dict):
+                value = value.get("current") or value.get("value") or value.get("score")
+            try:
+                parsed = int(value)
+                return parsed if parsed >= 0 else None
+            except (TypeError, ValueError):
+                return None
+
+        return number(home), number(away)
+
+    def _construir_solo_ecuabet(self, ecuabet: Dict[str, Any]) -> LiveMatch:
+        """Crea un snapshot sin inventar datos Flashscore ni estadísticas."""
+        competitors = ecuabet.get("competitors") or []
+        home_name = (competitors[0].get("name", "") if len(competitors) > 0 else "")
+        away_name = (competitors[1].get("name", "") if len(competitors) > 1 else "")
+        if not home_name or not away_name:
+            split_home, split_away = self._split_ecuabet_name(ecuabet)
+            home_name = home_name or split_home
+            away_name = away_name or split_away
+
+        home_score, away_score = self._parse_ecuabet_score(ecuabet)
+        stats = {
+            "home": {},
+            "away": {},
+            "raw_types": [],
+            "source": "ecuabet_fallback",
+            "warning": (
+                "Flashscore no proporcionó una coincidencia fiable. "
+                "Se usan marcador/minuto/cuotas de Ecuabet; estadísticas Flashscore no disponibles."
+            ),
+        }
+        match = LiveMatch(
+            ecuabet_event_id=int(ecuabet.get("id")),
+            flashscore_event_id=None,
+            home_team=home_name,
+            away_team=away_name,
+            league=(ecuabet.get("champ") or {}).get("name", ""),
+            country=(ecuabet.get("category") or {}).get("name", ""),
+            start_time=ecuabet.get("startDate"),
+            minute=ecuabet.get("liveTime") or ecuabet.get("minute"),
+            period=ecuabet.get("ls") or ecuabet.get("period"),
+            match_status="LIVE",
+            is_finished=False,
+            home_score=home_score,
+            away_score=away_score,
+            odds=self._flatten_odds(ecuabet.get("markets", [])),
+            performance=stats,
+            mapping_confidence=0.0,
+            data_quality=0.0,
+        )
+
+        # Los motores pueden evaluar los datos disponibles, pero el snapshot
+        # queda marcado como respaldo y sin estadísticas externas.
+        match.opportunities = LiveOpportunityEngine.evaluate(match)
+        match.opportunities_v2 = LiveOpportunityEngineV2.evaluate(match)
+        match.opportunities_v11 = LiveOpportunityEngineV11.evaluate(match)
+        match.opportunities_v12 = LiveOpportunityEngineV12.evaluate(match)
+        match.opportunities_v21 = LiveOpportunityEngineV21.evaluate(match)
+        match.opportunities_v22 = LiveOpportunityEngineV22.evaluate(match)
+        match.opportunities_v3 = LiveOpportunityEngineV3.evaluate(match)
+        match.opportunities_v2_ultra = LiveOpportunityEngineV2Ultra.evaluate(match)
+        match.opportunities_v11_ultra = LiveOpportunityEngineV11Ultra.evaluate(match)
+        match.opportunities_vpro = LiveOpportunityEngineVPro.evaluate(match)
+        match.opportunities_vpro11 = LiveOpportunityEngineVPro11.evaluate(match)
+        try:
+            record_match_snapshot(match)
+        except Exception:
+            logger.exception(
+                "No se pudo guardar snapshot de respaldo Ecuabet para evento %s",
+                match.ecuabet_event_id,
+            )
+        return match
 
     def construir_desde_evento(self, ecuabet_event: Dict[str, Any], flashscore_event_id: str, mapping_confidence: float = 1.0) -> LiveMatch:
         """Construye un snapshot usando un evento Ecuabet ya descargado."""
