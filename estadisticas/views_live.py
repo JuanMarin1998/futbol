@@ -2100,6 +2100,133 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
         # Patrón de Oportunidades usa exclusivamente el calculador central.
         # Los motores de estrategias permanecen fuera de este flujo y no se ejecutan aquí.
         mercados_calculados = list((calculator_result or {}).get("mercados_probables") or [])
+
+        # Consultar las cuotas reales LIVE de Ecuabet en cada ciclo. No usar las
+        # cuotas prepartido como sustituto ni presentar una cuota justa como cuota de la casa.
+        cuotas_live_diagnostico = {
+            "estado": "PENDIENTE",
+            "fuente": "Ecuabet GetLivenow + GetEventDetails",
+            "mercados_encontrados": 0,
+            "selecciones_encontradas": 0,
+            "error": None,
+        }
+        try:
+            ecuabet_live = EcuabetClient().obtener_cuotas_live_evento(ecuabet_event_id, sport_id=66)
+            live_markets = ecuabet_live.get("markets") or []
+            competitor_ids = ecuabet_live.get("competitor_ids") or []
+            home_competitor_id = str(competitor_ids[0]) if competitor_ids else None
+            away_competitor_id = str(competitor_ids[1]) if len(competitor_ids) > 1 else None
+
+            def _odd_label(value):
+                import unicodedata
+                value = unicodedata.normalize("NFKD", str(value or ""))
+                value = "".join(char for char in value if not unicodedata.combining(char))
+                return " ".join(__import__("re").sub(r"[^a-z0-9]+", " ", value.lower()).split())
+
+            def _valid_live_price(selection):
+                try:
+                    price = float(str(selection.get("price")).replace(",", "."))
+                except (TypeError, ValueError):
+                    return None
+                if price <= 1 or selection.get("is_suspended"):
+                    return None
+                if str(selection.get("status") or "").lower() in {"suspended", "closed", "inactive"}:
+                    return None
+                if str(selection.get("odd_status") or "").lower() in {"suspended", "closed", "inactive"}:
+                    return None
+                return price
+
+            mapped_prices = {}
+            live_selection_count = 0
+            for live_market in live_markets:
+                market_name = _odd_label(live_market.get("name") or live_market.get("short_name"))
+                market_type = str(live_market.get("market_type_id") or live_market.get("type_id") or "")
+                selections = live_market.get("selections") or []
+                for selection in selections:
+                    price = _valid_live_price(selection)
+                    if price is not None:
+                        live_selection_count += 1
+                # 1X2: asignar por ID del competidor; el empate se identifica por nombre.
+                if market_type == "1":
+                    for selection in selections:
+                        price = _valid_live_price(selection)
+                        if price is None:
+                            continue
+                        competitor_id = selection.get("competitor_id")
+                        label = _odd_label(selection.get("name") or selection.get("short_name"))
+                        if competitor_id is not None and home_competitor_id and str(competitor_id) == home_competitor_id:
+                            mapped_prices["home"] = (price, live_market.get("name"), selection.get("name"))
+                        elif competitor_id is not None and away_competitor_id and str(competitor_id) == away_competitor_id:
+                            mapped_prices["away"] = (price, live_market.get("name"), selection.get("name"))
+                        elif label in {"x", "draw", "empate", "tie", "the draw"}:
+                            mapped_prices["draw"] = (price, live_market.get("name"), selection.get("name"))
+
+                # Mercados compatibles adicionales, siempre por etiquetas explícitas.
+                is_double_chance = "double chance" in market_name or "doble oportunidad" in market_name
+                is_btts = (
+                    "both teams to score" in market_name or "ambos marcan" in market_name
+                    or "ambos equipos marcan" in market_name
+                )
+                if is_double_chance:
+                    for selection in selections:
+                        price = _valid_live_price(selection)
+                        if price is None:
+                            continue
+                        label = _odd_label(selection.get("name") or selection.get("short_name"))
+                        if label in {"1x", "home or draw", "local o empate"}:
+                            mapped_prices["dc_1x"] = (price, live_market.get("name"), selection.get("name"))
+                        elif label in {"12", "home or away", "local o visitante"}:
+                            mapped_prices["dc_12"] = (price, live_market.get("name"), selection.get("name"))
+                        elif label in {"x2", "draw or away", "empate o visitante"}:
+                            mapped_prices["dc_x2"] = (price, live_market.get("name"), selection.get("name"))
+                if is_btts:
+                    for selection in selections:
+                        price = _valid_live_price(selection)
+                        if price is None:
+                            continue
+                        label = _odd_label(selection.get("name") or selection.get("short_name"))
+                        if label in {"yes", "si", "ambos marcan si"}:
+                            mapped_prices["btts_yes"] = (price, live_market.get("name"), selection.get("name"))
+                        elif label in {"no", "ambos marcan no"}:
+                            mapped_prices["btts_no"] = (price, live_market.get("name"), selection.get("name"))
+
+            for market in mercados_calculados:
+                key = str(market.get("clave") or "")
+                mapped = mapped_prices.get(key)
+                if mapped:
+                    market["cuota_ecuabet"] = mapped[0]
+                    market["estado_cuota_ecuabet"] = "DISPONIBLE"
+                    market["mercado_ecuabet"] = mapped[1]
+                    market["seleccion_ecuabet"] = mapped[2]
+                else:
+                    market["cuota_ecuabet"] = None
+                    market["estado_cuota_ecuabet"] = (
+                        "RESULTADO_DETERMINADO"
+                        if market.get("estado_live") == "CERRADO_RESULTADO_DETERMINADO"
+                        else "NO_ENCONTRADA_EN_ECUABET"
+                    )
+                    market["mercado_ecuabet"] = None
+                    market["seleccion_ecuabet"] = None
+
+            cuotas_live_diagnostico.update({
+                "estado": "OK" if mapped_prices else "SIN_CUOTAS_COMPATIBLES",
+                "mercados_encontrados": len(live_markets),
+                "selecciones_encontradas": live_selection_count,
+                "evento": ecuabet_live.get("name"),
+                "detalle_error": ecuabet_live.get("detail_error"),
+            })
+        except Exception as odds_exc:
+            logger.warning("No se pudieron obtener cuotas LIVE de Ecuabet para %s: %s", ecuabet_event_id, odds_exc)
+            cuotas_live_diagnostico.update({
+                "estado": "ERROR_CONSULTA",
+                "error": str(odds_exc),
+            })
+            for market in mercados_calculados:
+                market["cuota_ecuabet"] = None
+                market["estado_cuota_ecuabet"] = "ERROR_CONSULTA"
+                market["mercado_ecuabet"] = None
+                market["seleccion_ecuabet"] = None
+
         for market in mercados_calculados:
             key = str(market.get("clave") or market.get("mercado"))
             old_market = previous_by_market.get(key, {})
@@ -2119,6 +2246,7 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
             "motores_involucrados": False,
             "mercados": mercados_calculados,
             "cantidad_mercados": len(mercados_calculados),
+            "cuotas_ecuabet_live": cuotas_live_diagnostico,
             "motivo": (
                 "Cada ciclo actualiza probabilidades y cuotas justas; un gol nuevo también activa Acción."
                 if monitoring["detonante"] else
@@ -2194,6 +2322,7 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
 
         return JsonResponse({
             "ok": True,
+            "cuotas_ecuabet_live": cuotas_live_diagnostico,
             "partido": {
                 "id": match.ecuabet_event_id,
                 "local": match.home_team,
