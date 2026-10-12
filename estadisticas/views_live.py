@@ -1451,116 +1451,115 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
         # El gol solo activa la etapa Acción. Contexto, probabilidades y señales
         # de los motores se muestran también en la primera observación y en ciclos
         # sin gol, para que ejecutar el patrón nunca termine en una pantalla vacía.
-        if True:
-            home_sot = None
-            away_sot = None
-            performance = match.performance or {}
-            def stat(side, *keys):
-                data = performance.get(side) or {}
-                for key in keys:
-                    val = data.get(key)
-                    if isinstance(val, dict):
-                        val = val.get("value", val.get("raw_value"))
-                    if val is not None:
-                        try: return float(str(val).replace("%", "").replace(",", "."))
-                        except (TypeError, ValueError): pass
-                return None
-            home_sot = stat("home", "shots_on_goal", "shots_on_target", "tiros a puerta")
-            away_sot = stat("away", "shots_on_goal", "shots_on_target", "tiros a puerta")
-            home = int(match.home_score or 0)
-            away = int(match.away_score or 0)
-            if home > away:
-                score_read = f"{match.home_team} va ganando {home}-{away}"
-            elif away > home:
-                score_read = f"{match.away_team} va ganando {away}-{home}"
-            else:
-                score_read = f"el partido está empatado {home}-{away}"
-            if home_sot is None or away_sot is None:
-                stats_read = "Faltan tiros a puerta de uno o ambos equipos; la lectura estadística es parcial."
-            elif home_sot >= away_sot + 2:
-                stats_read = f"{match.home_team} tiene ventaja en tiros a puerta ({home_sot:g} contra {away_sot:g})."
-            elif away_sot >= home_sot + 2:
-                stats_read = f"{match.away_team} tiene ventaja en tiros a puerta ({away_sot:g} contra {home_sot:g})."
-            else:
-                stats_read = f"Los tiros a puerta no muestran una ventaja clara ({home_sot:g} contra {away_sot:g})."
-            if monitoring["detonante"]:
-                stage_action = {
-                    "status": "EVALUADA",
-                    "diagnostico": f"Tras el gol, {score_read}; {stats_read}",
-                    "datos_evaluados": [context_stage["status"], f"minuto {current_minute}", f"marcador {home}-{away}", stats_read],
-                }
-            else:
-                stage_action = {
-                    "status": "PENDIENTE_DE_DETONANTE",
-                    "diagnostico": f"No se activa Acción porque no se confirmó un gol nuevo. Estado observado: {score_read}; {stats_read}",
-                    "datos_evaluados": [context_stage["status"], f"minuto {current_minute}", f"marcador {home}-{away}", stats_read],
-                }
+        home_sot = None
+        away_sot = None
+        performance = match.performance or {}
+        def stat(side, *keys):
+            data = performance.get(side) or {}
+            for key in keys:
+                val = data.get(key)
+                if isinstance(val, dict):
+                    val = val.get("value", val.get("raw_value"))
+                if val is not None:
+                    try: return float(str(val).replace("%", "").replace(",", "."))
+                    except (TypeError, ValueError): pass
+            return None
+        home_sot = stat("home", "shots_on_goal", "shots_on_target", "tiros a puerta")
+        away_sot = stat("away", "shots_on_goal", "shots_on_target", "tiros a puerta")
+        home = int(match.home_score or 0)
+        away = int(match.away_score or 0)
+        if home > away:
+            score_read = f"{match.home_team} va ganando {home}-{away}"
+        elif away > home:
+            score_read = f"{match.away_team} va ganando {away}-{home}"
+        else:
+            score_read = f"el partido está empatado {home}-{away}"
+        if home_sot is None or away_sot is None:
+            stats_read = "Faltan tiros a puerta de uno o ambos equipos; la lectura estadística es parcial."
+        elif home_sot >= away_sot + 2:
+            stats_read = f"{match.home_team} tiene ventaja en tiros a puerta ({home_sot:g} contra {away_sot:g})."
+        elif away_sot >= home_sot + 2:
+            stats_read = f"{match.away_team} tiene ventaja en tiros a puerta ({away_sot:g} contra {home_sot:g})."
+        else:
+            stats_read = f"Los tiros a puerta no muestran una ventaja clara ({home_sot:g} contra {away_sot:g})."
+        if monitoring["detonante"]:
+            stage_action = {
+                "status": "EVALUADA",
+                "diagnostico": f"Tras el gol, {score_read}; {stats_read}",
+                "datos_evaluados": [context_stage["status"], f"minuto {current_minute}", f"marcador {home}-{away}", stats_read],
+            }
+        else:
+            stage_action = {
+                "status": "PENDIENTE_DE_DETONANTE",
+                "diagnostico": f"No se activa Acción porque no se confirmó un gol nuevo. Estado observado: {score_read}; {stats_read}",
+                "datos_evaluados": [context_stage["status"], f"minuto {current_minute}", f"marcador {home}-{away}", stats_read],
+            }
 
-            engine_specs = [
-                ("V1", LiveOpportunityEngine, "opportunities"),
-                ("V1.1", LiveOpportunityEngineV11, "opportunities_v11"),
-                ("V1.2", LiveOpportunityEngineV12, "opportunities_v12"),
-                ("V2", LiveOpportunityEngineV2, "opportunities_v2"),
-                ("V2.1", LiveOpportunityEngineV21, "opportunities_v21"),
-                ("V2.2", LiveOpportunityEngineV22, "opportunities_v22"),
-                ("V3", LiveOpportunityEngineV3, "opportunities_v3"),
-                ("V2.Ultra", LiveOpportunityEngineV2Ultra, "opportunities_v2_ultra"),
-                ("V1.1 Ultra", LiveOpportunityEngineV11Ultra, "opportunities_v11_ultra"),
-                ("V.Pro", LiveOpportunityEngineVPro, "opportunities_vpro"),
-                ("V.Pro 1.1", LiveOpportunityEngineVPro11, "opportunities_vpro11"),
-            ]
-            engine_results = []
-            all_opportunities = []
-            for label, engine, attr in engine_specs:
-                opportunities = getattr(match, attr, None)
-                if opportunities is None:
-                    opportunities = engine.evaluate(match)
-                clean = []
-                for op in (opportunities or [])[:5]:
-                    item = {
-                        "mercado": op.get("market", ""),
-                        "seleccion": op.get("selection", ""),
-                        "cuota": op.get("price"),
-                        "probabilidad_modelo": op.get("model_probability"),
-                        "probabilidad_implicita": op.get("implied_probability"),
-                        "edge_pct": op.get("edge_pct"),
-                        "confianza": op.get("confidence"),
-                        "senal": op.get("signal", ""),
-                    }
-                    clean.append(item)
-                    all_opportunities.append({"motor": label, **item})
-                engine_results.append({"motor": label, "senales": len(opportunities or []), "oportunidades": clean})
-            stage_probability = {
-                "status": "SALIDAS_REALES_DE_MOTORES",
-                "motores": engine_results,
-                "motivo": "Se muestran las probabilidades que entregan los motores existentes; el patrón no las fabrica ni modifica.",
+        engine_specs = [
+            ("V1", LiveOpportunityEngine, "opportunities"),
+            ("V1.1", LiveOpportunityEngineV11, "opportunities_v11"),
+            ("V1.2", LiveOpportunityEngineV12, "opportunities_v12"),
+            ("V2", LiveOpportunityEngineV2, "opportunities_v2"),
+            ("V2.1", LiveOpportunityEngineV21, "opportunities_v21"),
+            ("V2.2", LiveOpportunityEngineV22, "opportunities_v22"),
+            ("V3", LiveOpportunityEngineV3, "opportunities_v3"),
+            ("V2.Ultra", LiveOpportunityEngineV2Ultra, "opportunities_v2_ultra"),
+            ("V1.1 Ultra", LiveOpportunityEngineV11Ultra, "opportunities_v11_ultra"),
+            ("V.Pro", LiveOpportunityEngineVPro, "opportunities_vpro"),
+            ("V.Pro 1.1", LiveOpportunityEngineVPro11, "opportunities_vpro11"),
+        ]
+        engine_results = []
+        all_opportunities = []
+        for label, engine, attr in engine_specs:
+            opportunities = getattr(match, attr, None)
+            if opportunities is None:
+                opportunities = engine.evaluate(match)
+            clean = []
+            for op in (opportunities or [])[:5]:
+                item = {
+                    "mercado": op.get("market", ""),
+                    "seleccion": op.get("selection", ""),
+                    "cuota": op.get("price"),
+                    "probabilidad_modelo": op.get("model_probability"),
+                    "probabilidad_implicita": op.get("implied_probability"),
+                    "edge_pct": op.get("edge_pct"),
+                    "confianza": op.get("confidence"),
+                    "senal": op.get("signal", ""),
+                }
+                clean.append(item)
+                all_opportunities.append({"motor": label, **item})
+            engine_results.append({"motor": label, "senales": len(opportunities or []), "oportunidades": clean})
+        stage_probability = {
+            "status": "SALIDAS_REALES_DE_MOTORES",
+            "motores": engine_results,
+            "motivo": "Se muestran las probabilidades que entregan los motores existentes; el patrón no las fabrica ni modifica.",
+        }
+        stage_calculation = {
+            "status": "CALCULO_CON_SALIDAS_DE_MOTORES",
+            "oportunidades": all_opportunities[:60],
+            "motores_con_senales": sum(1 for item in engine_results if item["senales"]),
+            "motivo": "Cuotas, probabilidades, edge y confianza se toman de las salidas actuales de los motores. No se crean apuestas.",
+        }
+        positive = [x for x in all_opportunities if isinstance(x.get("edge_pct"), (int, float)) and x["edge_pct"] > 0]
+        if not all_opportunities:
+            stage_reaction = {
+                "status": "SIN_SENALES_DE_MOTORES",
+                "decision": "SEGUIR_MONITOREANDO",
+                "motivo": "Ningún motor devolvió oportunidades compatibles en este snapshot. No se crea una apuesta.",
             }
-            stage_calculation = {
-                "status": "CALCULO_CON_SALIDAS_DE_MOTORES",
-                "oportunidades": all_opportunities[:60],
-                "motores_con_senales": sum(1 for item in engine_results if item["senales"]),
-                "motivo": "Cuotas, probabilidades, edge y confianza se toman de las salidas actuales de los motores. No se crean apuestas.",
+        elif positive:
+            best = max(positive, key=lambda x: x.get("edge_pct", 0))
+            stage_reaction = {
+                "status": "SENALES_PARA_REVISION",
+                "decision": "REVISAR_SENAL_SIN_APUESTA",
+                "motivo": f"{len(positive)} señales con edge positivo; la mayor reportada es {best['motor']} · {best['mercado']} · {best['seleccion']} (edge {best['edge_pct']}%). Esto no ejecuta una apuesta.",
             }
-            positive = [x for x in all_opportunities if isinstance(x.get("edge_pct"), (int, float)) and x["edge_pct"] > 0]
-            if not all_opportunities:
-                stage_reaction = {
-                    "status": "SIN_SENALES_DE_MOTORES",
-                    "decision": "SEGUIR_MONITOREANDO",
-                    "motivo": "Ningún motor devolvió oportunidades compatibles en este snapshot. No se crea una apuesta.",
-                }
-            elif positive:
-                best = max(positive, key=lambda x: x.get("edge_pct", 0))
-                stage_reaction = {
-                    "status": "SENALES_PARA_REVISION",
-                    "decision": "REVISAR_SENAL_SIN_APUESTA",
-                    "motivo": f"{len(positive)} señales con edge positivo; la mayor reportada es {best['motor']} · {best['mercado']} · {best['seleccion']} (edge {best['edge_pct']}%). Esto no ejecuta una apuesta.",
-                }
-            else:
-                stage_reaction = {
-                    "status": "SIN_EDGE_POSITIVO",
-                    "decision": "DESCARTAR_POR_AHORA",
-                    "motivo": "Los motores no reportaron edge positivo en las oportunidades disponibles.",
-                }
+        else:
+            stage_reaction = {
+                "status": "SIN_EDGE_POSITIVO",
+                "decision": "DESCARTAR_POR_AHORA",
+                "motivo": "Los motores no reportaron edge positivo en las oportunidades disponibles.",
+            }
 
         return JsonResponse({
             "ok": True,
