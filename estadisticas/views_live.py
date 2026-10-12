@@ -1944,13 +1944,12 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
             "diagnostico": "No se detectó cambio en las estadísticas LIVE; Acción queda pendiente.",
             "datos_evaluados": [],
         }
-        stage_probability = {"status": "ANALISIS_LIVE_SIN_DETONANTE", "motores": [], "motivo": "Lectura informativa del estado actual; no equivale a una Acción activada por gol."}
-        stage_calculation = {"status": "ANALISIS_BASELINE", "oportunidades": [], "motores_con_senales": 0, "motivo": "Consulta informativa de salidas actuales; no crea apuestas."}
-        stage_reaction = {"status": "SEGUIR_MONITOREANDO", "decision": "SEGUIR_MONITOREANDO", "motivo": "No se confirmó un gol nuevo. Las señales se muestran solo como diagnóstico y no activan una apuesta."}
+        stage_probability = {}
+        stage_calculation = {}
+        stage_reaction = {"status": "SEGUIR_MONITOREANDO", "decision": "SEGUIR_MONITOREANDO", "motivo": "Esperando cambios en los datos LIVE para avanzar a Acción."}
 
-        # El gol solo activa la etapa Acción. Contexto, probabilidades y señales
-        # de los motores se muestran también en la primera observación y en ciclos
-        # sin gol, para que ejecutar el patrón nunca termine en una pantalla vacía.
+        # Acción evalúa las nuevas estadísticas cuando Monitoreo detecta cambios.
+        # Probabilidad se calcula desde estadísticas; Cálculo incorpora cuotas.
         home_sot = None
         away_sot = None
         def stat(side, *keys):
