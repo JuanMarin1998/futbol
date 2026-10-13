@@ -67,6 +67,11 @@ class BettingRunnerLabTests(TestCase):
                 },
             },
         }
+        # Los corredores deben recibir exclusivamente la salida final de REACCIÓN.
+        self.payload["etapas"]["reaccion"] = {
+            "senales_recibidas": self.payload["etapas"]["calculo"]["mercados"],
+            "total_senales_recibidas": len(self.payload["etapas"]["calculo"]["mercados"]),
+        }
 
     def test_six_runners_record_at_most_one_bet_per_match(self):
         first = BettingRunnerLab.process_payload(123456, self.payload)
@@ -118,6 +123,15 @@ class BettingRunnerLabTests(TestCase):
                 "estado_cuota_ecuabet": "NO_ENCONTRADA_EN_ECUABET",
                 "estado_live": "ABIERTO",
             }]},
+            "reaccion": {"senales_recibidas": [{
+                "clave": "home",
+                "mercado": "Victoria local",
+                "probabilidad": 99,
+                "probabilidad_decimal": 0.99,
+                "cuota_ecuabet": None,
+                "estado_cuota_ecuabet": "NO_ENCONTRADA_EN_ECUABET",
+                "estado_live": "ABIERTO",
+            }]},
         }
         result = BettingRunnerLab.process_payload(987654, payload)
         self.assertEqual(result["bets_placed"], 0)
@@ -156,6 +170,7 @@ class BettingRunnerLabTests(TestCase):
         payload["etapas"] = {
             **self.payload["etapas"],
             "calculo": {"mercados": []},
+            "reaccion": {"senales_recibidas": [], "total_senales_recibidas": 0},
         }
         first = BettingRunnerLab.process_payload(654321, payload)
         self.assertEqual(first["bets_placed"], 0)
@@ -164,6 +179,10 @@ class BettingRunnerLabTests(TestCase):
         payload["etapas"] = {
             **self.payload["etapas"],
             "calculo": {"mercados": self.payload["etapas"]["calculo"]["mercados"]},
+            "reaccion": {
+                "senales_recibidas": self.payload["etapas"]["calculo"]["mercados"],
+                "total_senales_recibidas": len(self.payload["etapas"]["calculo"]["mercados"]),
+            },
         }
         second = BettingRunnerLab.process_payload(654321, payload)
         self.assertEqual(second["bets_placed"], 0)
