@@ -2380,7 +2380,11 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
                 market["variacion_cuota_justa"] = None
 
         stage_calculation = {
-            "status": "CALCULO_COMPLETADO" if mercados_calculados else "ESTABLECIENDO_LINEA_BASE",
+            "status": (
+                "CALCULO_COMPLETADO" if monitoring["detonante"] and mercados_calculados
+                else "ESPERANDO_DETONANTE" if previous is not None
+                else "ESTABLECIENDO_LINEA_BASE"
+            ),
             "fuente": "LiveProbabilityCalculator",
             "motores_ejecutados": [],
             "motores_involucrados": False,
@@ -2388,10 +2392,12 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
             "cantidad_mercados": len(mercados_calculados),
             "cuotas_ecuabet_live": cuotas_live_diagnostico,
             "motivo": (
-                "Cada ciclo actualiza probabilidades y cuotas justas; gol o tarjeta roja nueva activa Acción."
+                "Detonante nuevo confirmado: se calcularon probabilidades y se compararon con cuotas LIVE."
+                if monitoring["detonante"] and mercados_calculados else
+                "Detonante confirmado, pero no hay mercados calculados para enviar."
                 if monitoring["detonante"] else
-                "Sin gol ni roja nueva: se actualizan mercados sin reactivar Acción."
-                if previous is not None else "Primera lectura: línea base guardada."
+                "Sin gol ni tarjeta roja nueva: no se calculan ni distribuyen oportunidades."
+                if previous is not None else "Primera lectura: línea base guardada; no se generan oportunidades."
             ),
         }
         stage_reaction = {
