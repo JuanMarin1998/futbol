@@ -151,6 +151,33 @@ class BettingRunnerLabTests(TestCase):
         self.assertEqual(result["status"], "WAITING_TRIGGER")
         self.assertEqual(BettingRunnerBet.objects.filter(ecuabet_event_id=555555).count(), 0)
 
+    def test_same_trigger_is_not_processed_twice_when_first_has_no_markets(self):
+        payload = dict(self.payload)
+        payload["etapas"] = {
+            **self.payload["etapas"],
+            "calculo": {"mercados": []},
+        }
+        first = BettingRunnerLab.process_payload(654321, payload)
+        self.assertEqual(first["bets_placed"], 0)
+
+        # Aunque aparezcan cuotas después, el mismo detonante no abre otra cadena.
+        payload["etapas"] = {
+            **self.payload["etapas"],
+            "calculo": {"mercados": self.payload["etapas"]["calculo"]["mercados"]},
+        }
+        second = BettingRunnerLab.process_payload(654321, payload)
+        self.assertEqual(second["bets_placed"], 0)
+        self.assertEqual(
+            BettingRunnerBet.objects.filter(ecuabet_event_id=654321).count(), 0
+        )
+        self.assertEqual(
+            BettingRunnerEvaluation.objects.filter(
+                ecuabet_event_id=654321,
+                snapshot__trigger_id="123456:GOL:1-0",
+            ).count(),
+            6,
+        )
+
     def test_settlement_updates_pnl_and_is_idempotent(self):
         BettingRunnerLab.process_payload(123456, self.payload)
         settled = BettingRunnerLab.settle_event(123456, 4, 0, True)
