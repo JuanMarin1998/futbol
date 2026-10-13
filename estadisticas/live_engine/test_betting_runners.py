@@ -3,7 +3,7 @@ from decimal import Decimal
 from django.test import TestCase
 
 from estadisticas.live_engine.betting_runners import BettingRunnerLab
-from estadisticas.models import BettingRunner, BettingRunnerBet
+from estadisticas.models import BettingRunner, BettingRunnerBet, BettingRunnerEvaluation
 
 
 class BettingRunnerLabTests(TestCase):
@@ -20,7 +20,15 @@ class BettingRunnerLabTests(TestCase):
             },
             "etapas": {
                 "contexto": {"favorito": "Always Ready"},
-                "monitoreo": {"detonante": True},
+                "monitoreo": {
+                    "detonante": True,
+                    "ultimo_detonante": {
+                        "tipo": "GOL",
+                        "id": "123456:GOL:1-0",
+                        "marcador": [1, 0],
+                        "registrado_en": "2026-10-13T12:00:00-05:00",
+                    },
+                },
                 "probabilidad": {
                     "confianza_calculador": 0.80,
                     "calidad_datos": 0.80,
@@ -59,6 +67,11 @@ class BettingRunnerLabTests(TestCase):
                 },
             },
         }
+        # Los corredores deben recibir exclusivamente la salida final de REACCIÓN.
+        self.payload["etapas"]["reaccion"] = {
+            "senales_recibidas": self.payload["etapas"]["calculo"]["mercados"],
+            "total_senales_recibidas": len(self.payload["etapas"]["calculo"]["mercados"]),
+        }
 
     def test_six_runners_record_at_most_one_bet_per_match(self):
         first = BettingRunnerLab.process_payload(123456, self.payload)
@@ -71,6 +84,34 @@ class BettingRunnerLabTests(TestCase):
                 BettingRunnerBet.objects.filter(runner=runner, ecuabet_event_id=123456).count(),
                 1,
             )
+
+    def test_runners_use_reaction_signals_not_calculation_markets(self):
+        payload = dict(self.payload)
+        payload["etapas"] = {
+            **self.payload["etapas"],
+            # El cálculo puede contener mercados, pero si REACCIÓN no los entrega,
+            # los corredores no deben considerarlos oportunidades.
+            "reaccion": {"senales_recibidas": [], "total_senales_recibidas": 0},
+        }
+        result = BettingRunnerLab.process_payload(222222, payload)
+        self.assertEqual(result["bets_placed"], 0)
+        self.assertEqual(
+            BettingRunnerBet.objects.filter(ecuabet_event_id=222222).count(), 0
+        )
+
+    def test_reaction_can_deliver_opportunities_without_reading_calculation_stage(self):
+        payload = dict(self.payload)
+        payload["etapas"] = {
+            **self.payload["etapas"],
+            "calculo": {"mercados": []},
+            "reaccion": {
+                "senales_recibidas": self.payload["etapas"]["reaccion"]["senales_recibidas"],
+                "total_senales_recibidas": len(self.payload["etapas"]["reaccion"]["senales_recibidas"]),
+            },
+        }
+        result = BettingRunnerLab.process_payload(333333, payload)
+        self.assertEqual(result["bets_placed"], 6)
+        self.assertEqual(BettingRunnerBet.objects.filter(ecuabet_event_id=333333).count(), 6)
 
     def test_lives_follow_engine_ledger_accounting(self):
         runner = BettingRunner.objects.get(key="valor")
@@ -110,16 +151,28 @@ class BettingRunnerLabTests(TestCase):
                 "estado_cuota_ecuabet": "NO_ENCONTRADA_EN_ECUABET",
                 "estado_live": "ABIERTO",
             }]},
+            "reaccion": {"senales_recibidas": [{
+                "clave": "home",
+                "mercado": "Victoria local",
+                "probabilidad": 99,
+                "probabilidad_decimal": 0.99,
+                "cuota_ecuabet": None,
+                "estado_cuota_ecuabet": "NO_ENCONTRADA_EN_ECUABET",
+                "estado_live": "ABIERTO",
+            }]},
         }
         result = BettingRunnerLab.process_payload(987654, payload)
         self.assertEqual(result["bets_placed"], 0)
         self.assertEqual(BettingRunnerBet.objects.filter(ecuabet_event_id=987654).count(), 0)
 
-    def test_missing_live_stats_do_not_globally_block_value_runner(self):
+    def test_no_trigger_globally_blocks_every_runner(self):
         payload = dict(self.payload)
         payload["etapas"] = {
             **self.payload["etapas"],
-            "monitoreo": {"detonante": False},
+            "monitoreo": {
+                "detonante": False,
+                "ultimo_detonante": None,
+            },
             "probabilidad": {
                 "confianza_calculador": 0.45,
                 "calidad_datos": 0.20,
@@ -136,13 +189,41 @@ class BettingRunnerLabTests(TestCase):
             }]},
         }
         result = BettingRunnerLab.process_payload(555555, payload)
-        self.assertEqual(result["bets_placed"], 3)
-        self.assertTrue(BettingRunnerBet.objects.filter(
-            runner__key="valor", ecuabet_event_id=555555
-        ).exists())
-        self.assertFalse(BettingRunnerBet.objects.filter(
-            runner__key="validador", ecuabet_event_id=555555
-        ).exists())
+        self.assertEqual(result["bets_placed"], 0)
+        self.assertEqual(result["status"], "WAITING_TRIGGER")
+        self.assertEqual(BettingRunnerBet.objects.filter(ecuabet_event_id=555555).count(), 0)
+
+    def test_same_trigger_can_retry_after_wait_when_reaction_delivers_markets(self):
+        payload = dict(self.payload)
+        payload["etapas"] = {
+            **self.payload["etapas"],
+            "calculo": {"mercados": []},
+            "reaccion": {"senales_recibidas": [], "total_senales_recibidas": 0},
+        }
+        first = BettingRunnerLab.process_payload(654321, payload)
+        self.assertEqual(first["bets_placed"], 0)
+
+        # Si REACCIÓN entrega después las cuotas del mismo detonante, se reevalúa el WAIT.
+        payload["etapas"] = {
+            **self.payload["etapas"],
+            "calculo": {"mercados": self.payload["etapas"]["calculo"]["mercados"]},
+            "reaccion": {
+                "senales_recibidas": self.payload["etapas"]["calculo"]["mercados"],
+                "total_senales_recibidas": len(self.payload["etapas"]["calculo"]["mercados"]),
+            },
+        }
+        second = BettingRunnerLab.process_payload(654321, payload)
+        self.assertEqual(second["bets_placed"], 6)
+        self.assertEqual(
+            BettingRunnerBet.objects.filter(ecuabet_event_id=654321).count(), 6
+        )
+        self.assertEqual(
+            BettingRunnerEvaluation.objects.filter(
+                ecuabet_event_id=654321,
+                snapshot__trigger_id="123456:GOL:1-0",
+            ).count(),
+            6,
+        )
 
     def test_settlement_updates_pnl_and_is_idempotent(self):
         BettingRunnerLab.process_payload(123456, self.payload)

@@ -2036,7 +2036,13 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
         for side, team in (("home", match.home_team), ("away", match.away_team)):
             current_red = _red_card_count(performance, side)
             previous_red = _red_card_count(previous_performance, side)
-            if current_red is not None and current_red > (previous_red if previous_red is not None else 0):
+            # La primera lectura o un contador previo desconocido no confirma una roja nueva.
+            if (
+                previous is not None
+                and previous_red is not None
+                and current_red is not None
+                and current_red > previous_red
+            ):
                 red_card_changes.append({
                     "equipo": team,
                     "anterior": previous_red if previous_red is not None else 0,
@@ -2053,6 +2059,7 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
                 "tipo": "GOL", "marcador": list(now_score),
                 "minuto": str(current_minute or ""),
                 "registrado_en": timezone.localtime().isoformat(),
+                "id": f"{int(ecuabet_event_id)}:GOL:{now_score[0]}-{now_score[1]}",
                 "motivo": "Aumento confirmado del marcador LIVE.",
             }
             if goal_scored else (
@@ -2060,6 +2067,13 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
                     "tipo": "TARJETA_ROJA", "marcador": list(now_score),
                     "minuto": str(current_minute or ""),
                     "registrado_en": timezone.localtime().isoformat(),
+                    "id": (
+                        f"{int(ecuabet_event_id)}:ROJA:"
+                        + ",".join(
+                            f"{item['equipo']}:{item['anterior']}-{item['actual']}"
+                            for item in red_card_changes
+                        )
+                    ),
                     "motivo": "Nueva tarjeta roja detectada: " + ", ".join(item["equipo"] for item in red_card_changes),
                     "equipos_afectados": red_card_changes,
                 } if red_card_detected else previous_last_trigger
@@ -2168,8 +2182,8 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
             for item in previous_opportunities if isinstance(item, dict)
         }
 
-        # Después de la línea base, recalcular probabilidades en cada ciclo, con o sin gol.
-        if match is not None and previous is not None:
+        # Etapas 5 y 6 solo se ejecutan tras confirmar un gol/roja nuevos.
+        if match is not None and previous is not None and monitoring["detonante"]:
             calculator_result = LiveProbabilityCalculator.calculate(
                 match,
                 pre_match_context={
@@ -2180,18 +2194,26 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
             )
             stage_probability = {
                 **calculator_result,
-                "status": "PROBABILIDAD_ESTADISTICA_ACTUALIZADA" if monitoring["detonante"] else "PROBABILIDAD_ACTUALIZADA_SIN_DETONANTE",
+                "status": "PROBABILIDAD_ESTADISTICA_ACTUALIZADA",
                 "estadisticas_live_recibidas": performance,
-                "criterio": "Recalculado en cada ciclo con marcador/minuto LIVE, estadísticas disponibles y contexto 1X2 prepartido.",
-                "motivo": ("Gol nuevo: cadena activada." if goal_scored else "Tarjeta roja nueva: cadena activada y contexto numérico ajustado." if red_card_detected else "Sin gol ni roja nueva: se actualizan probabilidades sin reactivar Acción."),
+                "criterio": "Calculada tras un detonante nuevo con marcador/minuto LIVE, estadísticas disponibles y contexto 1X2 prepartido.",
+                "motivo": (
+                    "Gol nuevo: cadena activada."
+                    if goal_scored
+                    else "Tarjeta roja nueva: cadena activada y contexto numérico ajustado."
+                ),
             }
         else:
             stage_probability = {
-                "status": "ESTABLECIENDO_LINEA_BASE",
+                "status": "ESPERANDO_DETONANTE" if previous is not None else "ESTABLECIENDO_LINEA_BASE",
                 "mercados_probables": [],
                 "mas_probable": None,
                 "estadisticas_utilizadas": {},
-                "motivo": "Primera lectura: se guarda marcador y línea base; el cálculo comienza en el siguiente ciclo.",
+                "motivo": (
+                    "Sin gol nuevo ni tarjeta roja nueva: no se calculan probabilidades de oportunidad."
+                    if previous is not None
+                    else "Primera lectura: se guarda marcador y línea base; no se activa el análisis."
+                ),
             }
 
         # Patrón de Oportunidades usa exclusivamente el calculador central.
@@ -2380,7 +2402,11 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
                 market["variacion_cuota_justa"] = None
 
         stage_calculation = {
-            "status": "CALCULO_COMPLETADO" if mercados_calculados else "ESTABLECIENDO_LINEA_BASE",
+            "status": (
+                "CALCULO_COMPLETADO" if monitoring["detonante"] and mercados_calculados
+                else "ESPERANDO_DETONANTE" if previous is not None
+                else "ESTABLECIENDO_LINEA_BASE"
+            ),
             "fuente": "LiveProbabilityCalculator",
             "motores_ejecutados": [],
             "motores_involucrados": False,
@@ -2388,23 +2414,32 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
             "cantidad_mercados": len(mercados_calculados),
             "cuotas_ecuabet_live": cuotas_live_diagnostico,
             "motivo": (
-                "Cada ciclo actualiza probabilidades y cuotas justas; gol o tarjeta roja nueva activa Acción."
+                "Detonante nuevo confirmado: se calcularon probabilidades y se compararon con cuotas LIVE."
+                if monitoring["detonante"] and mercados_calculados else
+                "Detonante confirmado, pero no hay mercados calculados para enviar."
                 if monitoring["detonante"] else
-                "Sin gol ni roja nueva: se actualizan mercados sin reactivar Acción."
-                if previous is not None else "Primera lectura: línea base guardada."
+                "Sin gol ni tarjeta roja nueva: no se calculan ni distribuyen oportunidades."
+                if previous is not None else "Primera lectura: línea base guardada; no se generan oportunidades."
             ),
         }
+        # Solo las reacciones de una cadena activada se distribuyen a los corredores.
+        señales_para_corredores = mercados_calculados if monitoring["detonante"] else []
         stage_reaction = {
-            "senales_recibidas": mercados_calculados,
-            "total_senales_recibidas": len(mercados_calculados),
-            "status": "DETONANTE_NUEVO_CADENA_ACTIVADA" if monitoring["detonante"] else ("OPORTUNIDADES_ACTUALIZADAS_SIN_DETONANTE" if mercados_calculados else "ESTABLECIENDO_LINEA_BASE"),
-            "decision": "ACTUALIZAR_OPORTUNIDADES" if mercados_calculados else "SEGUIR_MONITOREANDO",
-            "ultimo_detonante": last_trigger,
+            "senales_recibidas": señales_para_corredores,
+            "total_senales_recibidas": len(señales_para_corredores),
+            "status": (
+                "DETONANTE_NUEVO_CADENA_ACTIVADA" if monitoring["detonante"]
+                else "ESPERANDO_DETONANTE" if previous is not None
+                else "ESTABLECIENDO_LINEA_BASE"
+            ),
+            "decision": "ENVIAR_ANALISIS_A_CORREDORES" if monitoring["detonante"] else "SEGUIR_MONITOREANDO",
+            "ultimo_detonante": last_trigger if monitoring["detonante"] else None,
             "motivo": (
-                "Gol nuevo confirmado: cadena ejecutada y mercados actualizados."
+                "Detonante nuevo confirmado: análisis y mercados enviados a los corredores."
                 if monitoring["detonante"] else
-                "Sin gol ni roja nueva: se conservan mercados y se actualizan probabilidad y cuota justa."
-                if mercados_calculados else "Primera lectura guardada como línea base."
+                "Sin gol ni tarjeta roja nueva: no se envían oportunidades a los corredores."
+                if previous is not None else
+                "Primera lectura guardada como línea base; no se envían oportunidades."
             ),
         }
 

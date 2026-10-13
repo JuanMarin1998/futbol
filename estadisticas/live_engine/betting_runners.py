@@ -72,7 +72,10 @@ class BettingRunnerLab:
     @classmethod
     def _normalise_markets(cls, payload):
         stages = payload.get("etapas") or {}
-        calc = stages.get("calculo") or {}
+        # REACCIÓN es la única interfaz entre el Patrón y los corredores.
+        # Los corredores no consumen directamente el cálculo interno de mercados.
+        reaction = stages.get("reaccion") or {}
+        reaction_signals = reaction.get("senales_recibidas") or []
         probability_stage = stages.get("probabilidad") or {}
         monitoring = stages.get("monitoreo") or {}
         quality = cls._as_float(probability_stage.get("calidad_datos"), 0.0) or 0.0
@@ -81,7 +84,7 @@ class BettingRunnerLab:
         match = payload.get("partido") or {}
         context = stages.get("contexto") or {}
         candidates = []
-        for source in calc.get("mercados") or []:
+        for source in reaction_signals:
             if not isinstance(source, dict):
                 continue
             key = str(source.get("clave") or "").strip()
@@ -117,7 +120,7 @@ class BettingRunnerLab:
                 "source": source,
                 "match": match,
             })
-        return candidates, stages
+        return candidates, {"reaccion": reaction, "senales_recibidas": len(reaction_signals), "etapas": stages}
 
     @staticmethod
     def _minute(value):
@@ -231,13 +234,32 @@ class BettingRunnerLab:
             return {"event_id": event_id, "bets_placed": 0, "error": (payload or {}).get("error", "Respuesta del Patrón no válida.")}
         match = payload.get("partido") or {}
         stages = payload.get("etapas") or {}
-        candidates, _ = cls._normalise_markets(payload)
+        monitoring = stages.get("monitoreo") or {}
+        trigger = monitoring.get("ultimo_detonante")
         try:
             event_id = int(event_id)
         except (TypeError, ValueError):
             return {"event_id": event_id, "bets_placed": 0, "error": "ID de evento inválido."}
         if not match.get("local") or not match.get("visitante"):
             return {"event_id": event_id, "bets_placed": 0, "error": "El partido no está identificado correctamente."}
+
+        # Barrera global de seguridad: ninguna estrategia puede apostar si el patrón
+        # no entrega un gol/roja nuevos confirmados. No basta con que existan mercados.
+        if (
+            monitoring.get("detonante") is not True
+            or not isinstance(trigger, dict)
+            or trigger.get("tipo") not in {"GOL", "TARJETA_ROJA"}
+            or not str(trigger.get("id") or "").strip()
+        ):
+            return {
+                "event_id": event_id,
+                "bets_placed": 0,
+                "evaluations": [],
+                "status": "WAITING_TRIGGER",
+                "reason": "Sin detonante nuevo confirmado; ningún corredor puede registrar apuestas.",
+            }
+
+        candidates, _ = cls._normalise_markets(payload)
         score = match.get("marcador") or [None, None]
         try:
             home_score, away_score = int(score[0]), int(score[1])
@@ -245,10 +267,25 @@ class BettingRunnerLab:
             home_score = away_score = None
         placed = 0
         outcomes = []
+        trigger_id = str(trigger["id"])
         for runner in BettingRunner.objects.filter(active=True).order_by("id"):
             existing = BettingRunnerBet.objects.filter(runner=runner, ecuabet_event_id=event_id).first()
+            prior_evaluation = BettingRunnerEvaluation.objects.filter(
+                runner=runner, ecuabet_event_id=event_id
+            ).first()
+            prior_snapshot = prior_evaluation.snapshot if prior_evaluation and isinstance(prior_evaluation.snapshot, dict) else {}
             if existing:
                 action, reason, selected = "BET_ALREADY_PLACED", "Este corredor ya registró su única apuesta para este partido.", existing.market
+            elif (
+                prior_snapshot.get("trigger_id") == trigger_id
+                and prior_evaluation.action != "WAIT"
+            ):
+                action = "TRIGGER_PROCESSED"
+                reason = "Este detonante ya produjo una decisión final para este corredor."
+                selected = prior_evaluation.selected_market or ""
+            # Si la evaluación anterior terminó en WAIT, se permite reintentar el
+            # mismo detonante cuando REACCIÓN vuelva a entregar oportunidades.
+            # Las apuestas existentes siguen bloqueadas por la comprobación anterior.
             else:
                 chosen, strategy_reason = cls._choose(runner, candidates)
                 if not chosen:
@@ -305,6 +342,11 @@ class BettingRunnerLab:
             evaluation_snapshot = {
                 "opportunities_with_live_price": len(candidates),
                 "runner_strategy": runner.strategy,
+                "trigger_id": trigger_id,
+                "trigger_type": trigger.get("tipo"),
+                "trigger": trigger,
+                # Cada corredor conserva el informe recibido, incluso cuando decide esperar.
+                "analisis_patron": stages,
             }
             BettingRunnerEvaluation.objects.update_or_create(
                 runner=runner,
