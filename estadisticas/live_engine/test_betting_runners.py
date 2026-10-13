@@ -85,6 +85,34 @@ class BettingRunnerLabTests(TestCase):
                 1,
             )
 
+    def test_runners_use_reaction_signals_not_calculation_markets(self):
+        payload = dict(self.payload)
+        payload["etapas"] = {
+            **self.payload["etapas"],
+            # El cálculo puede contener mercados, pero si REACCIÓN no los entrega,
+            # los corredores no deben considerarlos oportunidades.
+            "reaccion": {"senales_recibidas": [], "total_senales_recibidas": 0},
+        }
+        result = BettingRunnerLab.process_payload(222222, payload)
+        self.assertEqual(result["bets_placed"], 0)
+        self.assertEqual(
+            BettingRunnerBet.objects.filter(ecuabet_event_id=222222).count(), 0
+        )
+
+    def test_reaction_can_deliver_opportunities_without_reading_calculation_stage(self):
+        payload = dict(self.payload)
+        payload["etapas"] = {
+            **self.payload["etapas"],
+            "calculo": {"mercados": []},
+            "reaccion": {
+                "senales_recibidas": self.payload["etapas"]["reaccion"]["senales_recibidas"],
+                "total_senales_recibidas": len(self.payload["etapas"]["reaccion"]["senales_recibidas"]),
+            },
+        }
+        result = BettingRunnerLab.process_payload(333333, payload)
+        self.assertEqual(result["bets_placed"], 6)
+        self.assertEqual(BettingRunnerBet.objects.filter(ecuabet_event_id=333333).count(), 6)
+
     def test_lives_follow_engine_ledger_accounting(self):
         runner = BettingRunner.objects.get(key="valor")
         bet = BettingRunnerBet.objects.create(
