@@ -3,7 +3,7 @@ from decimal import Decimal
 from django.test import TestCase
 
 from estadisticas.live_engine.betting_runners import BettingRunnerLab
-from estadisticas.models import BettingRunner, BettingRunnerBet
+from estadisticas.models import BettingRunner, BettingRunnerBet, BettingRunnerEvaluation
 
 
 class BettingRunnerLabTests(TestCase):
