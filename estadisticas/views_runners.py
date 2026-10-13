@@ -313,3 +313,22 @@ def api_corredores_reiniciar(request):
         )
         # No se borran apuestas ni evaluaciones; el saldo diario vuelve a 100 por el libro del día.
     return JsonResponse({"ok": True, "message": "Experimento reiniciado: se cancelaron las abiertas de hoy y se conservó el historial."})
+
+
+@require_POST
+def api_corredores_borrar_apuestas_hoy(request):
+    """Elimina las apuestas del día local y conserva las evaluaciones e historial anterior."""
+    from django.db import transaction
+
+    today = timezone.localdate()
+    # Pausa el proceso para evitar que vuelva a registrar apuestas durante la limpieza.
+    cache.delete(RUNNER_WORKER_KEY)
+    cache.delete(RUNNER_START_KEY)
+    with transaction.atomic():
+        deleted, _ = BettingRunnerBet.objects.filter(placed_at__date=today).delete()
+    return JsonResponse({
+        "ok": True,
+        "running": False,
+        "deleted": deleted,
+        "message": f"Se eliminaron {deleted} registros de apuestas de hoy ({today}). Se conservaron las evaluaciones y apuestas de días anteriores. Laboratorio pausado.",
+    })
