@@ -231,13 +231,31 @@ class BettingRunnerLab:
             return {"event_id": event_id, "bets_placed": 0, "error": (payload or {}).get("error", "Respuesta del Patrón no válida.")}
         match = payload.get("partido") or {}
         stages = payload.get("etapas") or {}
-        candidates, _ = cls._normalise_markets(payload)
+        monitoring = stages.get("monitoreo") or {}
+        trigger = monitoring.get("ultimo_detonante")
         try:
             event_id = int(event_id)
         except (TypeError, ValueError):
             return {"event_id": event_id, "bets_placed": 0, "error": "ID de evento inválido."}
         if not match.get("local") or not match.get("visitante"):
             return {"event_id": event_id, "bets_placed": 0, "error": "El partido no está identificado correctamente."}
+
+        # Barrera global de seguridad: ninguna estrategia puede apostar si el patrón
+        # no entrega un gol/roja nuevos confirmados. No basta con que existan mercados.
+        if (
+            monitoring.get("detonante") is not True
+            or not isinstance(trigger, dict)
+            or trigger.get("tipo") not in {"GOL", "TARJETA_ROJA"}
+        ):
+            return {
+                "event_id": event_id,
+                "bets_placed": 0,
+                "evaluations": [],
+                "status": "WAITING_TRIGGER",
+                "reason": "Sin detonante nuevo confirmado; ningún corredor puede registrar apuestas.",
+            }
+
+        candidates, _ = cls._normalise_markets(payload)
         score = match.get("marcador") or [None, None]
         try:
             home_score, away_score = int(score[0]), int(score[1])
