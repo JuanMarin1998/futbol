@@ -2,7 +2,7 @@
 {% block titulo %}Laboratorio de Corredores Virtuales{% endblock %}
 {% block contenido %}
 <style>
-main:has(.runner-page){max-width:1600px}.runner-page{max-width:1500px;margin:auto}.runner-panel{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:1rem;margin-bottom:1rem;color:#e2e8f0}.runner-muted{color:#94a3b8}.runner-actions{display:flex;gap:.6rem;flex-wrap:wrap}.runner-btn{border:0;border-radius:8px;padding:.65rem .95rem;font-weight:700;cursor:pointer;background:#2563eb;color:white}.runner-btn.secondary{background:#475569}.runner-btn.stop{background:#991b1b}.runner-btn:disabled{opacity:.55;cursor:wait}.runner-status{background:#0f172a;border:1px solid #334155;border-radius:8px;padding:.75rem;white-space:pre-wrap;margin-top:.8rem}.runner-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:.8rem}.runner-card{background:#0f172a;border:1px solid #334155;border-radius:10px;padding:1rem;min-width:0}.runner-card h3{margin:.1rem 0 .55rem}.runner-stat-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.45rem;margin:.65rem 0}.runner-stat{background:#172033;border-radius:7px;padding:.55rem}.runner-stat small{display:block;color:#94a3b8}.runner-stat strong{font-size:1.1rem}.runner-pill{display:inline-block;border-radius:999px;background:#334155;padding:.2rem .55rem;font-size:.75rem}.runner-good{color:#86efac}.runner-bad{color:#fca5a5}.runner-table-wrap{overflow:auto}table.runner-table{width:100%;border-collapse:collapse;font-size:.86rem}table.runner-table th,table.runner-table td{border-bottom:1px solid #334155;padding:.65rem;text-align:left;vertical-align:top}table.runner-table th{color:#94a3b8;white-space:nowrap}.runner-reason{max-width:340px;white-space:normal;line-height:1.4}.runner-top{display:flex;justify-content:space-between;align-items:start;gap:1rem;flex-wrap:wrap}@media(max-width:650px){.runner-table{min-width:850px}}
+main:has(.runner-page){max-width:1600px}.runner-page{max-width:1500px;margin:auto}.runner-panel{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:1rem;margin-bottom:1rem;color:#e2e8f0}.runner-muted{color:#94a3b8}.runner-actions{display:flex;gap:.6rem;flex-wrap:wrap}.runner-btn{border:0;border-radius:8px;padding:.65rem .95rem;font-weight:700;cursor:pointer;background:#2563eb;color:white}.runner-btn.secondary{background:#475569}.runner-btn.stop{background:#991b1b}.runner-btn:disabled{opacity:.55;cursor:wait}.runner-btn.delete-today{background:#b91c1c;font-size:1rem;padding:.95rem 1.25rem;border:2px solid #fecaca;box-shadow:0 0 0 2px #7f1d1d;letter-spacing:.02em}.runner-btn.delete-today:hover{background:#991b1b}.runner-status{background:#0f172a;border:1px solid #334155;border-radius:8px;padding:.75rem;white-space:pre-wrap;margin-top:.8rem}.runner-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:.8rem}.runner-card{background:#0f172a;border:1px solid #334155;border-radius:10px;padding:1rem;min-width:0}.runner-card h3{margin:.1rem 0 .55rem}.runner-stat-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.45rem;margin:.65rem 0}.runner-stat{background:#172033;border-radius:7px;padding:.55rem}.runner-stat small{display:block;color:#94a3b8}.runner-stat strong{font-size:1.1rem}.runner-pill{display:inline-block;border-radius:999px;background:#334155;padding:.2rem .55rem;font-size:.75rem}.runner-good{color:#86efac}.runner-bad{color:#fca5a5}.runner-table-wrap{overflow:auto}table.runner-table{width:100%;border-collapse:collapse;font-size:.86rem}table.runner-table th,table.runner-table td{border-bottom:1px solid #334155;padding:.65rem;text-align:left;vertical-align:top}table.runner-table th{color:#94a3b8;white-space:nowrap}.runner-reason{max-width:340px;white-space:normal;line-height:1.4}.runner-top{display:flex;justify-content:space-between;align-items:start;gap:1rem;flex-wrap:wrap}@media(max-width:650px){.runner-table{min-width:850px}}
 </style>
 <div class="runner-page">
  <section class="runner-panel">
@@ -18,6 +18,7 @@ main:has(.runner-page){max-width:1600px}.runner-page{max-width:1500px;margin:aut
     <button class="runner-btn secondary" id="cycleRunner">↻ Ejecutar ciclo</button>
     <button class="runner-btn secondary" id="settleRunner">✓ Liquidar pendientes</button>
     <button class="runner-btn secondary" id="resetRunner">Reiniciar día</button>
+    <button class="runner-btn delete-today" id="deleteTodayBets">🗑️ BORRAR APUESTAS DE HOY</button>
     <button class="runner-btn secondary" id="refreshRunner">Actualizar panel</button>
    </div>
   </div>
@@ -46,6 +47,7 @@ main:has(.runner-page){max-width:1600px}.runner-page{max-width:1500px;margin:aut
  const cycleUrl="{% url 'estadisticas:api_corredores_ciclo' %}";
  const settleUrl="{% url 'estadisticas:api_corredores_liquidar' %}";
  const resetUrl="{% url 'estadisticas:api_corredores_reiniciar' %}";
+ const deleteTodayUrl="{% url 'estadisticas:api_corredores_borrar_apuestas_hoy' %}";
  const statusEl=document.getElementById('runnerStatus');
  let busy=false;
  function esc(v){return String(v==null?'—':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
@@ -92,6 +94,7 @@ main:has(.runner-page){max-width:1600px}.runner-page{max-width:1500px;margin:aut
  document.getElementById('cycleRunner').addEventListener('click',()=>post(cycleUrl));
  document.getElementById('settleRunner').addEventListener('click',()=>post(settleUrl));
  document.getElementById('resetRunner').addEventListener('click',async()=>{if(confirm('¿Cancelar apuestas abiertas de hoy y conservar todo el historial?'))await post(resetUrl);});
+ document.getElementById('deleteTodayBets').addEventListener('click',async()=>{if(confirm('¿Eliminar DEFINITIVAMENTE todas las apuestas registradas hoy en el Laboratorio de Corredores? Se conservarán las apuestas de días anteriores y las evaluaciones. El laboratorio quedará pausado para evitar que se creen nuevas apuestas durante la limpieza.'))await post(deleteTodayUrl);});
  document.getElementById('refreshRunner').addEventListener('click',refresh);
  refresh();setInterval(refresh,10000);
 })();
