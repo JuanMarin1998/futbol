@@ -276,10 +276,16 @@ class BettingRunnerLab:
             prior_snapshot = prior_evaluation.snapshot if prior_evaluation and isinstance(prior_evaluation.snapshot, dict) else {}
             if existing:
                 action, reason, selected = "BET_ALREADY_PLACED", "Este corredor ya registró su única apuesta para este partido.", existing.market
-            elif prior_snapshot.get("trigger_id") == trigger_id:
+            elif (
+                prior_snapshot.get("trigger_id") == trigger_id
+                and prior_evaluation.action != "WAIT"
+            ):
                 action = "TRIGGER_PROCESSED"
-                reason = "Este detonante ya fue evaluado por este corredor; no se reprocesa la misma cadena."
+                reason = "Este detonante ya produjo una decisión final para este corredor."
                 selected = prior_evaluation.selected_market or ""
+            # Si la evaluación anterior terminó en WAIT, se permite reintentar el
+            # mismo detonante cuando REACCIÓN vuelva a entregar oportunidades.
+            # Las apuestas existentes siguen bloqueadas por la comprobación anterior.
             else:
                 chosen, strategy_reason = cls._choose(runner, candidates)
                 if not chosen:
