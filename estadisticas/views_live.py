@@ -2053,6 +2053,7 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
                 "tipo": "GOL", "marcador": list(now_score),
                 "minuto": str(current_minute or ""),
                 "registrado_en": timezone.localtime().isoformat(),
+                "id": f"{int(ecuabet_event_id)}:GOL:{now_score[0]}-{now_score[1]}",
                 "motivo": "Aumento confirmado del marcador LIVE.",
             }
             if goal_scored else (
@@ -2060,6 +2061,13 @@ def api_simular_patron_oportunidades(request, ecuabet_event_id):
                     "tipo": "TARJETA_ROJA", "marcador": list(now_score),
                     "minuto": str(current_minute or ""),
                     "registrado_en": timezone.localtime().isoformat(),
+                    "id": (
+                        f"{int(ecuabet_event_id)}:ROJA:"
+                        + ",".join(
+                            f"{item['equipo']}:{item['anterior']}-{item['actual']}"
+                            for item in red_card_changes
+                        )
+                    ),
                     "motivo": "Nueva tarjeta roja detectada: " + ", ".join(item["equipo"] for item in red_card_changes),
                     "equipos_afectados": red_card_changes,
                 } if red_card_detected else previous_last_trigger
