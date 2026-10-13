@@ -20,7 +20,14 @@ class BettingRunnerLabTests(TestCase):
             },
             "etapas": {
                 "contexto": {"favorito": "Always Ready"},
-                "monitoreo": {"detonante": True},
+                "monitoreo": {
+                    "detonante": True,
+                    "ultimo_detonante": {
+                        "tipo": "GOL",
+                        "marcador": [1, 0],
+                        "registrado_en": "2026-10-13T12:00:00-05:00",
+                    },
+                },
                 "probabilidad": {
                     "confianza_calculador": 0.80,
                     "calidad_datos": 0.80,
@@ -115,11 +122,14 @@ class BettingRunnerLabTests(TestCase):
         self.assertEqual(result["bets_placed"], 0)
         self.assertEqual(BettingRunnerBet.objects.filter(ecuabet_event_id=987654).count(), 0)
 
-    def test_missing_live_stats_do_not_globally_block_value_runner(self):
+    def test_no_trigger_globally_blocks_every_runner(self):
         payload = dict(self.payload)
         payload["etapas"] = {
             **self.payload["etapas"],
-            "monitoreo": {"detonante": False},
+            "monitoreo": {
+                "detonante": False,
+                "ultimo_detonante": None,
+            },
             "probabilidad": {
                 "confianza_calculador": 0.45,
                 "calidad_datos": 0.20,
@@ -136,13 +146,9 @@ class BettingRunnerLabTests(TestCase):
             }]},
         }
         result = BettingRunnerLab.process_payload(555555, payload)
-        self.assertEqual(result["bets_placed"], 3)
-        self.assertTrue(BettingRunnerBet.objects.filter(
-            runner__key="valor", ecuabet_event_id=555555
-        ).exists())
-        self.assertFalse(BettingRunnerBet.objects.filter(
-            runner__key="validador", ecuabet_event_id=555555
-        ).exists())
+        self.assertEqual(result["bets_placed"], 0)
+        self.assertEqual(result["status"], "WAITING_TRIGGER")
+        self.assertEqual(BettingRunnerBet.objects.filter(ecuabet_event_id=555555).count(), 0)
 
     def test_settlement_updates_pnl_and_is_idempotent(self):
         BettingRunnerLab.process_payload(123456, self.payload)
