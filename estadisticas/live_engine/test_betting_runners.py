@@ -24,6 +24,7 @@ class BettingRunnerLabTests(TestCase):
                     "detonante": True,
                     "ultimo_detonante": {
                         "tipo": "GOL",
+                        "id": "123456:GOL:1-0",
                         "marcador": [1, 0],
                         "registrado_en": "2026-10-13T12:00:00-05:00",
                     },
