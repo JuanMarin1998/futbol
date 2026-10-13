@@ -22,6 +22,7 @@ urlpatterns = [
     path("api/live/corredores/ciclo/", views_runners.api_corredores_ciclo, name="api_corredores_ciclo"),
     path("api/live/corredores/liquidar/", views_runners.api_corredores_liquidar, name="api_corredores_liquidar"),
     path("api/live/corredores/reiniciar/", views_runners.api_corredores_reiniciar, name="api_corredores_reiniciar"),
+    path("api/live/corredores/borrar-apuestas-hoy/", views_runners.api_corredores_borrar_apuestas_hoy, name="api_corredores_borrar_apuestas_hoy"),
     path("api/live/patron-oportunidades/partidos/", views_live.api_patron_oportunidades_partidos, name="api_patron_oportunidades_partidos"),
     path("api/live/patron-oportunidades/historial/", views_live.api_historial_patron_oportunidades, name="api_historial_patron_oportunidades"),
     path("api/live/patron-oportunidades/<int:ecuabet_event_id>/", views_live.api_simular_patron_oportunidades, name="api_simular_patron_oportunidades"),
