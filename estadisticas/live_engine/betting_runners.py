@@ -274,7 +274,7 @@ class BettingRunnerLab:
             if existing:
                 action, reason, selected = "BET_ALREADY_PLACED", "Este corredor ya registró su única apuesta para este partido.", existing.market
             elif prior_snapshot.get("trigger_id") == trigger_id:
-                action = "TRIGGER_ALREADY_PROCESSED"
+                action = "TRIGGER_PROCESSED"
                 reason = "Este detonante ya fue evaluado por este corredor; no se reprocesa la misma cadena."
                 selected = prior_evaluation.selected_market or ""
             else:
