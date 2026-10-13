@@ -335,6 +335,9 @@ class BettingRunnerLab:
                 "runner_strategy": runner.strategy,
                 "trigger_id": trigger_id,
                 "trigger_type": trigger.get("tipo"),
+                "trigger": trigger,
+                # Cada corredor conserva el informe recibido, incluso cuando decide esperar.
+                "analisis_patron": stages,
             }
             BettingRunnerEvaluation.objects.update_or_create(
                 runner=runner,
