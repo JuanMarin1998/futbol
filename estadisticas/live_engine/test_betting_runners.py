@@ -193,7 +193,7 @@ class BettingRunnerLabTests(TestCase):
         self.assertEqual(result["status"], "WAITING_TRIGGER")
         self.assertEqual(BettingRunnerBet.objects.filter(ecuabet_event_id=555555).count(), 0)
 
-    def test_same_trigger_is_not_processed_twice_when_first_has_no_markets(self):
+    def test_same_trigger_can_retry_after_wait_when_reaction_delivers_markets(self):
         payload = dict(self.payload)
         payload["etapas"] = {
             **self.payload["etapas"],
@@ -203,7 +203,7 @@ class BettingRunnerLabTests(TestCase):
         first = BettingRunnerLab.process_payload(654321, payload)
         self.assertEqual(first["bets_placed"], 0)
 
-        # Aunque aparezcan cuotas después, el mismo detonante no abre otra cadena.
+        # Si REACCIÓN entrega después las cuotas del mismo detonante, se reevalúa el WAIT.
         payload["etapas"] = {
             **self.payload["etapas"],
             "calculo": {"mercados": self.payload["etapas"]["calculo"]["mercados"]},
@@ -213,9 +213,9 @@ class BettingRunnerLabTests(TestCase):
             },
         }
         second = BettingRunnerLab.process_payload(654321, payload)
-        self.assertEqual(second["bets_placed"], 0)
+        self.assertEqual(second["bets_placed"], 6)
         self.assertEqual(
-            BettingRunnerBet.objects.filter(ecuabet_event_id=654321).count(), 0
+            BettingRunnerBet.objects.filter(ecuabet_event_id=654321).count(), 6
         )
         self.assertEqual(
             BettingRunnerEvaluation.objects.filter(
