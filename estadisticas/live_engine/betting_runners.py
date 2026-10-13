@@ -246,6 +246,7 @@ class BettingRunnerLab:
             monitoring.get("detonante") is not True
             or not isinstance(trigger, dict)
             or trigger.get("tipo") not in {"GOL", "TARJETA_ROJA"}
+            or not str(trigger.get("id") or "").strip()
         ):
             return {
                 "event_id": event_id,
@@ -263,10 +264,19 @@ class BettingRunnerLab:
             home_score = away_score = None
         placed = 0
         outcomes = []
+        trigger_id = str(trigger["id"])
         for runner in BettingRunner.objects.filter(active=True).order_by("id"):
             existing = BettingRunnerBet.objects.filter(runner=runner, ecuabet_event_id=event_id).first()
+            prior_evaluation = BettingRunnerEvaluation.objects.filter(
+                runner=runner, ecuabet_event_id=event_id
+            ).first()
+            prior_snapshot = prior_evaluation.snapshot if prior_evaluation and isinstance(prior_evaluation.snapshot, dict) else {}
             if existing:
                 action, reason, selected = "BET_ALREADY_PLACED", "Este corredor ya registró su única apuesta para este partido.", existing.market
+            elif prior_snapshot.get("trigger_id") == trigger_id:
+                action = "TRIGGER_ALREADY_PROCESSED"
+                reason = "Este detonante ya fue evaluado por este corredor; no se reprocesa la misma cadena."
+                selected = prior_evaluation.selected_market or ""
             else:
                 chosen, strategy_reason = cls._choose(runner, candidates)
                 if not chosen:
@@ -323,6 +333,8 @@ class BettingRunnerLab:
             evaluation_snapshot = {
                 "opportunities_with_live_price": len(candidates),
                 "runner_strategy": runner.strategy,
+                "trigger_id": trigger_id,
+                "trigger_type": trigger.get("tipo"),
             }
             BettingRunnerEvaluation.objects.update_or_create(
                 runner=runner,
