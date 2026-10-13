@@ -72,7 +72,10 @@ class BettingRunnerLab:
     @classmethod
     def _normalise_markets(cls, payload):
         stages = payload.get("etapas") or {}
-        calc = stages.get("calculo") or {}
+        # REACCIÓN es la única interfaz entre el Patrón y los corredores.
+        # Los corredores no consumen directamente el cálculo interno de mercados.
+        reaction = stages.get("reaccion") or {}
+        reaction_signals = reaction.get("senales_recibidas") or []
         probability_stage = stages.get("probabilidad") or {}
         monitoring = stages.get("monitoreo") or {}
         quality = cls._as_float(probability_stage.get("calidad_datos"), 0.0) or 0.0
@@ -81,7 +84,7 @@ class BettingRunnerLab:
         match = payload.get("partido") or {}
         context = stages.get("contexto") or {}
         candidates = []
-        for source in calc.get("mercados") or []:
+        for source in reaction_signals:
             if not isinstance(source, dict):
                 continue
             key = str(source.get("clave") or "").strip()
@@ -117,7 +120,7 @@ class BettingRunnerLab:
                 "source": source,
                 "match": match,
             })
-        return candidates, stages
+        return candidates, {"reaccion": reaction, "senales_recibidas": len(reaction_signals), "etapas": stages}
 
     @staticmethod
     def _minute(value):
