@@ -341,3 +341,24 @@ class VProAndV4StartupTests(TestCase):
         self.assertGreaterEqual(prepared[0]["edge"], 0.08)
         self.assertGreaterEqual(prepared[0]["confidence"], 0.65)
         self.assertEqual(LiveExperimentManager._eligibility_reason(self.experiment, "V4", prepared[0]), "")
+
+class V4ProfitabilityFilterTests(SimpleTestCase):
+    def test_accepts_candidate_meeting_odds_probability_and_ev_thresholds(self):
+        opportunity = {"price": 1.50, "model_probability": 0.72}
+        self.assertEqual(LiveExperimentManager._v4_profitability_reason(opportunity), "")
+
+    def test_rejects_odds_below_140(self):
+        opportunity = {"price": 1.39, "model_probability": 0.80}
+        self.assertIn("cuota", LiveExperimentManager._v4_profitability_reason(opportunity))
+
+    def test_rejects_probability_below_72_percent(self):
+        opportunity = {"price": 1.60, "model_probability": 0.719}
+        self.assertIn("probabilidad calibrada", LiveExperimentManager._v4_profitability_reason(opportunity))
+
+    def test_rejects_expected_value_below_3_percent(self):
+        opportunity = {"price": 1.40, "model_probability": 0.72}
+        self.assertIn("valor esperado", LiveExperimentManager._v4_profitability_reason(opportunity))
+
+    def test_rejects_missing_or_invalid_inputs(self):
+        self.assertIn("no verificable", LiveExperimentManager._v4_profitability_reason({}))
+
