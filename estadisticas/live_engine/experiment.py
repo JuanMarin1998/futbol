@@ -330,6 +330,23 @@ class LiveExperimentManager:
             return "resultado"
         return re.sub(r"\s+", " ", str(opportunity.get("market") or "").casefold().strip())
 
+    @staticmethod
+    def _v4_profitability_reason(opportunity: Dict[str, Any]) -> str:
+        """Aplica los mínimos prudenciales de cuota, probabilidad y valor esperado."""
+        try:
+            price = float(opportunity.get("price") or 0)
+            probability = float(opportunity.get("model_probability") or 0)
+        except (TypeError, ValueError):
+            return "Descartada V4: cuota o probabilidad no verificable."
+        if price < 1.40:
+            return f"Descartada V4: cuota {price:.2f} inferior al mínimo 1.40."
+        if probability < 0.72:
+            return f"Descartada V4: probabilidad calibrada {probability * 100:.1f}% inferior al 72%."
+        expected_value = probability * price - 1.0
+        if expected_value < 0.03:
+            return f"Descartada V4: valor esperado {expected_value * 100:.1f}% inferior al mínimo 3%."
+        return ""
+
     @classmethod
     def _eligibility_reason(cls, experiment, motor: str, opportunity: Dict[str, Any]) -> str:
         if motor in cls.PAUSED_MOTORS:
@@ -375,8 +392,9 @@ class LiveExperimentManager:
                 return "Descartada V4: mercado sin probabilidad verificable para calibrar y liquidar."
             if opportunity.get("v4_context_rejection"):
                 return str(opportunity["v4_context_rejection"])
-            if Decimal(str(opportunity.get("price") or 0)) < Decimal("1.25"):
-                return "Descartada V4: cuota inferior a 1.25."
+            profitability_reason = cls._v4_profitability_reason(opportunity)
+            if profitability_reason:
+                return profitability_reason
             calibration_n = int(opportunity.get("calibration_sample_size") or 0)
             edge_v4 = float(opportunity.get("edge") or 0)
             confidence_v4 = float(opportunity.get("confidence") or 0)
