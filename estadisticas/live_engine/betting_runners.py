@@ -157,8 +157,30 @@ class BettingRunnerLab:
             pool = [c for c in non_extreme if c["edge"] >= 0.015]
             return max(pool, key=lambda c: c["edge"], default=None), "Mayor EV positivo con cuota LIVE confirmada."
         if strategy == "conservative":
-            pool = [c for c in non_extreme if c["probability"] >= 0.72 and c["price"] >= 1.15 and c["edge"] >= 0.01]
-            return max(pool, key=lambda c: (c["probability"], c["edge"]), default=None), "Probabilidad alta, cuota mínima y EV positivo."
+            # No confiar íntegramente en probabilidades LIVE aún no calibradas:
+            # reducir a la mitad la ventaja estimada frente a la probabilidad implícita
+            # de la cuota actual. Es un filtro prudencial provisional, no un modelo
+            # estadístico entrenado; los valores originales quedan en el snapshot.
+            pool = []
+            for candidate in non_extreme:
+                implied_probability = 1.0 / candidate["price"]
+                adjusted_probability = implied_probability + 0.50 * (
+                    candidate["probability"] - implied_probability
+                )
+                adjusted_edge = adjusted_probability * candidate["price"] - 1.0
+                if (
+                    candidate["probability"] >= 0.72
+                    and candidate["price"] >= 1.40
+                    and adjusted_probability >= 0.72
+                    and adjusted_edge >= 0.03
+                ):
+                    selected = dict(candidate)
+                    selected["original_probability"] = candidate["probability"]
+                    selected["conservative_adjusted"] = True
+                    selected["probability"] = adjusted_probability
+                    selected["edge"] = adjusted_edge
+                    pool.append(selected)
+            return max(pool, key=lambda c: (c["edge"], c["probability"]), default=None), "Probabilidad prudencial ajustada hacia la cuota LIVE; cuota ≥ 1.40 y EV ajustado ≥ 3%."
         if strategy == "live_trigger":
             pool = [c for c in non_extreme if c["trigger"] and c["edge"] >= 0.005]
             return max(pool, key=lambda c: c["edge"], default=None), "Detonante LIVE nuevo y valor positivo."
@@ -301,6 +323,10 @@ class BettingRunnerLab:
                 else:
                     lives = cls.lives(runner)
                     stake = cls._stake(chosen, lives)
+                    # Limitar la exposición del corredor Conservador: su objetivo es
+                    # sobrevivir a errores de estimación, no maximizar el importe.
+                    if runner.strategy == "conservative":
+                        stake = min(stake, Decimal("5.00"))
                     if stake <= 0:
                         action, selected = "WAIT", ""
                         reason = "Capital disponible insuficiente o stake calculado igual a cero."
@@ -330,6 +356,8 @@ class BettingRunnerLab:
                                 "precio_fuente": "Ecuabet LIVE",
                                 "calidad_datos": chosen["quality"],
                                 "estadisticas_comparables": chosen["stat_count"],
+                                "probabilidad_original": chosen.get("original_probability", chosen["probability"]),
+                                "probabilidad_ajustada_conservador": chosen.get("conservative_adjusted", False),
                                 "etapas": stages,
                                 "runner_score": chosen.get("runner_score"),
                             },
