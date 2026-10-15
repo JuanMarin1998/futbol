@@ -334,8 +334,8 @@ class LiveExperimentManager:
     def _v4_profitability_reason(opportunity: Dict[str, Any]) -> str:
         """Aplica los mínimos prudenciales de cuota, probabilidad y valor esperado."""
         try:
-            price = float(opportunity.get("price") or 0)
-            probability = float(opportunity.get("model_probability") or 0)
+            price = float(str(opportunity.get("price") or 0).replace(",", "."))
+            probability = float(str(opportunity.get("model_probability") or 0).replace(",", "."))
         except (TypeError, ValueError):
             return "Descartada V4: cuota o probabilidad no verificable."
         if price < 1.40:
