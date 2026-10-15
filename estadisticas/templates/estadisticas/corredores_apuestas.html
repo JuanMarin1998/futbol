@@ -19,6 +19,7 @@ main:has(.runner-page){max-width:1600px}.runner-page{max-width:1500px;margin:aut
     <button class="runner-btn secondary" id="settleRunner">✓ Liquidar pendientes</button>
     <button class="runner-btn secondary" id="resetRunner">Reiniciar día</button>
     <button class="runner-btn delete-today" id="deleteTodayBets">🗑️ BORRAR APUESTAS DE HOY</button>
+    <button class="runner-btn delete-today" id="deleteAllBets">⚠️ BORRAR TODAS LAS APUESTAS</button>
     <button class="runner-btn secondary" id="refreshRunner">Actualizar panel</button>
    </div>
   </div>
@@ -48,6 +49,7 @@ main:has(.runner-page){max-width:1600px}.runner-page{max-width:1500px;margin:aut
  const settleUrl="{% url 'estadisticas:api_corredores_liquidar' %}";
  const resetUrl="{% url 'estadisticas:api_corredores_reiniciar' %}";
  const deleteTodayUrl="{% url 'estadisticas:api_corredores_borrar_apuestas_hoy' %}";
+ const deleteAllUrl="{% url 'estadisticas:api_corredores_borrar_todas_apuestas' %}";
  const statusEl=document.getElementById('runnerStatus');
  let busy=false;
  function esc(v){return String(v==null?'—':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
@@ -95,6 +97,7 @@ main:has(.runner-page){max-width:1600px}.runner-page{max-width:1500px;margin:aut
  document.getElementById('settleRunner').addEventListener('click',()=>post(settleUrl));
  document.getElementById('resetRunner').addEventListener('click',async()=>{if(confirm('¿Cancelar apuestas abiertas de hoy y conservar todo el historial?'))await post(resetUrl);});
  document.getElementById('deleteTodayBets').addEventListener('click',async()=>{if(confirm('¿Eliminar DEFINITIVAMENTE todas las apuestas registradas hoy en el Laboratorio de Corredores? Se conservarán las apuestas de días anteriores y las evaluaciones. El laboratorio quedará pausado para evitar que se creen nuevas apuestas durante la limpieza.'))await post(deleteTodayUrl);});
+ document.getElementById('deleteAllBets').addEventListener('click',async()=>{if(confirm('⚠️ BORRADO TOTAL: se eliminarán definitivamente todas las apuestas y evaluaciones de todas las fechas. Se conservarán los seis corredores y sus estrategias, pero se perderá el historial del laboratorio. El laboratorio quedará pausado. ¿Continuar?'))await post(deleteAllUrl);});
  document.getElementById('refreshRunner').addEventListener('click',refresh);
  refresh();setInterval(refresh,10000);
 })();
