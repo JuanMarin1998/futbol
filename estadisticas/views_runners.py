@@ -332,3 +332,35 @@ def api_corredores_borrar_apuestas_hoy(request):
         "deleted": deleted,
         "message": f"Se eliminaron {deleted} registros de apuestas de hoy ({today}). Se conservaron las evaluaciones y apuestas de días anteriores. Laboratorio pausado.",
     })
+
+@require_POST
+def api_corredores_borrar_todas_apuestas(request):
+    """Limpia el libro completo de apuestas y decisiones para iniciar el laboratorio desde cero."""
+    from django.db import transaction
+
+    # Detiene el worker automático antes de borrar para evitar nuevas apuestas durante la limpieza.
+    cache.delete(RUNNER_WORKER_KEY)
+    cache.delete(RUNNER_START_KEY)
+    if cache.get(RUNNER_CYCLE_KEY):
+        return JsonResponse({
+            "ok": False,
+            "error": "Hay un ciclo de corredores en curso. Espera a que termine y vuelve a borrar todas las apuestas.",
+        }, status=409)
+
+    with transaction.atomic():
+        deleted_bets, _ = BettingRunnerBet.objects.all().delete()
+        deleted_evaluations, _ = BettingRunnerEvaluation.objects.all().delete()
+
+    cache.delete("betting_runner_lab_last_cycle")
+    return JsonResponse({
+        "ok": True,
+        "running": False,
+        "deleted_bets": deleted_bets,
+        "deleted_evaluations": deleted_evaluations,
+        "message": (
+            f"Laboratorio limpio desde cero: se eliminaron {deleted_bets} registros de apuestas "
+            f"y {deleted_evaluations} evaluaciones de todas las fechas. "
+            "Se conservaron los seis corredores y sus estrategias. Laboratorio pausado."
+        ),
+    })
+
